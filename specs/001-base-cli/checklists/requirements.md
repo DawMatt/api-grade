@@ -38,3 +38,10 @@
   alternative linting engine to evaluate (FR-014); expanded output format to include
   grade label and professional-tone diagnostic summary (FR-006); added GradeLabel and
   DiagnosticSummary entities; updated contracts/cli-schema.md and data-model.md.
+- Spec updated (2026-06-12, clarify pass 2): 3 edge cases resolved — hints-only summary behaviour, unreachable ruleset URL (fail hard), semantically empty spec (grade normally).
+- Spec updated (2026-06-12): aligned with GOAL.md Grading Approach, constitution v1.1.0,
+  and api_diagnostic_algorithm_spec.md — replaced vague "mirror OpenAPI Doctor" references
+  with precise algorithm spec citations; confirmed score formula, grade thresholds, and
+  focus-rule risk score; updated FR-002 for AsyncAPI-specific narrative language; updated
+  FR-006 diagnostic summary to specify tone-calibration, error-first, volume-aware, and
+  category-specific algorithm behaviors; updated Assumptions accordingly.

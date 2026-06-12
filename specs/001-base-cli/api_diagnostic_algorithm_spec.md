@@ -1,12 +1,52 @@
 # API Diagnostic Algorithm Specification
 
-**Version:** 1.0 | **Scope:** OpenAPI 3.0+, AsyncAPI 3.0+
+**Version:** 1.0.1 | **Scope:** OpenAPI 3.0+, AsyncAPI 3.0+
 
 ---
 
 ## Overview
 
 Transforms linting violations into a diagnostic object containing score, grade, severity, and prioritized focus rules. Single-pass, deterministic, O(n) execution.
+
+---
+
+## Categories
+
+Categories are **extracted dynamically from rule IDs**, not predefined. The extraction rule:
+
+```
+category = first_token_before_underscore_or_dash(ruleId)
+```
+
+**Examples:**
+- `"operation_summary"` → `"operation"`
+- `"oas-schema-check"` → `"oas"`
+- `"schema_validation"` → `"schema"`
+
+### Expected Categories by Spec Type
+
+**OpenAPI 3.0+:**
+- `operation` — Operations (methods), summaries, descriptions, tags
+- `schema` — Data types, properties, validation
+- `security` — Security schemes and requirements
+- `response` — Response codes, content, schemas
+- `parameter` — Path/query/header parameters
+- `info` — API metadata (contact, license, version)
+- `server` — Server URLs and variables
+- `tag` — Tag definitions and usage
+- `oas` — OpenAPI spec-level validation
+
+**AsyncAPI 3.0+:**
+- `channel` — Channel definitions, descriptions, parameters
+- `message` — Message payloads, headers, examples, traits
+- `binding` — Protocol-specific bindings (Kafka, AMQP, MQTT, etc.)
+- `operation` — Publish/subscribe operations
+- `schema` — Data schema validation
+- `security` — Security schemes and requirements
+- `server` — Message broker/server definitions
+- `asyncapi` — AsyncAPI spec-level validation
+
+**Handling unknown categories:** Custom rules may introduce new categories. Include them as-is in `byCategory` and `focusRules`.
 
 ---
 

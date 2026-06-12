@@ -11,7 +11,13 @@
 ### Session 2026-06-12
 
 - Q: What grade scale should the CLI use for output? → A: Both letter grade (A–F, emphasised) and numeric score (0–100) displayed in all output modes.
-- Q: How should diagnostics be ordered in the output? → A: Mirror OpenAPI Doctor's ordering approach.
+
+### Session 2026-06-12 (clarify pass 2)
+
+- Q: How should the diagnostic summary behave when there are only hints and no errors or warnings? → A: Treat hints-only as "no violations" — summary states the spec is in excellent condition; hints are listed in the diagnostic detail section only.
+- Q: When a custom ruleset references external URLs that are unreachable at grading time, what should the CLI do? → A: Fail hard — print a descriptive error to stderr naming the unreachable URL and exit non-zero; partial grading with an incomplete ruleset is not permitted.
+- Q: What should the CLI do when the spec file is syntactically valid but semantically empty (no paths/channels)? → A: Grade normally — let the ruleset produce violations for missing required sections; no special upfront detection.
+- Q: How should diagnostics be ordered in the output? → A: Per the diagnostic algorithm in `api_diagnostic_algorithm_spec.md` — focus rules are ranked by risk score (errors × 10 + warnings × 1), ensuring error-bearing rules always outrank warning-only rules regardless of volume.
 - Q: Should the CLI accept URLs as input in addition to local file paths? → A: Local file paths only for this feature; a `--url` flag is reserved (documented, not implemented) for future use.
 - Q: How much diagnostic detail should the default output show? → A: All diagnostics shown by default; a `--top N` flag allows users to limit output to the N highest-priority findings.
 - Q: What format does `--min-grade` accept? → A: Letter grade only (e.g., `--min-grade B`).
@@ -45,10 +51,10 @@ stdout.
 1. **Given** a valid OpenAPI specification file on disk,
    **When** the user runs the CLI with that file as input,
    **Then** the output contains: (a) an overall grade displaying the letter, numeric
-   percentage, and a grade label (e.g., `D (73%) — Below Standard`); (b) a
-   professional-tone diagnostic summary identifying the highest-impact violation
-   categories to address; (c) the full ordered list of individual diagnostics;
-   and the process exits with code 0.
+   percentage, and a grade label (e.g., `F (57%) — Poor`); (b) a tone-calibrated
+   diagnostic summary that names error count first, scales warning language with
+   volume, and identifies the worst-performing category; (c) the full ordered list
+   of individual diagnostics ranked by risk score; and the process exits with code 0.
 
 2. **Given** a valid AsyncAPI specification file on disk,
    **When** the user runs the CLI with that file as input,
@@ -158,24 +164,24 @@ run.
 
 ### Edge Cases
 
-- What happens when the spec file is syntactically valid JSON/YAML but semantically
-  empty (no paths, no channels)?
+- **Semantically empty spec**: A spec file that is syntactically valid JSON/YAML but semantically empty (no paths, no channels) is graded normally — the ruleset will produce violations for the missing required sections and the CLI outputs a standard grade and diagnostics. No special upfront detection is performed.
 - How does the tool handle very large spec files (e.g., 10 MB+)?
-- What if the Spectral ruleset references external URLs that are unreachable at
-  grading time?
+- **Unreachable ruleset URL**: If a custom Spectral ruleset references external URLs that are unreachable at grading time, the CLI MUST print a descriptive error to stderr naming the unreachable URL and exit with a non-zero exit code. Partial grading with an incomplete ruleset is not permitted.
 - What if the same spec file triggers conflicting rules from the custom ruleset?
 - What does the diagnostic summary look like when the spec has no violations (perfect score)?
-- How should the diagnostic summary behave when there are only hints and no errors or warnings?
+- **Hints-only**: When a spec produces only hints (severity below warning) and no errors or warnings, the diagnostic summary MUST treat this as "no violations" — stating the spec is in excellent condition. Hints are listed in the diagnostic detail section only and do not affect the summary narrative.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: The CLI MUST accept a local file path to an OpenAPI specification
-  as input and produce a quality grade and a diagnostic list ordered using the
-  same prioritisation approach as OpenAPI Doctor.
+  as input and produce a quality grade and a prioritised diagnostic list ordered
+  according to the algorithm defined in `api_diagnostic_algorithm_spec.md`.
 - **FR-002**: The CLI MUST accept a local file path to an AsyncAPI specification
-  as input and produce the same quality grade and diagnostic output as for OpenAPI.
+  as input and produce the same quality grade and diagnostic output as for OpenAPI,
+  with AsyncAPI-specific narrative language (channels/messages/bindings in place
+  of operations/responses/security).
 - **FR-003**: The CLI MUST support a `--min-grade <LETTER>` option (or equivalent
   config file key) accepting a letter grade (A–F) that causes the process to exit
   non-zero when the achieved grade is below the specified threshold.
@@ -188,11 +194,16 @@ run.
   1. **Overall grade line**: letter grade (A–F, prominently), numeric score as a
      percentage (e.g., 73%), and a grade label (Excellent / Good / OK /
      Below Standard / Poor) — e.g., `Grade: D (73%) — Below Standard`.
-  2. **Diagnostic summary**: a concise professional-tone paragraph identifying the
-     count of errors and warnings, their impact on quality, and the top rule IDs
-     accounting for the most violations. The tone MUST be clear and factual (not
-     colloquial). When there are no violations the summary MUST state that the
-     specification is in excellent condition.
+  2. **Diagnostic summary**: a multi-sentence narrative generated by the diagnostic
+     algorithm defined in `api_diagnostic_algorithm_spec.md`. The summary MUST:
+     open with a tone label derived from the score band (Excellent / Good / OK effort
+     / Needs work / Critical condition); address errors before warnings; scale warning
+     language with volume (> 20: "significant damage", 11–20: "impacting", 1–10:
+     "affecting"); identify the worst-performing violation category by name; and adjust
+     vocabulary for the spec type (channels/messages for AsyncAPI; operations/responses
+     for OpenAPI). When there are no violations, or when all findings are hints
+     only (severity below warning), the summary MUST state that the specification
+     is in excellent condition; hints are shown in the diagnostic detail only.
   3. **Diagnostic detail**: the full ordered list of individual findings.
   The grade MUST be the most visually prominent element. All diagnostics MUST
   be shown by default; a `--top N` flag MUST allow users to limit the detail
@@ -208,7 +219,10 @@ run.
   https://github.com/daveshanley/vacuum) SHOULD be evaluated during implementation
   for performance or compatibility advantages over the reference Spectral engine.
 - **FR-008**: All error conditions MUST print a descriptive message to stderr and
-  exit with a non-zero exit code.
+  exit with a non-zero exit code. This includes (but is not limited to): missing
+  or unreadable spec file, unsupported spec format, missing or unreadable ruleset
+  file, and any external URL referenced by a custom ruleset that is unreachable
+  at grading time (the unreachable URL MUST be named in the error message).
 - **FR-009**: The repository MUST include at least one low-quality and one
   high-quality sample OpenAPI specification and at least one of each for AsyncAPI,
   for demonstration and testing purposes.
@@ -234,14 +248,16 @@ run.
   (Excellent / Good / OK / Below Standard / Poor).
 - **Grade Label**: A short qualitative descriptor paired with a letter grade:
   A = Excellent, B = Good, C = OK, D = Below Standard, F = Poor.
-- **Diagnostic Summary**: A concise professional-tone paragraph produced alongside
-  the grade. It states the total error and warning counts, their impact on quality,
-  and the top rule IDs to focus on — following the same logic as OpenAPI Doctor
-  but using clear, factual language.
+- **Diagnostic Summary**: A multi-sentence narrative produced alongside the grade,
+  generated by the diagnostic algorithm (`api_diagnostic_algorithm_spec.md`). Opens
+  with a tone label tied to the score band, states error count first, scales warning
+  language with volume, names the worst-performing violation category, and adjusts
+  vocabulary for spec type. Spec-type-aware: AsyncAPI uses channel/message/binding
+  terminology; OpenAPI uses operation/response/security terminology.
 - **Diagnostic**: A single finding produced during grading. Key attributes: rule
   name, severity, location in spec, human-readable message, impact on grade.
-  Diagnostics MUST be ordered using the same prioritisation approach as OpenAPI
-  Doctor (https://github.com/pb33f/doctor).
+  Focus rules are ranked by risk score (errors × 10 + warnings × 1); the top 5 by
+  risk score are surfaced as focus rules, with the top 3 highlighted in recommendations.
 - **Linting Engine**: The engine used to apply ruleset rules to an API specification
   and produce diagnostics. MUST be compatible with Spectral ruleset files. The
   reference engine is Spectral (@stoplight/spectral-core); vacuum
@@ -275,16 +291,17 @@ run.
 
 ## Assumptions
 
-- The grading algorithm will be based on ruleset violations weighted by severity
-  (error, warn, info, hint); the exact weighting formula will be determined
-  during implementation by studying OpenAPI Doctor's approach.
+- The grading algorithm is fully specified in `api_diagnostic_algorithm_spec.md`.
+  Score formula: `100 − (errors × 5) − (warnings × 1)`, floored at 0. Grade
+  thresholds: A ≥ 90, B ≥ 80, C ≥ 70, D ≥ 60, F < 60. Focus-rule risk score:
+  `(errorCount × 10) + totalCount`; top 5 returned, top 3 displayed.
 - All output modes display the letter grade (A–F, primary), numeric score as a
   percentage (0–100%), and a grade label. Grade labels: A = Excellent, B = Good,
-  C = OK, D = Below Standard, F = Poor. Boundary thresholds to be confirmed
-  against OpenAPI Doctor's implementation during development.
-- The diagnostic summary uses a professional, factual tone. It will NOT use
-  colloquial or informal language. The summary logic (error/warning counts,
-  top rule identification) mirrors OpenAPI Doctor; the wording does not.
+  C = OK, D = Below Standard, F = Poor. Diagnostic narrative tone (separate from
+  the grade label) is: Excellent / Good / OK effort / Needs work / Critical condition.
+- The diagnostic summary uses a professional, factual tone consistent with the
+  algorithm's tone-calibration rules. It will NOT use colloquial language. The
+  summary logic is fully defined in `api_diagnostic_algorithm_spec.md` (Stages 3–6).
 - vacuum (https://github.com/daveshanley/vacuum) is a Spectral-compatible linting
   engine that will be evaluated during implementation as a potential alternative
   to the reference Spectral engine. The evaluation criteria are: Spectral ruleset
