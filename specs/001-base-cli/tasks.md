@@ -25,11 +25,11 @@ and testing of each story. Tests MUST be written before or alongside implementat
 
 **Purpose**: Initialize the TypeScript/Node.js project skeleton with all tooling.
 
-- [ ] T001 Initialize Node.js project: create package.json with name `api-grade`, bin entry `{"api-grade": "./dist/cli/index.js"}`, and all dependency placeholders
-- [ ] T002 Install npm dependencies: `@stoplight/spectral-core`, `@stoplight/spectral-formats`, `@stoplight/spectral-rulesets`, `@stoplight/spectral-parsers`, `commander`, `chalk` (devDeps: `vitest`, `typescript`, `@types/node`)
-- [ ] T003 [P] Configure TypeScript: create `tsconfig.json` targeting Node.js 20, strict mode enabled, output to `dist/`
-- [ ] T004 [P] Configure Vitest: create `vitest.config.ts` pointing at `tests/` with TypeScript support
-- [ ] T005 [P] Add npm scripts to package.json: `build` (tsc), `test` (vitest), `test:watch` (vitest --watch), `test:coverage` (vitest --coverage), `start` (node dist/cli/index.js)
+- [x] T001 Initialize Node.js project: create package.json with name `api-grade`, bin entry `{"api-grade": "./dist/cli/index.js"}`, and all dependency placeholders
+- [x] T002 Install npm dependencies: `@stoplight/spectral-core`, `@stoplight/spectral-formats`, `@stoplight/spectral-rulesets`, `@stoplight/spectral-parsers`, `commander`, `chalk` (devDeps: `vitest`, `typescript`, `@types/node`)
+- [x] T003 [P] Configure TypeScript: create `tsconfig.json` targeting Node.js 20, strict mode enabled, output to `dist/`
+- [x] T004 [P] Configure Vitest: create `vitest.config.ts` pointing at `tests/` with TypeScript support
+- [x] T005 [P] Add npm scripts to package.json: `build` (tsc), `test` (vitest), `test:watch` (vitest --watch), `test:coverage` (vitest --coverage), `start` (node dist/cli/index.js)
 
 ---
 
@@ -39,13 +39,13 @@ and testing of each story. Tests MUST be written before or alongside implementat
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T006 Evaluate vacuum vs Spectral: clone/install `vacuum` (https://github.com/daveshanley/vacuum), run against sample specs using both engines, compare diagnostic output (rule IDs, severities, paths), document decision in `specs/001-base-cli/research.md` §8a and proceed with the chosen engine
-- [ ] T007 [P] Implement `src/core/spec-loader.ts`: reads file at given path (throws descriptive error if not found), returns raw content string; detects `ApiFormat` using `@stoplight/spectral-formats` detectors (`oas2`, `oas3`, `asyncapi2`, `asyncapi3`); throws descriptive error if format unrecognised
-- [ ] T008 [P] Implement `src/formats/openapi.ts`: exports function that constructs a Spectral `Document` from raw content for OpenAPI 2/3 using appropriate parser
-- [ ] T009 [P] Implement `src/formats/asyncapi.ts`: exports function that constructs a Spectral `Document` from raw content for AsyncAPI 2/3 using appropriate parser
-- [ ] T010 [P] Implement `src/rulesets/loader.ts`: exports `loadRuleset(path?: string)` — when `path` is provided, loads from file (throws if not found); when absent, loads built-in default ruleset extending `spectral:oas` and `spectral:asyncapi`
-- [ ] T011 [P] Add `.spectral.yaml` at repository root: `extends: ["spectral:oas", "spectral:asyncapi"]` — the built-in default ruleset used when `--ruleset` is omitted
-- [ ] T012 Implement `src/core/scorer.ts`: exports `computeScore(diagnostics: Diagnostic[]): { numericScore: number; letterGrade: LetterGrade; gradeLabel: GradeLabel }` using deduction weights and DEFAULT_BOUNDARIES from data-model.md; confirms algorithm against OpenAPI Doctor source (https://github.com/pb33f/doctor) and documents final weights in `specs/001-base-cli/research.md` §5
+- [x] T006 Evaluate vacuum vs Spectral: clone/install `vacuum` (https://github.com/daveshanley/vacuum), run against sample specs using both engines, compare diagnostic output (rule IDs, severities, paths), document decision in `specs/001-base-cli/research.md` §8a and proceed with the chosen engine
+- [x] T007 [P] Implement `src/core/spec-loader.ts`: reads file at given path (throws descriptive error if not found), returns raw content string; detects `ApiFormat` using `@stoplight/spectral-formats` detectors (`oas2`, `oas3`, `asyncapi2`, `asyncapi3`); throws descriptive error if format unrecognised
+- [x] T008 [P] Implement `src/formats/openapi.ts`: exports function that constructs a Spectral `Document` from raw content for OpenAPI 2/3 using appropriate parser
+- [x] T009 [P] Implement `src/formats/asyncapi.ts`: exports function that constructs a Spectral `Document` from raw content for AsyncAPI 2/3 using appropriate parser
+- [x] T010 [P] Implement `src/rulesets/loader.ts`: exports `loadRuleset(path?: string)` — when `path` is provided, loads from file (throws if not found); when absent, loads built-in default ruleset extending `spectral:oas` and `spectral:asyncapi`
+- [x] T011 [P] Add `.spectral.yaml` at repository root: `extends: ["spectral:oas", "spectral:asyncapi"]` — the built-in default ruleset used when `--ruleset` is omitted
+- [x] T012 Implement `src/core/scorer.ts`: exports `computeScore(diagnostics: Diagnostic[]): { numericScore: number; letterGrade: LetterGrade; gradeLabel: GradeLabel }` using deduction weights and DEFAULT_BOUNDARIES from data-model.md; confirms algorithm against OpenAPI Doctor source (https://github.com/pb33f/doctor) and documents final weights in `specs/001-base-cli/research.md` §5
 
 **Checkpoint**: Foundation ready — user story implementation can now begin in parallel.
 
@@ -63,28 +63,28 @@ Repeat for an AsyncAPI fixture.
 
 ### Fixtures for User Story 1
 
-- [ ] T013 [P] [US1] Add `tests/fixtures/openapi/museum-api.yaml`: obtain Redocly Museum API spec (https://github.com/Redocly/museum-openapi-example), save to this path; add header comment `# High-quality OpenAPI 3.1 sample — Redocly Museum API`
-- [ ] T014 [P] [US1] Add `tests/fixtures/openapi/poor-quality.yaml`: create a minimal OpenAPI 3.0 spec intentionally missing descriptions, examples, and schema types; add header comment `# Low-quality sample — intentionally violates common rules for grading demonstration`
-- [ ] T015 [P] [US1] Add `tests/fixtures/asyncapi/streetlights-api.yaml`: obtain AsyncAPI Streetlights tutorial spec (https://www.asyncapi.com/docs/tutorials/getting-started/streetlights), save to this path; add header comment `# High-quality AsyncAPI 2.x sample — AsyncAPI Streetlights tutorial`
-- [ ] T016 [P] [US1] Add `tests/fixtures/asyncapi/poor-quality.yaml`: create a minimal AsyncAPI 2.x spec intentionally missing descriptions and message schemas; add header comment `# Low-quality sample — intentionally violates common rules for grading demonstration`
+- [x] T013 [P] [US1] Add `tests/fixtures/openapi/museum-api.yaml`: obtain Redocly Museum API spec (https://github.com/Redocly/museum-openapi-example), save to this path; add header comment `# High-quality OpenAPI 3.1 sample — Redocly Museum API`
+- [x] T014 [P] [US1] Add `tests/fixtures/openapi/poor-quality.yaml`: create a minimal OpenAPI 3.0 spec intentionally missing descriptions, examples, and schema types; add header comment `# Low-quality sample — intentionally violates common rules for grading demonstration`
+- [x] T015 [P] [US1] Add `tests/fixtures/asyncapi/streetlights-api.yaml`: obtain AsyncAPI Streetlights tutorial spec (https://www.asyncapi.com/docs/tutorials/getting-started/streetlights), save to this path; add header comment `# High-quality AsyncAPI 2.x sample — AsyncAPI Streetlights tutorial`
+- [x] T016 [P] [US1] Add `tests/fixtures/asyncapi/poor-quality.yaml`: create a minimal AsyncAPI 2.x spec intentionally missing descriptions and message schemas; add header comment `# Low-quality sample — intentionally violates common rules for grading demonstration`
 
 ### Tests for User Story 1 ⚠️ Write BEFORE implementation
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T017 [P] [US1] Write `tests/unit/scorer.test.ts`: tests for `computeScore()` — verify correct `numericScore`, `letterGrade`, and `gradeLabel` for known violation counts; verify boundary conditions (89 → B, 90 → A; 59 → F, 60 → D); verify all five labels map correctly
-- [ ] T018 [P] [US1] Write `tests/unit/summariser.test.ts`: tests for `generateSummary()` — verify professional-tone output for (a) errors + warnings present, (b) errors only, (c) no violations, (d) hints only; verify `topRules` contains max 5 rule IDs sorted by occurrence count; verify no colloquial language
-- [ ] T019 [P] [US1] Write `tests/unit/formatter.test.ts`: tests for human-readable output — verify 3-section structure (grade line, Quality Assessment, Diagnostics header); verify JSON output contains all required fields (`grade.letter`, `grade.score`, `grade.label`, `qualityAssessment`, `diagnosticCounts`, `topRules`, `diagnostics`); verify `--top N` truncates diagnostic list but not `diagnosticCounts`
-- [ ] T020 [P] [US1] Write `tests/unit/spec-loader.test.ts`: tests for `loadSpec()` — verify correct `ApiFormat` detection for OpenAPI 2/3 and AsyncAPI 2/3 YAML files; verify error thrown for missing file; verify error thrown for unrecognised format
+- [x] T017 [P] [US1] Write `tests/unit/scorer.test.ts`: tests for `computeScore()` — verify correct `numericScore`, `letterGrade`, and `gradeLabel` for known violation counts; verify boundary conditions (89 → B, 90 → A; 59 → F, 60 → D); verify all five labels map correctly
+- [x] T018 [P] [US1] Write `tests/unit/summariser.test.ts`: tests for `generateSummary()` — verify professional-tone output for (a) errors + warnings present, (b) errors only, (c) no violations, (d) hints only; verify `topRules` contains max 5 rule IDs sorted by occurrence count; verify no colloquial language
+- [x] T019 [P] [US1] Write `tests/unit/formatter.test.ts`: tests for human-readable output — verify 3-section structure (grade line, Quality Assessment, Diagnostics header); verify JSON output contains all required fields (`grade.letter`, `grade.score`, `grade.label`, `qualityAssessment`, `diagnosticCounts`, `topRules`, `diagnostics`); verify `--top N` truncates diagnostic list but not `diagnosticCounts`
+- [x] T020 [P] [US1] Write `tests/unit/spec-loader.test.ts`: tests for `loadSpec()` — verify correct `ApiFormat` detection for OpenAPI 2/3 and AsyncAPI 2/3 YAML files; verify error thrown for missing file; verify error thrown for unrecognised format
 
 ### Implementation for User Story 1
 
-- [ ] T021 [US1] Implement `src/core/summariser.ts`: exports `generateSummary(diagnostics: Diagnostic[]): DiagnosticSummary` — computes error/warn/info/hint counts, identifies `topRules` (max 5 by occurrence), generates professional-tone `text` string per the rules in data-model.md; handles zero-violation and hints-only edge cases
-- [ ] T022 [US1] Implement `src/core/grader.ts`: exports `GradeEngine.grade(request: GradeRequest): Promise<GradeResult>` — loads spec, detects format, builds Document, loads ruleset, runs Spectral/vacuum, maps raw results to `Diagnostic[]`, calls `computeScore()` and `generateSummary()`, returns `GradeResult`
-- [ ] T023 [US1] Implement `src/core/formatter.ts`: exports `formatHuman(result: GradeResult, top?: number): string` (3-section human output per contracts/cli-schema.md) and `formatJson(result: GradeResult): string` (JSON output per contracts/cli-schema.md); `--top N` truncates diagnostics array in human output only
-- [ ] T024 [US1] Implement `src/cli/index.ts`: Commander.js program with positional `<spec-file>`, flags `--format`, `--top`, `--url` (reserved — prints "not yet supported" and exits 1); calls `GradeEngine.grade()`, selects formatter, writes to stdout; all errors to stderr with exit 1
-- [ ] T025 [US1] Write `tests/integration/openapi-grading.test.ts`: end-to-end tests grading both OpenAPI fixtures; verify museum-api.yaml scores higher than poor-quality.yaml; verify output structure matches contracts/cli-schema.md human and JSON formats
-- [ ] T026 [US1] Write `tests/integration/asyncapi-grading.test.ts`: end-to-end tests grading both AsyncAPI fixtures; verify streetlights-api.yaml scores higher than poor-quality.yaml; verify output consistent with OpenAPI output format
+- [x] T021 [US1] Implement `src/core/summariser.ts`: exports `generateSummary(diagnostics: Diagnostic[]): DiagnosticSummary` — computes error/warn/info/hint counts, identifies `topRules` (max 5 by occurrence), generates professional-tone `text` string per the rules in data-model.md; handles zero-violation and hints-only edge cases
+- [x] T022 [US1] Implement `src/core/grader.ts`: exports `GradeEngine.grade(request: GradeRequest): Promise<GradeResult>` — loads spec, detects format, builds Document, loads ruleset, runs Spectral/vacuum, maps raw results to `Diagnostic[]`, calls `computeScore()` and `generateSummary()`, returns `GradeResult`
+- [x] T023 [US1] Implement `src/core/formatter.ts`: exports `formatHuman(result: GradeResult, top?: number): string` (3-section human output per contracts/cli-schema.md) and `formatJson(result: GradeResult): string` (JSON output per contracts/cli-schema.md); `--top N` truncates diagnostics array in human output only
+- [x] T024 [US1] Implement `src/cli/index.ts`: Commander.js program with positional `<spec-file>`, flags `--format`, `--top`, `--url` (reserved — prints "not yet supported" and exits 1); calls `GradeEngine.grade()`, selects formatter, writes to stdout; all errors to stderr with exit 1
+- [x] T025 [US1] Write `tests/integration/openapi-grading.test.ts`: end-to-end tests grading both OpenAPI fixtures; verify museum-api.yaml scores higher than poor-quality.yaml; verify output structure matches contracts/cli-schema.md human and JSON formats
+- [x] T026 [US1] Write `tests/integration/asyncapi-grading.test.ts`: end-to-end tests grading both AsyncAPI fixtures; verify streetlights-api.yaml scores higher than poor-quality.yaml; verify output consistent with OpenAPI output format
 
 **Checkpoint**: User Story 1 is fully functional — `api-grade <spec-file>` works for OpenAPI and AsyncAPI with correct output format.
 

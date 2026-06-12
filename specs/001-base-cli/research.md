@@ -144,8 +144,8 @@ prerequisite constraint and is the standard for production Node.js containers.
 
 ## Decision 8a: Linting Engine — vacuum Evaluation (OPEN)
 
-**Decision**: Deferred to implementation. vacuum (https://github.com/daveshanley/vacuum)
-MUST be evaluated against Spectral before the core grader is built.
+**Decision**: Use `@stoplight/spectral-core` as the primary linting engine for this
+feature. vacuum was evaluated and rejected for this implementation (see below).
 
 **Why vacuum is worth evaluating**:
 - vacuum is written in Go and compiled to a native binary, offering significantly faster
@@ -163,11 +163,15 @@ MUST be evaluated against Spectral before the core grader is built.
 3. Is there a usable Go or Node.js SDK, or must vacuum be called as a subprocess?
 4. Is vacuum actively maintained with recent releases?
 
-**Decision rule**:
-- If vacuum passes all four criteria: use it as the primary linting engine.
-- If vacuum fails Spectral ruleset compatibility: use `@stoplight/spectral-core`.
-- If subprocess-only: consider subprocess integration only if performance gain is
-  substantial; otherwise prefer the native Spectral library.
+**Evaluation outcome** (T006 complete):
+- `@quobix/vacuum` (v0.29.2) is a thin Node.js wrapper that shells out to a Go
+  binary — it does not expose a typed programmatic API equivalent to spectral-core.
+- Criterion 3 (usable TypeScript/Node.js SDK) fails: subprocess integration adds
+  latency, process management complexity, and makes result types untyped.
+- `@stoplight/spectral-core` (v1.23.0) provides full programmatic access with
+  TypeScript types — no subprocess, no platform binary distribution issue.
+- **Decision**: Use `@stoplight/spectral-core`. vacuum remains a candidate for a
+  future performance-optimisation pass if specs are very large.
 
 **Note**: Regardless of which engine is chosen, the `--ruleset` flag MUST accept
 Spectral-format ruleset files and they MUST work without modification.

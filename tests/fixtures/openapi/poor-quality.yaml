@@ -1,0 +1,36 @@
+openapi: 3.0.0
+info:
+  title: Bad API
+  version: 1
+
+paths:
+  /stuff:
+    get:
+      responses:
+        '200':
+          description: ok
+  /things:
+    post:
+      responses:
+        '200':
+          description: ok
+  /data:
+    get:
+      responses:
+        '200':
+          description: ok
+  /items:
+    get:
+      responses:
+        '200':
+          description: ok
+  /users:
+    get:
+      responses:
+        '200':
+          description: ok
+  /orders:
+    post:
+      responses:
+        '200':
+          description: ok
