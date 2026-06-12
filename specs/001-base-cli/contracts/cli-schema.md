@@ -37,16 +37,20 @@ AsyncAPI specification (YAML or JSON).
 The output is structured in three sections, always in this order:
 
 ```
-Grade: D (73%) — Below Standard
+Grade: F (57%) — Poor
 
 Quality Assessment:
-This specification demonstrates adequate quality but requires improvement before it
-is production-ready. 1 error has been identified and should be addressed as an
-immediate priority. 38 warnings are materially impacting specification quality.
-The following rules account for the most impactful violations:
-  • oas-schema-check
-  • camel-case-properties
-  • oas3-missing-example
+Critical condition. I detected 1 error, it should be your first concern. 38 warnings
+are impacting the quality. The oas category has the most issues.
+
+Recommendations:
+  1. Fix all 1 error immediately — it blocks production readiness
+  2. Focus on these rules (highest impact first):
+       oas-schema-check — 15 violations (HIGH)
+       operation_tags — 12 violations (HIGH)
+       schema_validation — 11 violations (HIGH)
+  3. Create a plan to address the 38 warnings incrementally
+  4. Start with the oas category — it has the most issues
 
 Diagnostics (39 total — 1 error, 38 warnings):
 
@@ -67,9 +71,15 @@ Diagnostics (39 total — 1 error, 38 warnings):
   - Letter grade is the most visually prominent element.
   - Score is expressed as a percentage integer (e.g., `73%` not `73/100`).
   - Label is one of: Excellent / Good / OK / Below Standard / Poor.
-- **Section 2 — Quality Assessment**: professional-tone paragraph.
-  - States error count, warning count, and top rule IDs.
-  - When no violations, or when all findings are hints only: `This specification is in excellent condition. No issues were detected.` (hints are shown in Section 3 only; they do not affect the summary narrative)
+- **Section 2 — Quality Assessment + Recommendations**: two subsections.
+  - **Quality Assessment paragraph**: Opens with tone label (e.g., `Critical condition.`),
+    then error assessment (if any errors), then volume-aware warning language
+    (>20: "causing significant damage"; 11–20: "impacting"; 1–10: "affecting"),
+    then worst-performing category insight. All per Stage 4 of `api_diagnostic_algorithm_spec.md`.
+  - When no violations, or when all findings are hints only: `This specification is in excellent condition. No issues were detected.` No Recommendations subsection is emitted.
+  - **Recommendations subsection**: Printed when violations exist. Up to 4 numbered items
+    per Stage 6 of the algorithm spec (fix errors, focus rules, address warnings,
+    start with highest-violation category). Focus rules show: `<id> — <N> violations (<IMPACT>)`.
   - Tone MUST be factual and professional (no colloquial or informal language).
 - **Section 3 — Diagnostics**: header line + ordered finding list.
   - Header: `Diagnostics (<total> total — <N> error[s], <N> warning[s][, <N> info[s][, <N> hint[s]]]):`
@@ -86,14 +96,16 @@ Diagnostics (39 total — 1 error, 38 warnings):
 ```json
 {
   "grade": {
-    "letter": "D",
-    "score": 73,
-    "label": "Below Standard"
+    "letter": "F",
+    "score": 57,
+    "label": "Poor"
   },
   "specPath": "/path/to/openapi.yaml",
   "format": "openapi-3",
   "rulesetSource": "default",
-  "qualityAssessment": "This specification demonstrates adequate quality but requires improvement before it is production-ready. 1 error has been identified and should be addressed as an immediate priority. 38 warnings are materially impacting specification quality. The following rules account for the most impactful violations: oas-schema-check, camel-case-properties, oas3-missing-example.",
+  "tone": "Critical condition",
+  "severityLevel": "CRITICAL",
+  "qualityAssessment": "Critical condition. I detected 1 error, it should be your first concern. 38 warnings are impacting the quality. The oas category has the most issues.",
   "diagnosticCounts": {
     "errors": 1,
     "warnings": 38,
@@ -101,7 +113,17 @@ Diagnostics (39 total — 1 error, 38 warnings):
     "hints": 0,
     "total": 39
   },
-  "topRules": ["oas-schema-check", "camel-case-properties", "oas3-missing-example"],
+  "focusRules": [
+    { "id": "oas-schema-check", "title": "Oas Schema Check", "category": "oas",       "count": 15, "impact": "HIGH", "url": "" },
+    { "id": "operation_tags",   "title": "Operation Tags",   "category": "operation", "count": 12, "impact": "HIGH", "url": "" },
+    { "id": "schema_validation","title": "Schema Validation","category": "schema",    "count": 11, "impact": "HIGH", "url": "" }
+  ],
+  "recommendations": [
+    "Fix all 1 error immediately — it blocks production readiness",
+    "Focus on these rules (highest impact first): oas-schema-check — 15 violations (HIGH), operation_tags — 12 violations (HIGH), schema_validation — 11 violations (HIGH)"
+    "Create a plan to address the 38 warnings incrementally",
+    "Start with the oas category — it has the most issues"
+  ],
   "diagnostics": [
     {
       "ruleId": "oas-schema-check",
@@ -125,8 +147,13 @@ Diagnostics (39 total — 1 error, 38 warnings):
 - `diagnostics` is always an array (empty `[]` when no findings).
 - `severity` in each diagnostic is always one of `"error" | "warn" | "info" | "hint"`.
 - `rulesetSource` is `"default"` or `"custom"`. When `"custom"`, a `"rulesetPath"` field is added.
-- When `--top N` is set, `diagnostics` contains at most N items; `diagnosticCounts` and
-  `topRules` always reflect ALL findings regardless of `--top`.
+- `tone` is one of `"Excellent" | "Good" | "OK effort" | "Needs work" | "Critical condition"`.
+- `severityLevel` is one of `"CRITICAL" | "WARNING" | "INFO"`.
+- `focusRules` is always an array (empty `[]` when no violations). Each entry has `id`, `title`,
+  `category`, `count`, `impact` (`"HIGH" | "MEDIUM" | "LOW"`), and `url` (always `""`).
+- `recommendations` is always an array (empty `[]` when no violations).
+- When `--top N` is set, `diagnostics` contains at most N items; `diagnosticCounts`,
+  `focusRules`, and `recommendations` always reflect ALL findings regardless of `--top`.
 
 ---
 

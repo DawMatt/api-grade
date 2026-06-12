@@ -128,7 +128,7 @@ Build multi-sentence commentary by conditionally appending:
    - \>20 warnings: "causing significant damage to the quality"
    - 11-20: "impacting the quality"
    - 1-10: "affecting"
-4. **Category insight** — Mention worst-performing category by violation count
+4. **Category insight** — Mention worst-performing categories (up to 3), focussing on error count first, and then violation count
 5. **Spec-type insight** — AsyncAPI-specific language for channels/messages vs OpenAPI operations/responses
 
 Join all non-null parts with spaces.
@@ -175,7 +175,7 @@ FOR EACH rule:
   category: extract_category(ruleId),
   count: totalCount,
   impact: impact,
-  url: "https://pb33f.io/doctor/#" + ruleId
+  url: null                               // reserved for future use
 }
 ```
 
@@ -198,10 +198,10 @@ Examples:
 
 Build numbered action items:
 
-1. **If errorCount > 0:** "Fix all {N} error(s) immediately — it(they) block production readiness"
+1. **If errorCount > 0:** "Fix (all) {N} error(s) immediately — it(they) block(s) production readiness: " + error rule(s)
 2. **If focusRules exist:** "Focus on these rules (highest impact first):" + top 3 rules with links
 3. **If warningCount > 10:** "Create a plan to address the {N} warnings incrementally"
-4. **If focusRules exist:** Find category with most violations, append "Start with the {category} category — it has the most issues"
+4. **If focusRules exist:** Find categories (up to 3) with most errors, then most violations, append "Start with categories {category list} — they have the most impactful issues"
 
 ---
 
@@ -236,10 +236,10 @@ info_contact: (0 × 10) + 1 = 1 → Rank #4, impact = LOW
 ```
 
 **Stage 6 — Recommendations:**
-1. "Fix all 1 error immediately — it blocks production readiness"
+1. "Fix 1 error immediately — it blocks production readiness: oas-schema-check"
 2. "Focus on these rules (highest impact first): [oas-schema-check](…) — 15 violations (HIGH), [operation_tags](…) — 12 violations (HIGH), [schema_validation](…) — 11 violations (HIGH)"
 3. "Create a plan to address the 38 warnings incrementally"
-4. "Start with the oas category — it has the most issues"
+4. "Start with the categories oas, operation and schema — they have the most impactful issues"
 
 ---
 

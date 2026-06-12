@@ -65,26 +65,56 @@ group — mirroring OpenAPI Doctor's output order.
 
 ## ScoringWeights
 
-Configuration for the deduction-based scoring algorithm.
+Configuration for the deduction-based scoring algorithm (Stage 2 of
+`api_diagnostic_algorithm_spec.md`).
 
 ```typescript
 interface ScoringWeights {
   error: number;   // points deducted per error violation
   warn:  number;   // points deducted per warning violation
-  info:  number;   // points deducted per info violation
-  hint:  number;   // points deducted per hint violation (typically 0)
+  // info and hint violations do NOT affect the numeric score
 }
 ```
 
-**Default weights** (to be confirmed against OpenAPI Doctor source during implementation):
+**Default weights** (per `api_diagnostic_algorithm_spec.md` Stage 2):
 ```typescript
 const DEFAULT_WEIGHTS: ScoringWeights = {
-  error: 10,
-  warn:  5,
-  info:  1,
-  hint:  0,
+  error: 5,
+  warn:  1,
 };
 ```
+
+**Score formula**: `score = MAX(0, 100 − (errorCount × 5) − (warningCount × 1))`
+Info and hint violations are excluded from scoring. No soft caps are applied.
+
+**Example** (algorithm spec §Example): 1 error + 38 warnings → `100 − 5 − 38 = 57` → grade F.
+
+---
+
+## RuleMetadata
+
+Enriched representation of a focus rule produced by Stage 5 of the diagnostic
+algorithm. Used in `DiagnosticSummary.focusRules` and in JSON output.
+
+```typescript
+type ImpactLevel = 'HIGH' | 'MEDIUM' | 'LOW';
+
+interface RuleMetadata {
+  id:       string;       // Spectral rule ID (e.g., "oas-schema-check")
+  title:    string;       // Human-readable title: id_to_title(id) e.g., "Oas Schema Check"
+  category: string;       // First token before _ or - (e.g., "oas", "operation")
+  count:    number;       // Total violation count for this rule
+  impact:   ImpactLevel;  // HIGH if errors>0 OR count≥10; MEDIUM if count≥5; else LOW
+  url:      string;       // reserved for future use; always set to empty string ""
+}
+```
+
+**Category extraction rule**: `category = first_token_before_underscore_or_dash(ruleId)`
+- `"operation_summary"` → `"operation"`
+- `"oas-schema-check"` → `"oas"`
+
+**Risk score** (used to rank focus rules in Stage 5):
+`riskScore = (errorViolationCount × 10) + totalCount`
 
 ---
 
@@ -108,42 +138,43 @@ const GRADE_LABELS: Record<LetterGrade, GradeLabel> = {
 
 ## DiagnosticSummary
 
-A concise professional-tone assessment generated alongside the grade.
-The text is generated programmatically from the diagnostic counts and top rules;
-it is NOT human-authored per run.
+Output of the 6-stage diagnostic algorithm (`api_diagnostic_algorithm_spec.md`).
+Generated programmatically; NOT human-authored per run.
 
 ```typescript
+type DiagnosticSeverityLevel = 'CRITICAL' | 'WARNING' | 'INFO';
+
 interface DiagnosticSummary {
-  text: string;          // rendered paragraph (professional tone, factual)
-  errorCount: number;    // total errors across all diagnostics
-  warnCount: number;     // total warnings across all diagnostics
-  infoCount: number;     // total infos
-  hintCount: number;     // total hints
-  topRules: string[];    // rule IDs with highest violation counts (max 5)
+  // Stage 3 outputs
+  tone:          string;                  // "Excellent" | "Good" | "OK effort" | "Needs work" | "Critical condition"
+  severityLevel: DiagnosticSeverityLevel; // CRITICAL if errors>0 OR score<60; WARNING if score<80; INFO otherwise
+
+  // Counts (Stage 1)
+  errorCount: number;
+  warnCount:  number;
+  infoCount:  number;
+  hintCount:  number;
+
+  // Stage 4 output
+  commentary: string;  // Multi-sentence narrative: tone-prefixed, error-first, volume-aware warnings, category insight
+
+  // Stage 5 output
+  focusRules: RuleMetadata[];  // Top 5 rules by risk score (errors×10 + totalCount)
+
+  // Stage 6 output
+  recommendations: string[];   // Numbered action items (up to 4); empty when no violations
 }
 ```
 
-**Generation rules**:
-- When `errorCount === 0 && warnCount === 0`: summary text MUST state the spec
-  is in excellent condition with no issues detected.
-- When only hints exist (no errors, warnings, or infos): summary MUST treat this
-  as "no violations" — stating the spec is in excellent condition. Hints are
-  listed in the diagnostic detail section only and do not appear in the summary
-  narrative.
-- `topRules` MUST list rules by descending violation count; maximum 5 rule IDs.
-- Summary text MUST be factual and professional — no colloquial language.
-
-**Example summary text** (matching the OpenAPI Doctor sample, professional tone):
-```
-This specification demonstrates adequate quality but requires improvement
-before it is production-ready. 1 error has been identified and should be
-addressed as an immediate priority. 38 warnings are materially impacting
-specification quality. The following rules account for the most impactful
-violations:
-  • oas-schema-check
-  • camel-case-properties
-  • oas3-missing-example
-```
+**Generation rules** (all per `api_diagnostic_algorithm_spec.md`):
+- When `errorCount === 0 && warnCount === 0` (including hints-only): `commentary`
+  MUST state the spec is in excellent condition; `focusRules` and `recommendations`
+  are empty arrays.
+- `focusRules` MUST contain at most 5 entries, ranked by descending riskScore.
+- `commentary` warning volume language: >20 "causing significant damage to the quality";
+  11–20 "impacting the quality"; 1–10 "affecting".
+- Stage 6 recommendation text patterns and conditions are defined in the algorithm spec.
+- Summary MUST be factual and professional — no colloquial language.
 
 ---
 

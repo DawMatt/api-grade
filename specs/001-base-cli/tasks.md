@@ -90,6 +90,28 @@ Repeat for an AsyncAPI fixture.
 
 ---
 
+## Phase 3a: Clarification Fixes (spec clarified 2026-06-12, pass 2)
+
+**Purpose**: Retroactive fixes from spec clarification session — hints-only summary
+behavior changed from "good shape" to "excellent condition"; unreachable URL in custom
+ruleset must now fail hard with a named error. Must complete before US2–US4 work begins.
+
+- ~~T041~~ ~~Fix `src/core/summariser.ts` hints-only path~~ — **Superseded by T047** (full algorithm rewrite covers hints-only)
+- ~~T042~~ ~~Fix `tests/unit/summariser.test.ts` hints-only test~~ — **Superseded by T048** (full test rewrite)
+- [ ] T043 Update `src/rulesets/loader.ts`: wrap Spectral ruleset loading in a try/catch; when a network/fetch error occurs (indicating an unreachable external URL referenced by the ruleset), re-throw a descriptive `Error` that names the unreachable URL in the message — e.g. `'Ruleset could not be loaded: external URL unreachable: <URL>'`; grading with a partially-loaded ruleset MUST NOT proceed
+- [ ] T044 Update `src/core/types.ts`: (a) add `ImpactLevel = 'HIGH' | 'MEDIUM' | 'LOW'` and `RuleMetadata` interface (`id`, `title`, `category`, `count`, `impact`, `url`) per data-model.md; (b) add exported `extractCategory(ruleId: string): string` pure function (first token before `_` or `-`); (c) add `DiagnosticSeverityLevel = 'CRITICAL' | 'WARNING' | 'INFO'`; (d) update `DiagnosticSummary`: replace `topRules: string[]` with `focusRules: RuleMetadata[]`, add `tone: string`, `severityLevel: DiagnosticSeverityLevel`, `commentary: string`, `recommendations: string[]`; rename `text` field to `commentary` (or keep `text` as alias for `commentary`)
+- [ ] T045 Rewrite `src/core/scorer.ts`: replace the soft-capped deduction formula with the exact algorithm spec formula `score = MAX(0, 100 − errorCount × 5 − warningCount × 1)`; info and hint violations do NOT affect the score; remove all caps and per-severity deduction complexity; keep grade boundary logic unchanged
+- [ ] T046 Rewrite `tests/unit/scorer.test.ts`: verify the algorithm spec canonical example (1 error + 38 warnings → score 57 → grade F → label "Poor"); verify grade boundaries with formula-derived counts (A: 0 violations → 100; B: 20 warnings → 80; C: 30 warnings → 70; D: 40 warnings → 60; F: 41 warnings → 59); remove all soft-cap tests; verify hints and infos are excluded from score
+- [ ] T047 Rewrite `src/core/summariser.ts` implementing the full 6-stage algorithm per `api_diagnostic_algorithm_spec.md`: **Stage 1** aggregate errors/warnings/category counts using `extractCategory`; **Stage 3** compute `tone` (Excellent/Good/OK effort/Needs work/Critical condition) and `severityLevel` (CRITICAL/WARNING/INFO) from score; **Stage 4** build `commentary` — tone prefix, error assessment if errorCount>0, volume-aware warning language (>20 "causing significant damage", 11–20 "impacting", 1–10 "affecting"), worst-category insight; **Stage 5** compute `focusRules` — group violations by rule, riskScore = (errorCount×10)+totalCount, sort descending, take top 5, classify impact (HIGH if errors>0 OR count≥10; MEDIUM if count≥5; else LOW), build RuleMetadata with `title` = id_to_title(id) and `url` = `""` (reserved, always empty); **Stage 6** build `recommendations` array — (1) fix errors if errorCount>0; (2) focus rules top 3 if focusRules non-empty; (3) address warnings if warningCount>10; (4) start with highest-violation category if focusRules non-empty; add `numericScore` and `specType` parameters; hints-only and no-violations both return empty focusRules/recommendations and "excellent condition" commentary
+- [ ] T048 Rewrite `tests/unit/summariser.test.ts` covering all algorithm stages: Stage 3 tone labels for each of the 5 score bands; severityLevel classification (CRITICAL when errors>0, CRITICAL when score<60, WARNING when score 60–79, INFO when score≥80); Stage 4 volume-aware warning language (test all three thresholds: 1, 11, 21 warnings); Stage 5 risk-score ordering (verify 1 error + 14 warnings (riskScore=25) outranks 0 errors + 20 warnings (riskScore=20)); Stage 5 impact classification (HIGH/MEDIUM/LOW thresholds); Stage 5 category extraction for underscored and hyphenated rule IDs; Stage 5 url field is always `""`; Stage 6 recommendation structure (all 4 items, singular/plural grammar); hints-only → "excellent condition" and empty recommendations; no-violations → empty recommendations
+- [ ] T049 Update `src/core/formatter.ts`: (a) human output — render `result.summary.commentary` as Quality Assessment paragraph; add Recommendations section below it (numbered list with `<id> — <N> violations (<IMPACT>)` format per focus rules, omit section when `recommendations` is empty); (b) JSON output — replace `topRules: string[]` with `focusRules: RuleMetadata[]` (each entry including `url: ""`), add `tone`, `severityLevel`, and `recommendations: string[]` fields per updated contracts/cli-schema.md
+- [ ] T050 Update `tests/unit/formatter.test.ts`: update Quality Assessment test expectations to include tone prefix and Recommendations section; verify `focusRules` array (with impact/url fields) and `recommendations` array in JSON output; verify Recommendations section is omitted for no-violations case
+- [ ] T051 Re-verify integration tests: run `tests/integration/openapi-grading.test.ts` and `tests/integration/asyncapi-grading.test.ts`; update any grade/score expectations that relied on the old soft-capped formula (poor-quality spec now expected to score lower — likely F instead of C); update output structure checks to expect `focusRules`/`recommendations` in JSON and `Recommendations:` section in human output
+
+**Checkpoint**: Clarification and algorithm fixes verified — run `npm test`, confirm all 51 tasks' tests pass, and verify the algorithm spec canonical example (1 error + 38 warnings → F, 57%) matches CLI output.
+
+---
+
 ## Phase 4: User Story 2 — Enforce a minimum grade in CI/CD (Priority: P2)
 
 **Goal**: `api-grade <spec-file> --min-grade B` exits 0 when grade ≥ B, exits 1 when grade < B,
@@ -124,7 +146,7 @@ and verify the custom rule ID appears in diagnostics.
 ### Tests for User Story 3 ⚠️ Write BEFORE implementation
 
 - [ ] T029 [P] [US3] Add `tests/fixtures/custom-ruleset.yaml`: a minimal valid Spectral ruleset defining one custom rule that reliably triggers on museum-api.yaml; include header comment explaining the fixture's purpose
-- [ ] T030 [P] [US3] Write `tests/integration/custom-ruleset.test.ts`: test that grading museum-api.yaml with the custom ruleset produces the custom rule ID in diagnostics; test that built-in rules are NOT present (custom ruleset replaces default); test that missing ruleset path exits 1 with error
+- [ ] T030 [P] [US3] Write `tests/integration/custom-ruleset.test.ts`: test that grading museum-api.yaml with the custom ruleset produces the custom rule ID in diagnostics; test that built-in rules are NOT present (custom ruleset replaces default); test that missing ruleset path exits 1 with error; test that a ruleset referencing an unreachable external URL exits 1 with a message naming the URL
 
 ### Implementation for User Story 3
 
@@ -173,6 +195,7 @@ compare output to local `api-grade` run against the same file.
 - **Setup (Phase 1)**: No dependencies — can start immediately
 - **Foundational (Phase 2)**: Depends on Setup completion — BLOCKS all user stories
   - T006 (vacuum evaluation) should be completed first within Phase 2; other T007–T012 can proceed in parallel once tooling is installed
+- **Clarification Fixes (Phase 3a)**: Retroactive corrections to completed Phase 2/3 work; T043–T051 MUST be completed before US2–US4 work begins. Within Phase 3a: T044 (types) first; then T045/T046/T047/T048 in parallel (different files); then T049/T050 (formatter); then T051 (integration re-verify)
 - **User Stories (Phase 3+)**: All depend on Foundational phase completion
   - Stories can proceed in priority order (P1 → P2 → P3 → P4) or in parallel if staffed
 - **Polish (Phase N)**: Depends on all desired user stories being complete
