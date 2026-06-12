@@ -1,19 +1,16 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: N/A (template) → 1.0.0 (initial ratification)
+Version change: 1.0.0 → 1.1.0
 
-Principles added:
-  - I. Multi-Format API Support (new)
-  - II. Core-First Architecture (new)
-  - III. Spectral-Based Grading (new)
-  - IV. Test-Driven Quality (new)
-  - V. Cross-Platform & Zero-Cost Prerequisites (new)
-  - VI. Educational Excellence (new)
+Principles modified:
+  - III. Spectral-Ruleset Based Grading — materially expanded to include algorithm
+    design principles (error-first prioritization, volume-aware severity,
+    category-specific insights, actionable next steps, tone calibration) and
+    explicit reference to api_diagnostic_algorithm_spec.md as canonical algorithm spec.
 
-Sections added:
-  - CI/CD Integration Requirements (new)
-  - Governance (new)
+Sections added: none
+Sections removed: none
 
 Templates reviewed:
   - .specify/templates/plan-template.md ✅ — Constitution Check section present; no updates needed
@@ -50,14 +47,35 @@ depending on which feature is used, undermining user trust and maintainability.
 ### III. Spectral-Ruleset Based Grading
 
 API grading MUST provide grading and diagnostic capabilities equivalent to those found
-in OpenAPI Doctor ( https://github.com/pb33f/doctor ). Users MUST be able to supply a custom Spectral ruleset as the basis
-for grades and diagnostics. We require spectral ruleset compatibility, but spectral alternatives (e.g. [vacuum](https://github.com/daveshanley/vacuum)) should be considered. When a Backstage integration sources a custom ruleset from
-a secured location (e.g., private GitHub Enterprise repository), the integration MUST
-support that access pattern. The default behavior when no custom ruleset is supplied
-MUST still produce meaningful, actionable grades.
+in OpenAPI Doctor ( https://github.com/pb33f/doctor ). The grading algorithm MUST
+implement a multi-stage, deterministic pipeline as specified in
+`api_diagnostic_algorithm_spec.md`. Each stage feeds into the next; no stage output
+is arbitrary. The algorithm MUST embody the following design principles:
+
+- **Error-first prioritization** — a single error outweighs a large volume of warnings
+  in both scoring (errors: −5 each; warnings: −1 each) and recommendation ordering.
+- **Volume-aware severity** — diagnostic language MUST scale with violation volume;
+  "38 warnings" and "3 warnings" MUST produce qualitatively different commentary.
+- **Category-specific insights** — output MUST identify which API domain (e.g.,
+  operations, schemas) requires the most attention, not just list all findings.
+- **Actionable next steps** — every diagnostic output MUST specify where to start
+  and why, not merely enumerate findings.
+- **Tone calibration** — the overall tone (e.g., "Excellent", "Critical condition")
+  MUST be derived from the score bracket before any detail is presented.
+
+Users MUST be able to supply a custom Spectral ruleset as the basis for grades and
+diagnostics. Spectral ruleset compatibility is required; alternatives (e.g.
+[vacuum](https://github.com/daveshanley/vacuum)) SHOULD be considered. When a Backstage
+integration sources a custom ruleset from a secured location (e.g., private GitHub
+Enterprise repository), the integration MUST support that access pattern. The default
+behavior when no custom ruleset is supplied MUST still produce meaningful, actionable
+grades.
 
 **Rationale**: Different organisations have different API standards; a fixed ruleset
-would not serve the diversity of real-world API programs.
+would not serve the diversity of real-world API programs. The multi-stage data-driven
+approach ensures diagnostics are meaningful and actionable rather than a raw count of
+violations — a grading tool that only scores without explaining does not help developers
+improve.
 
 ### IV. Test-Driven Quality
 
@@ -131,4 +149,4 @@ All pull requests and code reviews MUST verify compliance with the principles ab
 Complexity violations MUST be recorded in the plan's Complexity Tracking table with
 explicit justification.
 
-**Version**: 1.0.0 | **Ratified**: 2026-06-12 | **Last Amended**: 2026-06-12
+**Version**: 1.1.0 | **Ratified**: 2026-06-12 | **Last Amended**: 2026-06-12

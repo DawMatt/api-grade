@@ -4,6 +4,25 @@
 
 Create a consistent way to grade API quality and share diagnostics to help with improving quality.
 
+## Grading Approach
+
+Use a grading approach that focuses on:
+
+- Error-first prioritization — A single error blocks production more than 20 warnings
+- Volume-aware severity — "38 warnings" triggers different language than "3 warnings"
+- Category-specific insights — Mentions which area (oas, operations, schemas) needs the most work
+- Actionable next steps — Doesn't just list problems, tells you where to start and why
+- Tone-calibrated — "OK effort" vs "Critical" sets expectations before delivering details
+
+The algorithm is NOT:
+
+❌ Just counting violations
+❌ Random rule selection
+❌ Generic feedback templates
+❌ One-size-fits-all commentary
+
+It's a multi-stage pipeline where each stage feeds into the next, and each decision (tone → commentary → focus rules → recommendations) is data-driven.
+
 ## Features
 
 Feature 1 - Base CLI
@@ -22,7 +41,7 @@ Feature 2 - Backstage API page
 
 ## Constitution
 
-- API grading will provide functionality similar to the API grading and diagnostics capabilities found in OpenAPI Doctor: https://github.com/pb33f/doctor . This includes providing an overall grade (e.g. D) and numeric rating (e.g. 73%), a diagnostic summary identifying priority areas to focus on, followed by the diagnostic detail.
+- API grading will use a similar algorithm and approach to the API grading and diagnostics capabilities found in OpenAPI Doctor: https://github.com/pb33f/doctor . This includes providing an overall grade (e.g. D) and numeric rating (e.g. 73%), a diagnostic summary identifying priority areas to focus on, followed by the diagnostic detail. The algorithm is summarised in api_diagnostic_algorithm_spec.md .
 - All API grading and diagnostics functionality will support multiple API specification formats. This includes OpenAPI and AsyncAPI.
 - All features will share a single, consistent implementation of the core grades and diagnostics functionality. The features will then use this core functionality in the way most appropriate for that feature.
 - Users will be able to supply a custom spectral ruleset to use as the basis for grades and diagnostics. We require spectral ruleset compatibility, but spectral alternatives (e.g. [vacuum](https://github.com/daveshanley/vacuum)) should be considered.
