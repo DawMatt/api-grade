@@ -44,8 +44,11 @@ stdout.
 
 1. **Given** a valid OpenAPI specification file on disk,
    **When** the user runs the CLI with that file as input,
-   **Then** a grade (letter or numeric) and an ordered list of diagnostics are printed
-   to stdout, and the process exits with code 0.
+   **Then** the output contains: (a) an overall grade displaying the letter, numeric
+   percentage, and a grade label (e.g., `D (73%) — Below Standard`); (b) a
+   professional-tone diagnostic summary identifying the highest-impact violation
+   categories to address; (c) the full ordered list of individual diagnostics;
+   and the process exits with code 0.
 
 2. **Given** a valid AsyncAPI specification file on disk,
    **When** the user runs the CLI with that file as input,
@@ -161,6 +164,8 @@ run.
 - What if the Spectral ruleset references external URLs that are unreachable at
   grading time?
 - What if the same spec file triggers conflicting rules from the custom ruleset?
+- What does the diagnostic summary look like when the spec has no violations (perfect score)?
+- How should the diagnostic summary behave when there are only hints and no errors or warnings?
 
 ## Requirements *(mandatory)*
 
@@ -175,17 +180,33 @@ run.
   config file key) accepting a letter grade (A–F) that causes the process to exit
   non-zero when the achieved grade is below the specified threshold.
 - **FR-004**: The CLI MUST support a `--ruleset` option that accepts a path to a
-  custom Spectral ruleset file to use in place of the built-in default.
+  Spectral-compatible ruleset file to use in place of the built-in default.
 - **FR-005**: When no custom ruleset is supplied, the CLI MUST grade using a
-  built-in default Spectral ruleset.
-- **FR-006**: The CLI MUST produce human-readable output to stdout by default. The
-  grade MUST be displayed as a letter (A–F, prominently) alongside the numeric
-  score (0–100) in all output modes. All diagnostics MUST be shown by default;
-  a `--top N` flag MUST allow users to limit output to the N highest-priority
-  findings.
+  built-in default Spectral-compatible ruleset.
+- **FR-006**: The CLI MUST produce human-readable output to stdout by default,
+  structured in three parts:
+  1. **Overall grade line**: letter grade (A–F, prominently), numeric score as a
+     percentage (e.g., 73%), and a grade label (Excellent / Good / OK /
+     Below Standard / Poor) — e.g., `Grade: D (73%) — Below Standard`.
+  2. **Diagnostic summary**: a concise professional-tone paragraph identifying the
+     count of errors and warnings, their impact on quality, and the top rule IDs
+     accounting for the most violations. The tone MUST be clear and factual (not
+     colloquial). When there are no violations the summary MUST state that the
+     specification is in excellent condition.
+  3. **Diagnostic detail**: the full ordered list of individual findings.
+  The grade MUST be the most visually prominent element. All diagnostics MUST
+  be shown by default; a `--top N` flag MUST allow users to limit the detail
+  section to the N highest-priority findings (the summary always reflects the
+  full count).
 - **FR-007**: The CLI MUST support a machine-readable output format (JSON) via a
   flag (e.g., `--format json`), suitable for CI/CD pipeline consumption. JSON output
-  MUST include both the letter grade and the numeric score.
+  MUST include the letter grade, numeric score, grade label, diagnostic summary
+  text, and the full diagnostics array.
+- **FR-014**: The linting engine used for grading MUST be compatible with Spectral
+  ruleset files so that custom rulesets supplied via `--ruleset` work without
+  modification. Alternative Spectral-compatible engines (such as vacuum,
+  https://github.com/daveshanley/vacuum) SHOULD be evaluated during implementation
+  for performance or compatibility advantages over the reference Spectral engine.
 - **FR-008**: All error conditions MUST print a descriptive message to stderr and
   exit with a non-zero exit code.
 - **FR-009**: The repository MUST include at least one low-quality and one
@@ -207,22 +228,36 @@ run.
 - **API Specification**: A file conforming to OpenAPI or AsyncAPI standards,
   provided as input for grading. Key attributes: file path, detected format,
   version.
-- **Grade**: A scalar quality score derived from applying a Spectral ruleset to
-  an API specification. Must be consistent and comparable (e.g., letter grade A–F
-  or numeric 0–100).
+- **Grade**: A quality score derived from applying a ruleset to an API specification.
+  Comprises three components: letter grade (A–F), numeric score (0–100 as a
+  percentage), and a grade label conveying the qualitative meaning of the score
+  (Excellent / Good / OK / Below Standard / Poor).
+- **Grade Label**: A short qualitative descriptor paired with a letter grade:
+  A = Excellent, B = Good, C = OK, D = Below Standard, F = Poor.
+- **Diagnostic Summary**: A concise professional-tone paragraph produced alongside
+  the grade. It states the total error and warning counts, their impact on quality,
+  and the top rule IDs to focus on — following the same logic as OpenAPI Doctor
+  but using clear, factual language.
 - **Diagnostic**: A single finding produced during grading. Key attributes: rule
   name, severity, location in spec, human-readable message, impact on grade.
   Diagnostics MUST be ordered using the same prioritisation approach as OpenAPI
   Doctor (https://github.com/pb33f/doctor).
-- **Spectral Ruleset**: A file defining the rules used to evaluate an API
-  specification. May be the built-in default or a user-supplied custom file.
+- **Linting Engine**: The engine used to apply ruleset rules to an API specification
+  and produce diagnostics. MUST be compatible with Spectral ruleset files. The
+  reference engine is Spectral (@stoplight/spectral-core); vacuum
+  (https://github.com/daveshanley/vacuum) is a Spectral-compatible alternative
+  to be evaluated during implementation.
+- **Spectral-Compatible Ruleset**: A file defining the rules used to evaluate an API
+  specification, conforming to the Spectral ruleset format. May be the built-in
+  default or a user-supplied custom file.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
 - **SC-001**: A developer can grade a local OpenAPI or AsyncAPI spec file and see
-  a grade and diagnostic list within 30 seconds of invoking the CLI.
+  an overall grade (letter, percentage, label), a diagnostic summary, and the
+  full diagnostic list within 30 seconds of invoking the CLI.
 - **SC-002**: The CLI correctly identifies and grades both the bundled low-quality
   and high-quality sample specs, with the high-quality sample receiving a
   meaningfully higher grade than the low-quality sample.
@@ -240,15 +275,20 @@ run.
 
 ## Assumptions
 
-- The grading algorithm will be based on Spectral rule violations weighted by
-  severity (error, warn, info, hint); the exact weighting formula will be
-  determined during planning.
-- Both letter grade (A–F, emphasised as the primary signal) and numeric score
-  (0–100) are displayed in all output modes. The exact grade boundary thresholds
-  mapping numeric ranges to letters will be defined during planning, aligned with
-  OpenAPI Doctor's approach. Diagnostic ordering and grading algorithm will
-  mirror OpenAPI Doctor's approach; planning will document the specific rules
-  derived from studying that reference implementation.
+- The grading algorithm will be based on ruleset violations weighted by severity
+  (error, warn, info, hint); the exact weighting formula will be determined
+  during implementation by studying OpenAPI Doctor's approach.
+- All output modes display the letter grade (A–F, primary), numeric score as a
+  percentage (0–100%), and a grade label. Grade labels: A = Excellent, B = Good,
+  C = OK, D = Below Standard, F = Poor. Boundary thresholds to be confirmed
+  against OpenAPI Doctor's implementation during development.
+- The diagnostic summary uses a professional, factual tone. It will NOT use
+  colloquial or informal language. The summary logic (error/warning counts,
+  top rule identification) mirrors OpenAPI Doctor; the wording does not.
+- vacuum (https://github.com/daveshanley/vacuum) is a Spectral-compatible linting
+  engine that will be evaluated during implementation as a potential alternative
+  to the reference Spectral engine. The evaluation criteria are: Spectral ruleset
+  compatibility, performance, and active maintenance status.
 - The CLI will be implemented as a single executable invoked via command line;
   no GUI or web server component is in scope for this feature.
 - The CLI accepts only local file paths as input in this feature. URL-based input

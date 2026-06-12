@@ -34,28 +34,51 @@ AsyncAPI specification (YAML or JSON).
 
 ## Human-Readable Output (stdout)
 
+The output is structured in three sections, always in this order:
+
 ```
-Grade: A  (96/100)
+Grade: D (73%) — Below Standard
 
-✖ 2 errors  ⚠ 5 warnings  ℹ 1 info
+Quality Assessment:
+This specification demonstrates adequate quality but requires improvement before it
+is production-ready. 1 error has been identified and should be addressed as an
+immediate priority. 38 warnings are materially impacting specification quality.
+The following rules account for the most impactful violations:
+  • oas-schema-check
+  • camel-case-properties
+  • oas3-missing-example
 
-  error  info-description         info » description   Line 5
-         OpenAPI object info `description` must be present and non-empty string.
+Diagnostics (39 total — 1 error, 38 warnings):
 
-  warn   operation-tag-defined    paths » /pets » get  Line 22
-         Operation tags must be defined in global tags.
+  error  oas-schema-check         components » schemas » Pet » properties   Line 42
+         Schema object must have a valid type defined.
+
+  warn   camel-case-properties    components » schemas » Pet » properties   Line 44
+         Property names must use camelCase.
+
+  warn   oas3-missing-example     paths » /pets » get » responses » 200     Line 67
+         Response should include an example.
 
   ...
 ```
 
 **Format rules**:
-- First line: `Grade: <LETTER>  (<SCORE>/100)` — letter grade is prominent.
-- Summary line: counts by severity, present only when diagnostics exist.
-- Each diagnostic: `  <severity>  <rule-id>  <path>  Line <N>\n  <message>`
-- Diagnostics ordered: errors first, then warnings, info, hints.
-- When `--top N` is set, only the first N diagnostics are printed; a trailing line
-  reads: `  ... and <X> more findings (use --top <larger N> or omit --top to see all)`
-- When no diagnostics: `Grade: A  (100/100)\n\n  ✔ No issues found.`
+- **Section 1 — Grade line**: `Grade: <LETTER> (<SCORE>%) — <LABEL>`
+  - Letter grade is the most visually prominent element.
+  - Score is expressed as a percentage integer (e.g., `73%` not `73/100`).
+  - Label is one of: Excellent / Good / OK / Below Standard / Poor.
+- **Section 2 — Quality Assessment**: professional-tone paragraph.
+  - States error count, warning count, and top rule IDs.
+  - When no violations: `This specification is in excellent condition. No issues were detected.`
+  - When only hints: `This specification is in good shape. Minor style suggestions only.`
+  - Tone MUST be factual and professional (no colloquial or informal language).
+- **Section 3 — Diagnostics**: header line + ordered finding list.
+  - Header: `Diagnostics (<total> total — <N> error[s], <N> warning[s][, <N> info[s][, <N> hint[s]]]):`
+  - Each finding: `  <severity>  <rule-id>  <path>  Line <N>\n             <message>`
+  - Ordered: errors → warnings → info → hints.
+  - When `--top N` is set, only the first N findings are shown; a trailing line reads:
+    `  ... and <X> more findings (omit --top or increase N to see all)`
+  - When no diagnostics: section 3 is omitted entirely.
 
 ---
 
@@ -64,41 +87,47 @@ Grade: A  (96/100)
 ```json
 {
   "grade": {
-    "letter": "A",
-    "score": 96
+    "letter": "D",
+    "score": 73,
+    "label": "Below Standard"
   },
   "specPath": "/path/to/openapi.yaml",
   "format": "openapi-3",
   "rulesetSource": "default",
+  "qualityAssessment": "This specification demonstrates adequate quality but requires improvement before it is production-ready. 1 error has been identified and should be addressed as an immediate priority. 38 warnings are materially impacting specification quality. The following rules account for the most impactful violations: oas-schema-check, camel-case-properties, oas3-missing-example.",
+  "diagnosticCounts": {
+    "errors": 1,
+    "warnings": 38,
+    "infos": 0,
+    "hints": 0,
+    "total": 39
+  },
+  "topRules": ["oas-schema-check", "camel-case-properties", "oas3-missing-example"],
   "diagnostics": [
     {
-      "ruleId": "info-description",
-      "message": "OpenAPI object info `description` must be present and non-empty string.",
+      "ruleId": "oas-schema-check",
+      "message": "Schema object must have a valid type defined.",
       "severity": "error",
-      "path": ["info", "description"],
+      "path": ["components", "schemas", "Pet", "properties"],
       "range": {
-        "start": { "line": 4, "character": 2 },
-        "end":   { "line": 4, "character": 14 }
+        "start": { "line": 42, "character": 4 },
+        "end":   { "line": 42, "character": 20 }
       }
     }
-  ],
-  "summary": {
-    "errors": 1,
-    "warnings": 0,
-    "infos": 0,
-    "hints": 0
-  }
+  ]
 }
 ```
 
 **Schema invariants**:
 - `grade.letter` is always one of `"A" | "B" | "C" | "D" | "F"`.
 - `grade.score` is always an integer in [0, 100].
+- `grade.label` is always one of `"Excellent" | "Good" | "OK" | "Below Standard" | "Poor"`.
+- `qualityAssessment` is always a non-empty string.
 - `diagnostics` is always an array (empty `[]` when no findings).
 - `severity` in each diagnostic is always one of `"error" | "warn" | "info" | "hint"`.
 - `rulesetSource` is `"default"` or `"custom"`. When `"custom"`, a `"rulesetPath"` field is added.
-- When `--top N` is set, `diagnostics` contains at most N items; `summary` still reflects
-  ALL findings (not just the top N shown).
+- When `--top N` is set, `diagnostics` contains at most N items; `diagnosticCounts` and
+  `topRules` always reflect ALL findings regardless of `--top`.
 
 ---
 

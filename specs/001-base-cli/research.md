@@ -142,7 +142,39 @@ prerequisite constraint and is the standard for production Node.js containers.
 
 ---
 
-## Decision 8: Package Distribution
+## Decision 8a: Linting Engine — vacuum Evaluation (OPEN)
+
+**Decision**: Deferred to implementation. vacuum (https://github.com/daveshanley/vacuum)
+MUST be evaluated against Spectral before the core grader is built.
+
+**Why vacuum is worth evaluating**:
+- vacuum is written in Go and compiled to a native binary, offering significantly faster
+  execution than Node.js-based Spectral for large specs.
+- vacuum claims full Spectral ruleset compatibility — existing `.spectral.yaml` files
+  and custom rulesets should work without modification.
+- It is actively maintained and open-source ($0 cost).
+- pb33f (the author of OpenAPI Doctor) is also a primary contributor to vacuum, making
+  it the closest reference implementation to our grading target.
+
+**Evaluation criteria** (to be assessed during implementation task T-core-engine-eval):
+1. Does vacuum correctly parse and execute the same Spectral rulesets as Spectral core?
+2. Do diagnostic results (rule IDs, severities, paths) match Spectral's output for
+   identical input files?
+3. Is there a usable Go or Node.js SDK, or must vacuum be called as a subprocess?
+4. Is vacuum actively maintained with recent releases?
+
+**Decision rule**:
+- If vacuum passes all four criteria: use it as the primary linting engine.
+- If vacuum fails Spectral ruleset compatibility: use `@stoplight/spectral-core`.
+- If subprocess-only: consider subprocess integration only if performance gain is
+  substantial; otherwise prefer the native Spectral library.
+
+**Note**: Regardless of which engine is chosen, the `--ruleset` flag MUST accept
+Spectral-format ruleset files and they MUST work without modification.
+
+---
+
+## Decision 9: Package Distribution
 
 **Decision**: Distribute as a standard npm package. Local installation via `npm install -g`
 or execution via `npx`. The binary entry point is `api-grade`.

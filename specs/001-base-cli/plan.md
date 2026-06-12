@@ -6,19 +6,23 @@
 
 ## Summary
 
-Build a TypeScript/Node.js CLI tool (`api-grade`) that uses the Spectral linting
-engine to grade OpenAPI and AsyncAPI specifications on a letter scale (A–F) alongside
-a 0–100 numeric score. The core grading engine is a standalone module consumed by
-the CLI layer. The tool supports CI/CD pipeline integration via `--min-grade`, custom
-Spectral rulesets via `--ruleset`, optional diagnostic limiting via `--top`, and
-JSON output via `--format json`. A Dockerfile is provided for containerised execution.
+Build a TypeScript/Node.js CLI tool (`api-grade`) that uses a Spectral-compatible
+linting engine (reference: Spectral; candidate: vacuum) to grade OpenAPI and AsyncAPI
+specifications. Output presents three sections: an overall grade (letter A–F +
+percentage + label such as "Below Standard"), a professional-tone diagnostic summary
+identifying priority rules to address, and the full ordered diagnostic detail list.
+The core grading engine is a standalone module consumed by the CLI layer. The tool
+supports CI/CD pipeline integration via `--min-grade`, custom Spectral-compatible
+rulesets via `--ruleset`, optional diagnostic limiting via `--top`, and JSON output
+via `--format json`. A Dockerfile is provided for containerised execution.
 
 ## Technical Context
 
 **Language/Version**: TypeScript 5.x, Node.js 20 LTS
 
-**Primary Dependencies**:
-- `@stoplight/spectral-core` — Spectral linting engine (programmatic API)
+**Primary Dependencies** (subject to linting engine evaluation — see research.md §8a):
+- `@stoplight/spectral-core` — reference Spectral linting engine (programmatic API);
+  may be replaced by vacuum (https://github.com/daveshanley/vacuum) pending evaluation
 - `@stoplight/spectral-formats` — format detection (OAS 2/3, AsyncAPI 2/3)
 - `@stoplight/spectral-rulesets` — built-in OAS and AsyncAPI rulesets
 - `@stoplight/spectral-parsers` — YAML/JSON document parsers
@@ -77,8 +81,9 @@ specs/001-base-cli/
 src/
 ├── core/
 │   ├── grader.ts          # GradeEngine: orchestrates spec load → lint → score
-│   ├── scorer.ts          # Computes numeric score + letter grade from diagnostics
-│   ├── formatter.ts       # Human-readable and JSON output formatters
+│   ├── scorer.ts          # Computes numeric score + letter grade + label from diagnostics
+│   ├── summariser.ts      # Generates professional-tone DiagnosticSummary paragraph
+│   ├── formatter.ts       # Human-readable (3-section) and JSON output formatters
 │   └── spec-loader.ts     # Reads file, detects API format (OAS/AsyncAPI)
 ├── formats/
 │   ├── openapi.ts         # Spectral Document + format config for OpenAPI

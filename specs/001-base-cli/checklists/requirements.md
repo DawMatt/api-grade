@@ -31,6 +31,10 @@
 
 ## Notes
 
-- All items pass. Spec is ready for `/speckit-plan`.
+- All items pass. Spec is ready for `/speckit-tasks`.
 - 5 clarifications applied (2026-06-12): grade scale, diagnostic ordering, input
-  source, output detail level, min-grade format. No outstanding ambiguities.
+  source, output detail level, min-grade format.
+- Spec updated (2026-06-12, branch 002-update-spec-output-format): added vacuum as
+  alternative linting engine to evaluate (FR-014); expanded output format to include
+  grade label and professional-tone diagnostic summary (FR-006); added GradeLabel and
+  DiagnosticSummary entities; updated contracts/cli-schema.md and data-model.md.

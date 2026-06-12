@@ -22,10 +22,10 @@ Feature 2 - Backstage API page
 
 ## Constitution
 
-- API grading will provide functionality similar to the API grading and diagnostics capabilities found in OpenAPI Doctor: https://github.com/pb33f/doctor
+- API grading will provide functionality similar to the API grading and diagnostics capabilities found in OpenAPI Doctor: https://github.com/pb33f/doctor . This includes providing an overall grade (e.g. D) and numeric rating (e.g. 73%), a diagnostic summary identifying priority areas to focus on, followed by the diagnostic detail.
 - All API grading and diagnostics functionality will support multiple API specification formats. This includes OpenAPI and AsyncAPI.
 - All features will share a single, consistent implementation of the core grades and diagnostics functionality. The features will then use this core functionality in the way most appropriate for that feature.
-- Users will be able to supply a custom spectral ruleset to use as the basis for grades and diagnostics.
+- Users will be able to supply a custom spectral ruleset to use as the basis for grades and diagnostics. We require spectral ruleset compatibility, but spectral alternatives (e.g. [vacuum](https://github.com/daveshanley/vacuum)) should be considered.
 - Maintain and use a test suite to ensure the specification has been delivered.
 - Support current Windows and MacOS environments, at a minimum.
 - Expect to deploy both containerised and local versions of functionality.

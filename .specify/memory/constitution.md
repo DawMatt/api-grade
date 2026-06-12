@@ -47,11 +47,11 @@ output to the appropriate presentation context.
 **Rationale**: Divergent implementations produce inconsistent grades for the same API
 depending on which feature is used, undermining user trust and maintainability.
 
-### III. Spectral-Based Grading
+### III. Spectral-Ruleset Based Grading
 
 API grading MUST provide grading and diagnostic capabilities equivalent to those found
 in OpenAPI Doctor ( https://github.com/pb33f/doctor ). Users MUST be able to supply a custom Spectral ruleset as the basis
-for grades and diagnostics. When a Backstage integration sources a custom ruleset from
+for grades and diagnostics. We require spectral ruleset compatibility, but spectral alternatives (e.g. [vacuum](https://github.com/daveshanley/vacuum)) should be considered. When a Backstage integration sources a custom ruleset from
 a secured location (e.g., private GitHub Enterprise repository), the integration MUST
 support that access pattern. The default behavior when no custom ruleset is supplied
 MUST still produce meaningful, actionable grades.
