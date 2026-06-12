@@ -23,13 +23,39 @@ export interface Diagnostic {
 export type LetterGrade = 'A' | 'B' | 'C' | 'D' | 'F';
 export type GradeLabel = 'Excellent' | 'Good' | 'OK' | 'Below Standard' | 'Poor';
 
+export type ImpactLevel = 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface RuleMetadata {
+  id:       string;
+  title:    string;
+  category: string;
+  count:    number;
+  impact:   ImpactLevel;
+  url:      null;
+}
+
+export type DiagnosticSeverityLevel = 'CRITICAL' | 'WARNING' | 'INFO';
+
 export interface DiagnosticSummary {
-  text: string;
+  // Stage 3 outputs
+  tone:          string;
+  severityLevel: DiagnosticSeverityLevel;
+
+  // Stage 1 counts
   errorCount: number;
-  warnCount: number;
-  infoCount: number;
-  hintCount: number;
-  topRules: string[];
+  warnCount:  number;
+  infoCount:  number;
+  hintCount:  number;
+
+  // Stage 4 output
+  commentary: string;
+  text:       string;  // alias for commentary; kept for backward compatibility
+
+  // Stage 5 output
+  focusRules: RuleMetadata[];
+
+  // Stage 6 output
+  recommendations: string[];
 }
 
 export interface GradeResult {
@@ -55,4 +81,9 @@ export interface CliOptions {
   rulesetPath?: string;
   format: 'human' | 'json';
   top?: number;
+}
+
+export function extractCategory(ruleId: string): string {
+  const match = ruleId.match(/^([^_-]+)/);
+  return match ? match[1] : ruleId;
 }

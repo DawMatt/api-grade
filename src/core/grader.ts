@@ -23,6 +23,8 @@ const SEVERITY_ORDER: Record<DiagnosticSeverity, number> = {
   hint: 3,
 };
 
+const SLOW_LINT_MS = 30_000;
+
 export class GradeEngine {
   async grade(request: GradeRequest): Promise<GradeResult> {
     const spec = await loadSpec(request.specPath);
@@ -37,7 +39,20 @@ export class GradeEngine {
 
     const spectral = new Spectral();
     spectral.setRuleset(ruleset);
-    const rawResults = await spectral.run(document);
+
+    // Emit a stderr warning if linting takes longer than 30 seconds
+    const slowTimer = setTimeout(() => {
+      process.stderr.write(
+        'Warning: linting is taking longer than expected (>30s). Large or complex specs may take more time.\n'
+      );
+    }, SLOW_LINT_MS);
+
+    let rawResults: Awaited<ReturnType<typeof spectral.run>>;
+    try {
+      rawResults = await spectral.run(document);
+    } finally {
+      clearTimeout(slowTimer);
+    }
 
     const diagnostics: Diagnostic[] = rawResults.map((r) => ({
       ruleId: String(r.code),
@@ -53,7 +68,8 @@ export class GradeEngine {
     );
 
     const { numericScore, letterGrade, gradeLabel } = computeScore(diagnostics);
-    const summary = generateSummary(diagnostics);
+    const specType = spec.format.startsWith('asyncapi') ? 'asyncapi' : 'openapi';
+    const summary = generateSummary(diagnostics, numericScore, specType);
 
     return {
       specPath: request.specPath,

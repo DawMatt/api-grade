@@ -24,10 +24,32 @@ export async function loadRuleset(format: ApiFormat, rulesetPath?: string): Prom
   if (!existsSync(absolutePath)) {
     throw new Error(`Ruleset file not found: ${rulesetPath}`);
   }
+
+  // Read content before bundling so we can name any unreachable URLs in error messages
+  const rulesetContent = await fsPromises.readFile(absolutePath, 'utf-8');
+  const externalUrls = extractExternalUrls(rulesetContent);
+
   const { bundleAndLoadRuleset } = await import(
     '@stoplight/spectral-ruleset-bundler/with-loader'
   );
   const io = { fs: { promises: { readFile: fsPromises.readFile } }, fetch: globalThis.fetch };
-  const ruleset = await bundleAndLoadRuleset(absolutePath, io);
-  return { ruleset, rulesetSource: 'custom', rulesetPath: absolutePath };
+
+  try {
+    const ruleset = await bundleAndLoadRuleset(absolutePath, io);
+    return { ruleset, rulesetSource: 'custom', rulesetPath: absolutePath };
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    // Prefer a URL found in the error message itself, fall back to URLs from ruleset content
+    const urlInError = errMsg.match(/https?:\/\/[^\s'">\]]+/)?.[0];
+    const url = urlInError ?? externalUrls[0];
+    if (url) {
+      throw new Error(`Ruleset could not be loaded: external URL unreachable: ${url}`);
+    }
+    throw new Error(`Ruleset could not be loaded: ${errMsg}`);
+  }
+}
+
+function extractExternalUrls(content: string): string[] {
+  const matches = content.match(/https?:\/\/[^\s'">\]]+/g) ?? [];
+  return [...new Set(matches)];
 }

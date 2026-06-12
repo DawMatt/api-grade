@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { GradeEngine } from '../core/grader.js';
 import { formatHuman, formatJson } from '../core/formatter.js';
 import { LETTER_GRADE_ORDER, gradeToNumber } from '../core/scorer.js';
+import { loadConfig } from './config-loader.js';
 import type { LetterGrade } from '../core/types.js';
 
 const program = new Command();
@@ -15,7 +16,7 @@ program
   .argument('<spec-file>', 'Path to OpenAPI or AsyncAPI specification file')
   .option('--min-grade <LETTER>', 'Exit with code 1 if grade is below this threshold (A-F)')
   .option('--ruleset <path>', 'Path to a custom Spectral-compatible ruleset file')
-  .option('--format <type>', 'Output format: human or json', 'human')
+  .option('--format <type>', 'Output format: human or json')
   .option('--top <n>', 'Show only the top N diagnostics', (v) => {
     const n = parseInt(v, 10);
     if (isNaN(n) || n < 1) {
@@ -25,27 +26,42 @@ program
     return n;
   })
   .option('--url <url>', '(reserved for future use)')
-  .action(async (specFile: string, options: {
+  .action(async (specFile: string, cliOpts: {
     minGrade?: string;
     ruleset?: string;
     format?: string;
     top?: number;
     url?: string;
   }) => {
-    if (options.url) {
+    if (cliOpts.url) {
       console.error(chalk.red('Error: --url is reserved for future use. Provide a local file path.'));
       process.exit(2);
     }
 
-    const outputFormat = options.format ?? 'human';
+    // Load .apigrade.json config; CLI flags override config values
+    let fileConfig: ReturnType<typeof loadConfig> = {};
+    try {
+      fileConfig = loadConfig(process.cwd());
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(chalk.red(`Error: ${message}`));
+      process.exit(1);
+    }
+
+    // Merge: CLI flags take precedence over config file values
+    const outputFormat = cliOpts.format ?? fileConfig.format ?? 'human';
     if (outputFormat !== 'human' && outputFormat !== 'json') {
       console.error(chalk.red(`Error: --format must be "human" or "json"`));
       process.exit(2);
     }
 
+    const topN = cliOpts.top ?? fileConfig.top;
+    const rulesetPath = cliOpts.ruleset ?? fileConfig.rulesetPath;
+
     let minGrade: LetterGrade | undefined;
-    if (options.minGrade) {
-      const g = options.minGrade.toUpperCase() as LetterGrade;
+    const minGradeRaw = cliOpts.minGrade ?? fileConfig.minGrade;
+    if (minGradeRaw) {
+      const g = minGradeRaw.toUpperCase() as LetterGrade;
       if (!LETTER_GRADE_ORDER.includes(g)) {
         console.error(chalk.red(`Error: --min-grade must be one of A, B, C, D, F`));
         process.exit(2);
@@ -57,12 +73,12 @@ program
       const engine = new GradeEngine();
       const result = await engine.grade({
         specPath: specFile,
-        rulesetPath: options.ruleset,
+        rulesetPath,
       });
 
       const output = outputFormat === 'json'
-        ? formatJson(result)
-        : formatHuman(result, options.top);
+        ? formatJson(result, topN)
+        : formatHuman(result, topN);
 
       console.log(output);
 

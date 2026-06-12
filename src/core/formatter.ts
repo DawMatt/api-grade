@@ -21,9 +21,18 @@ export function formatHuman(result: GradeResult, top?: number): string {
 
   // Section 2: Quality Assessment
   lines.push(chalk.bold('Quality Assessment:'));
-  lines.push(result.summary.text);
+  lines.push(result.summary.commentary);
 
-  // Section 3: Diagnostics (only when there are findings)
+  // Section 3: Recommendations (omit when empty)
+  if (result.summary.recommendations.length > 0) {
+    lines.push('');
+    lines.push(chalk.bold('Recommendations:'));
+    result.summary.recommendations.forEach((rec, i) => {
+      lines.push(`  ${i + 1}. ${rec}`);
+    });
+  }
+
+  // Section 4: Diagnostics (only when there are findings)
   if (result.diagnostics.length > 0) {
     lines.push('');
     const { errorCount, warnCount, infoCount, hintCount } = result.summary;
@@ -63,7 +72,10 @@ export function formatHuman(result: GradeResult, top?: number): string {
   return lines.join('\n');
 }
 
-export function formatJson(result: GradeResult): string {
+export function formatJson(result: GradeResult, top?: number): string {
+  const displayedDiagnostics = top !== undefined
+    ? result.diagnostics.slice(0, top)
+    : result.diagnostics;
   const output = {
     grade: {
       letter: result.letterGrade,
@@ -74,7 +86,9 @@ export function formatJson(result: GradeResult): string {
     format: result.format,
     rulesetSource: result.rulesetSource,
     ...(result.rulesetPath ? { rulesetPath: result.rulesetPath } : {}),
-    qualityAssessment: result.summary.text,
+    tone: result.summary.tone,
+    severityLevel: result.summary.severityLevel,
+    qualityAssessment: result.summary.commentary,
     diagnosticCounts: {
       errors: result.summary.errorCount,
       warnings: result.summary.warnCount,
@@ -82,8 +96,9 @@ export function formatJson(result: GradeResult): string {
       hints: result.summary.hintCount,
       total: result.diagnostics.length,
     },
-    topRules: result.summary.topRules,
-    diagnostics: result.diagnostics.map((d) => ({
+    focusRules: result.summary.focusRules,
+    recommendations: result.summary.recommendations,
+    diagnostics: displayedDiagnostics.map((d) => ({
       ruleId: d.ruleId,
       message: d.message,
       severity: d.severity,

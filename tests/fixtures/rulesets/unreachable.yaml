@@ -1,0 +1,3 @@
+# Fixture referencing an unreachable external URL — used to test network error handling
+extends:
+  - 'https://unreachable.example.invalid/rules.yaml'
