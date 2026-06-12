@@ -20,8 +20,8 @@ program
   .option('--top <n>', 'Show only the top N diagnostics', (v) => {
     const n = parseInt(v, 10);
     if (isNaN(n) || n < 1) {
-      console.error(chalk.red('Error: --top must be a positive integer'));
-      process.exit(2);
+      console.error(chalk.red(`Error: Invalid --top value "${v}". Must be a positive integer.`));
+      process.exit(1);
     }
     return n;
   })
@@ -34,8 +34,8 @@ program
     url?: string;
   }) => {
     if (cliOpts.url) {
-      console.error(chalk.red('Error: --url is reserved for future use. Provide a local file path.'));
-      process.exit(2);
+      console.error(chalk.red('Error: --url is not yet supported in this version.'));
+      process.exit(1);
     }
 
     // Load .apigrade.json config; CLI flags override config values
@@ -51,8 +51,8 @@ program
     // Merge: CLI flags take precedence over config file values
     const outputFormat = cliOpts.format ?? fileConfig.format ?? 'human';
     if (outputFormat !== 'human' && outputFormat !== 'json') {
-      console.error(chalk.red(`Error: --format must be "human" or "json"`));
-      process.exit(2);
+      console.error(chalk.red(`Error: --format must be "human" or "json".`));
+      process.exit(1);
     }
 
     const topN = cliOpts.top ?? fileConfig.top;
@@ -63,8 +63,8 @@ program
     if (minGradeRaw) {
       const g = minGradeRaw.toUpperCase() as LetterGrade;
       if (!LETTER_GRADE_ORDER.includes(g)) {
-        console.error(chalk.red(`Error: --min-grade must be one of A, B, C, D, F`));
-        process.exit(2);
+        console.error(chalk.red(`Error: Invalid --min-grade value "${minGradeRaw}". Must be one of: A, B, C, D, F.`));
+        process.exit(1);
       }
       minGrade = g;
     }
@@ -86,13 +86,17 @@ program
         const resultIdx = gradeToNumber(result.letterGrade);
         const thresholdIdx = gradeToNumber(minGrade);
         if (resultIdx > thresholdIdx) {
+          console.error(chalk.red(
+            `Error: Achieved grade ${result.letterGrade} (${result.numericScore}%) ` +
+            `is below the required minimum grade ${minGrade}.`
+          ));
           process.exit(1);
         }
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(chalk.red(`Error: ${message}`));
-      process.exit(2);
+      process.exit(1);
     }
   });
 

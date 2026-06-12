@@ -3,15 +3,17 @@
 Grade the quality of your OpenAPI and AsyncAPI specifications using Spectral-compatible linting rules. Get a letter grade, a numeric score, a plain-English quality assessment, and a full diagnostic list — all in one command.
 
 ```
-Grade: B (83%) — Good
+Grade: C (74%) — OK
 
 Quality Assessment:
-This specification has 1 error and 21 warnings that require attention. The error should
-be addressed as an immediate priority. The warnings are materially impacting specification
-quality. The following rules account for the highest number of violations:
-  • operation-description
-  • operation-operationId
-  • operation-tags
+OK effort. I detected 1 error, it should be your first concern. 21 warnings are causing
+significant damage to the quality. The oas3, operation and info categories have the most issues.
+
+Recommendations:
+  1. Fix 1 error immediately — it blocks production readiness: oas3-schema
+  2. Focus on these rules (highest impact first): oas3-schema — 1 violations (HIGH), operation-description — 6 violations (MEDIUM), operation-operationId — 6 violations (MEDIUM)
+  3. Create a plan to address the 21 warnings incrementally
+  4. Start with categories oas3, operation, info — they have the most impactful issues
 
 Diagnostics (22 total — 1 error, 21 warnings):
 
@@ -74,8 +76,7 @@ api-grade <spec-file> [options]
 | Code | Meaning |
 |------|---------|
 | `0` | Grading succeeded (and grade met `--min-grade` threshold, if set) |
-| `1` | Grade is below the `--min-grade` threshold |
-| `2` | Error (file not found, unrecognised format, invalid option) |
+| `1` | Grade is below `--min-grade`; file not found; unrecognised format; invalid option; or any other error |
 
 ## Examples
 
@@ -125,7 +126,7 @@ api-grade asyncapi.yaml
 | D | ≥ 60% | Below Standard |
 | F | < 60% | Poor |
 
-Scores are calculated using a deduction model: each error deducts up to 4 points (capped at 50), each warning up to 0.6 points (capped at 30), and each info finding up to 0.3 points (capped at 10). Hints do not affect the score.
+Scores are calculated using: `score = MAX(0, 100 − errors × 5 − warnings × 1)`. Info and hint findings do not affect the score.
 
 ## Custom rulesets
 
@@ -151,23 +152,21 @@ api-grade openapi.yaml --ruleset my-rules.yaml
 
 ```json
 {
-  "grade": {
-    "letter": "B",
-    "score": 83,
-    "label": "Good"
-  },
+  "grade": { "letter": "C", "score": 74, "label": "OK" },
   "specPath": "openapi.yaml",
   "format": "openapi-3",
   "rulesetSource": "default",
-  "qualityAssessment": "This specification has 1 error...",
-  "diagnosticCounts": {
-    "errors": 1,
-    "warnings": 21,
-    "infos": 0,
-    "hints": 0,
-    "total": 22
-  },
-  "topRules": ["operation-description", "operation-operationId"],
+  "tone": "OK effort",
+  "severityLevel": "CRITICAL",
+  "qualityAssessment": "OK effort. I detected 1 error, it should be your first concern. ...",
+  "diagnosticCounts": { "errors": 1, "warnings": 21, "infos": 0, "hints": 0, "total": 22 },
+  "focusRules": [
+    { "id": "oas3-schema", "title": "Oas3 Schema", "category": "oas3", "count": 1, "impact": "HIGH", "url": null }
+  ],
+  "recommendations": [
+    "Fix 1 error immediately — it blocks production readiness: oas3-schema",
+    "Focus on these rules (highest impact first): oas3-schema — 1 violations (HIGH)"
+  ],
   "diagnostics": [
     {
       "ruleId": "oas3-schema",

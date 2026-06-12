@@ -40,7 +40,7 @@ and testing of each story. Tests MUST be written before or alongside implementat
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
 - [x] T006 Evaluate vacuum vs Spectral: clone/install `vacuum` (https://github.com/daveshanley/vacuum), run against sample specs using both engines, compare diagnostic output (rule IDs, severities, paths), document decision in `specs/001-base-cli/research.md` §8a and proceed with the chosen engine
-- [ ] T058 Create `src/core/types.ts`: define and export all shared TypeScript types from data-model.md — `ApiFormat`, `DiagnosticSeverity`, `Diagnostic`, `ScoringWeights`, `ImpactLevel`, `RuleMetadata`, `GradeLabel`, `LetterGrade`, `DiagnosticSeverityLevel`, `DiagnosticSummary`, `GradeBoundaries`, `GradeResult`, `GradeRequest`, `CliOptions`; this file MUST exist before T007–T012 are implemented
+- [x] T058 Create `src/core/types.ts`: define and export all shared TypeScript types from data-model.md — `ApiFormat`, `DiagnosticSeverity`, `Diagnostic`, `ScoringWeights`, `ImpactLevel`, `RuleMetadata`, `GradeLabel`, `LetterGrade`, `DiagnosticSeverityLevel`, `DiagnosticSummary`, `GradeBoundaries`, `GradeResult`, `GradeRequest`, `CliOptions`; this file MUST exist before T007–T012 are implemented
 - [x] T007 [P] Implement `src/core/spec-loader.ts`: reads file at given path (throws descriptive error if not found), returns raw content string; detects `ApiFormat` using `@stoplight/spectral-formats` detectors (`oas2`, `oas3`, `asyncapi2`, `asyncapi3`); throws descriptive error if format unrecognised
 - [x] T008 [P] Implement `src/formats/openapi.ts`: exports function that constructs a Spectral `Document` from raw content for OpenAPI 2/3 using appropriate parser
 - [x] T009 [P] Implement `src/formats/asyncapi.ts`: exports function that constructs a Spectral `Document` from raw content for AsyncAPI 2/3 using appropriate parser
@@ -130,11 +130,11 @@ Run with `--min-grade F`; verify exit code is 0.
 
 ### Tests for User Story 2 ⚠️ Write BEFORE implementation
 
-- [ ] T027 [P] [US2] Write `tests/integration/min-grade.test.ts`: test that poor-quality.yaml with `--min-grade A` exits 1 with message; test that high-quality fixture with `--min-grade F` exits 0; test that invalid grade letter (e.g., `--min-grade X`) exits 1 with error message; test no `--min-grade` always exits 0
+- [x] T027 [P] [US2] Write `tests/integration/min-grade.test.ts`: test that poor-quality.yaml with `--min-grade A` exits 1 with message; test that high-quality fixture with `--min-grade F` exits 0; test that invalid grade letter (e.g., `--min-grade X`) exits 1 with error message; test no `--min-grade` always exits 0
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Add `--min-grade <A|B|C|D|F>` flag to `src/cli/index.ts`: validate input is one of A/B/C/D/F (exit 1 with error on invalid); after grading, compare achieved `letterGrade` against threshold using `GRADE_LABELS` order; if below threshold, print failure message to stderr and exit 1
+- [x] T028 [US2] Add `--min-grade <A|B|C|D|F>` flag to `src/cli/index.ts`: validate input is one of A/B/C/D/F (exit 1 with error on invalid); after grading, compare achieved `letterGrade` against threshold using `GRADE_LABELS` order; if below threshold, print failure message to stderr and exit 1
 
 **Checkpoint**: User Stories 1 AND 2 independently functional — CI/CD gate works.
 
@@ -152,12 +152,12 @@ and verify the custom rule ID appears in diagnostics.
 
 ### Tests for User Story 3 ⚠️ Write BEFORE implementation
 
-- [ ] T029 [P] [US3] Add `tests/fixtures/custom-ruleset.yaml`: a minimal valid Spectral ruleset defining one custom rule that reliably triggers on museum-api.yaml; include header comment explaining the fixture's purpose
-- [ ] T030 [P] [US3] Write `tests/integration/custom-ruleset.test.ts`: test that grading museum-api.yaml with the custom ruleset produces the custom rule ID in diagnostics; test that built-in rules are NOT present (custom ruleset replaces default); test that missing ruleset path exits 1 with error; test that a ruleset referencing an unreachable external URL exits 1 with a message naming the URL
+- [x] T029 [P] [US3] Add `tests/fixtures/custom-ruleset.yaml`: a minimal valid Spectral ruleset defining one custom rule that reliably triggers on museum-api.yaml; include header comment explaining the fixture's purpose
+- [x] T030 [P] [US3] Write `tests/integration/custom-ruleset.test.ts`: test that grading museum-api.yaml with the custom ruleset produces the custom rule ID in diagnostics; test that built-in rules are NOT present (custom ruleset replaces default); test that missing ruleset path exits 1 with error; test that a ruleset referencing an unreachable external URL exits 1 with a message naming the URL
 
 ### Implementation for User Story 3
 
-- [ ] T031 [US3] Add `--ruleset <path>` flag to `src/cli/index.ts`: validate file exists (exit 1 with error if not); pass path through `CliOptions` to `GradeRequest`; verify `src/rulesets/loader.ts` correctly loads the custom file and passes it to the linting engine
+- [x] T031 [US3] Add `--ruleset <path>` flag to `src/cli/index.ts`: validate file exists (exit 1 with error if not); pass path through `CliOptions` to `GradeRequest`; verify `src/rulesets/loader.ts` correctly loads the custom file and passes it to the linting engine
 
 **Checkpoint**: All of User Stories 1, 2, and 3 independently functional — custom rulesets work.
 
@@ -174,9 +174,9 @@ compare output to local `api-grade` run against the same file.
 
 ### Implementation for User Story 4
 
-- [ ] T032 [US4] Write `Dockerfile` at repository root: multi-stage build using `node:20-alpine`; stage 1 installs deps and runs `npm run build`; stage 2 copies `dist/` and runs as non-root user; ENTRYPOINT is `["node", "/app/dist/cli/index.js"]`
-- [ ] T033 [US4] Update `quickstart.md` Docker section with correct image name, build command, and volume mount examples for both macOS/Linux and Windows PowerShell (per quickstart.md template)
-- [ ] T034 [US4] Verify container produces identical output: build image, run museum-api.yaml through container and local CLI, document verification steps in `specs/001-base-cli/quickstart.md` under a "Verifying Container Output" subsection
+- [x] T032 [US4] Write `Dockerfile` at repository root: multi-stage build using `node:20-alpine`; stage 1 installs deps and runs `npm run build`; stage 2 copies `dist/` and runs as non-root user; ENTRYPOINT is `["node", "/app/dist/cli/index.js"]`
+- [x] T033 [US4] Update `quickstart.md` Docker section with correct image name, build command, and volume mount examples for both macOS/Linux and Windows PowerShell (per quickstart.md template)
+- [x] T034 [US4] Verify container produces identical output: build image, run museum-api.yaml through container and local CLI, document verification steps in `specs/001-base-cli/quickstart.md` under a "Verifying Container Output" subsection
 
 **Checkpoint**: All four user stories independently functional.
 
@@ -186,13 +186,13 @@ compare output to local `api-grade` run against the same file.
 
 **Purpose**: Improvements that apply across all stories.
 
-- [ ] T035 [P] Add `tests/fixtures/openapi/train-travel-api.yaml`: obtain Train Travel API spec (https://github.com/bump-sh-examples/train-travel-api), save to this path; add header comment `# High-quality OpenAPI 3.1 sample — Train Travel API`
-- [ ] T036 [P] Add `.gitignore`: exclude `node_modules/`, `dist/`, `coverage/`, `.env`
-- [ ] T037 [P] Add `README.md` at repository root: brief project description, installation, basic usage example, link to quickstart.md
-- [ ] T038 Run full test suite (`npm test`) and verify all tests pass; fix any failures
-- [ ] T039 Run `npm run build` and verify `dist/` is produced and `api-grade --version` runs correctly
-- [ ] T040 End-to-end quickstart validation: follow `specs/001-base-cli/quickstart.md` from a clean directory, verify completion in under 15 minutes (SC-006); time `api-grade` against bundled fixtures and confirm output appears within 30 seconds (SC-001)
-- [ ] T059 [P] Windows compatibility validation (FR-010): on Windows 10/11 (or via WSL if native unavailable), run `npm install -g api-grade` and `api-grade tests/fixtures/openapi/poor-quality.yaml`; verify exit codes propagate correctly in cmd.exe and PowerShell; document any Windows-specific caveats (path separators, line endings) in `specs/001-base-cli/quickstart.md` under a "Windows Notes" subsection
+- [x] T035 [P] Add `tests/fixtures/openapi/train-travel-api.yaml`: obtain Train Travel API spec (https://github.com/bump-sh-examples/train-travel-api), save to this path; add header comment `# High-quality OpenAPI 3.1 sample — Train Travel API`
+- [x] T036 [P] Add `.gitignore`: exclude `node_modules/`, `dist/`, `coverage/`, `.env`
+- [x] T037 [P] Add `README.md` at repository root: brief project description, installation, basic usage example, link to quickstart.md
+- [x] T038 Run full test suite (`npm test`) and verify all tests pass; fix any failures
+- [x] T039 Run `npm run build` and verify `dist/` is produced and `api-grade --version` runs correctly
+- [x] T040 End-to-end quickstart validation: follow `specs/001-base-cli/quickstart.md` from a clean directory, verify completion in under 15 minutes (SC-006); time `api-grade` against bundled fixtures and confirm output appears within 30 seconds (SC-001)
+- [x] T059 [P] Windows compatibility validation (FR-010): on Windows 10/11 (or via WSL if native unavailable), run `npm install -g api-grade` and `api-grade tests/fixtures/openapi/poor-quality.yaml`; verify exit codes propagate correctly in cmd.exe and PowerShell; document any Windows-specific caveats (path separators, line endings) in `specs/001-base-cli/quickstart.md` under a "Windows Notes" subsection
 
 ---
 
