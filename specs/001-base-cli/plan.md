@@ -38,7 +38,12 @@ via `--format json`. A Dockerfile is provided for containerised execution.
 **Project Type**: CLI tool (npm global package; binary entry point `api-grade`)
 
 **Performance Goals**: Grade a typical API spec (< 5 MB) within 30 seconds from
-CLI invocation to output (SC-001)
+CLI invocation to output (SC-001). No file-size gate; if linting exceeds 30 s a
+warning is emitted to stderr and processing continues.
+
+**Config File**: `.apigrade.json` in the current working directory (optional). All
+CLI flags settable as camelCase keys. CLI flags always take precedence over config
+file values.
 
 **Constraints**: All prerequisites $0 cost; cross-platform (Windows + macOS native);
 container image uses free base image (`node:20-alpine`)

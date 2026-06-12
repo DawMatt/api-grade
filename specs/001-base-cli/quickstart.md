@@ -67,12 +67,16 @@ api-grade tests/fixtures/asyncapi/streetlights-api.yaml
 Expected human-readable output:
 
 ```
-Grade: A  (92/100)
+Grade: A (92%) — Excellent
 
-⚠ 3 warnings
+Quality Assessment:
+Excellent. This specification is in excellent condition. No significant issues were detected.
 
-  warn  operation-tag-defined    paths » /museum » get  Line 14
-        Operation tags must be defined in global tags.
+Diagnostics (3 total — 0 errors, 3 warnings):
+
+  warn   operation-tag-defined    paths » /museum » get   Line 14
+         Operation tags must be defined in global tags.
+
   ...
 ```
 
@@ -116,6 +120,31 @@ for the ruleset format.
 ```bash
 # Show only the top 10 highest-priority findings
 api-grade openapi.yaml --top 10
+```
+
+---
+
+## Use a project config file
+
+Create `.apigrade.json` in your project root to set defaults without repeating flags:
+
+```json
+{
+  "minGrade": "B",
+  "ruleset": "./api-standards.yaml"
+}
+```
+
+```bash
+# Reads minGrade and ruleset from .apigrade.json automatically
+api-grade openapi.yaml
+```
+
+CLI flags always override config file values:
+
+```bash
+# Overrides .apigrade.json minGrade with C for this run
+api-grade openapi.yaml --min-grade C
 ```
 
 ---

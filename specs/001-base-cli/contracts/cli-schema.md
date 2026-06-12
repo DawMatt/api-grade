@@ -205,6 +205,44 @@ echo "Exit code: $?"
 
 ---
 
+## Configuration File (`.apigrade.json`)
+
+The CLI optionally reads a `.apigrade.json` file from the **current working directory**.
+All CLI flags can be set as config file keys. CLI flags always take precedence over
+config file values for the same option.
+
+**Supported keys**:
+
+```json
+{
+  "minGrade": "B",
+  "ruleset": "./my-rules.yaml",
+  "format": "json",
+  "top": 10
+}
+```
+
+Key names use camelCase equivalents of the CLI flags (e.g., `--min-grade` → `minGrade`,
+`--ruleset` → `ruleset`, `--format` → `format`, `--top` → `top`).
+
+If `.apigrade.json` does not exist, the CLI proceeds with CLI flags (or built-in defaults)
+only. A malformed `.apigrade.json` MUST print a descriptive error to stderr and exit 1.
+
+---
+
+## Large File Behaviour
+
+No file-size gate is enforced. If linting takes longer than 30 seconds, the CLI MUST
+emit a warning to stderr and continue processing:
+
+```
+Warning: linting is taking longer than expected (>30s). Large or complex specs may take more time.
+```
+
+The process exits normally once linting completes.
+
+---
+
 ## Reserved Flags (not implemented, documented for future compatibility)
 
 | Flag | Status | Planned feature |

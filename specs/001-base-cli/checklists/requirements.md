@@ -38,6 +38,7 @@
   alternative linting engine to evaluate (FR-014); expanded output format to include
   grade label and professional-tone diagnostic summary (FR-006); added GradeLabel and
   DiagnosticSummary entities; updated contracts/cli-schema.md and data-model.md.
+- Spec updated (2026-06-12, clarify pass 3): 4 clarifications applied — implementation runtime (TypeScript/Node.js), large file handling (no size gate; stderr warning after 30 s), conflicting ruleset rules (delegate to engine), config file format (`.apigrade.json` in CWD, CLI flags take precedence). All edge case placeholders resolved.
 - Spec updated (2026-06-12, clarify pass 2): 3 edge cases resolved — hints-only summary behaviour, unreachable ruleset URL (fail hard), semantically empty spec (grade normally).
 - Spec updated (2026-06-12): aligned with GOAL.md Grading Approach, constitution v1.1.0,
   and api_diagnostic_algorithm_spec.md — replaced vague "mirror OpenAPI Doctor" references

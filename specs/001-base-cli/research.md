@@ -93,19 +93,26 @@ the box on Node.js, requires zero extra configuration for TypeScript, and is MIT
 
 ## Decision 5: Grading Algorithm
 
-**Decision**: Mirror OpenAPI Doctor's scoring approach. Grade boundaries: A=90–100,
-B=80–89, C=70–79, D=60–69, F=0–59. Scoring formula to be confirmed by studying
-the pb33f/doctor source code (https://github.com/pb33f/doctor) during implementation.
+**Decision**: Use the formula specified in `api_diagnostic_algorithm_spec.md` (confirmed
+in spec Assumptions). Grade boundaries: A ≥ 90, B ≥ 80, C ≥ 70, D ≥ 60, F < 60.
 
-**Working approach** (default if source study yields no cleaner formula):
-- Start at 100 points
-- Deduct per violation by severity: error=−10, warn=−5, info=−1, hint=0
-- Apply a floor of 0 (score cannot go negative)
-- Map final score to letter grade using the boundaries above
+**Scoring formula** (confirmed — no further study needed):
+- `score = MAX(0, 100 − (errorCount × 5) − (warningCount × 1))`
+- Info and hint violations do NOT affect the numeric score
+- Floor of 0 (score cannot go negative)
 
-**Implementation note**: The OpenAPI Doctor source must be studied during task T-core-scorer
-to confirm whether the deduction model or a ratio model is used. The exact weights above
-are a reasonable default; the implementation MUST document the final formula chosen.
+**Deduction weights**:
+| Severity | Deduction per violation |
+|----------|------------------------|
+| error    | −5                      |
+| warn     | −1                      |
+| info     | 0                       |
+| hint     | 0                       |
+
+**Example** (from algorithm spec): 1 error + 38 warnings → `100 − 5 − 38 = 57` → grade F.
+
+**Focus-rule risk score**: `(errorCount × 10) + totalCount` — top 5 by risk score are
+surfaced as focus rules; top 3 displayed in Recommendations.
 
 **Diagnostic ordering** (mirrors OpenAPI Doctor / Spectral natural sort):
 1. Severity ascending (errors=0 first, hints=3 last)

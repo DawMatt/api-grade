@@ -129,9 +129,10 @@ Build multi-sentence commentary by conditionally appending:
    - 11-20: "impacting the quality"
    - 1-10: "affecting"
 4. **Category insight** — Mention worst-performing categories (up to 3), focussing on error count first, and then violation count
-5. **Spec-type insight** — AsyncAPI-specific language for channels/messages vs OpenAPI operations/responses
 
 Join all non-null parts with spaces.
+
+When preparing the commentary use spec-type aware terminology. Primarily ensure use of appropriate AsyncAPI-specific vs OpenAPI-specific language: channels vs operations, messages vs responses, bindings vs security (respectively).
 
 ---
 
