@@ -1,6 +1,6 @@
 import { oas } from '@stoplight/spectral-rulesets';
 import { asyncapi } from '@stoplight/spectral-rulesets';
-import { existsSync } from 'node:fs';
+import { existsSync, promises as fsPromises } from 'node:fs';
 import { resolve } from 'node:path';
 import type { ApiFormat } from '../core/types.js';
 
@@ -27,6 +27,7 @@ export async function loadRuleset(format: ApiFormat, rulesetPath?: string): Prom
   const { bundleAndLoadRuleset } = await import(
     '@stoplight/spectral-ruleset-bundler/with-loader'
   );
-  const ruleset = await bundleAndLoadRuleset(absolutePath);
+  const io = { fs: { promises: { readFile: fsPromises.readFile } }, fetch: globalThis.fetch };
+  const ruleset = await bundleAndLoadRuleset(absolutePath, io);
   return { ruleset, rulesetSource: 'custom', rulesetPath: absolutePath };
 }

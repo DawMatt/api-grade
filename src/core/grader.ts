@@ -1,5 +1,8 @@
-import { Spectral, Document } from '@stoplight/spectral-core';
-import { Yaml, Json } from '@stoplight/spectral-parsers';
+import spectralCore from '@stoplight/spectral-core';
+import parsers from '@stoplight/spectral-parsers';
+
+const { Spectral, Document } = spectralCore;
+const { Yaml, Json } = parsers;
 import { loadSpec } from './spec-loader.js';
 import { loadRuleset } from '../rulesets/loader.js';
 import { computeScore } from './scorer.js';
@@ -24,7 +27,8 @@ export class GradeEngine {
   async grade(request: GradeRequest): Promise<GradeResult> {
     const spec = await loadSpec(request.specPath);
     const parser = spec.rawContent.trimStart().startsWith('{') ? Json : Yaml;
-    const document = new Document(spec.rawContent, parser, spec.filePath);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const document = new Document(spec.rawContent, parser as any, spec.filePath);
 
     const { ruleset, rulesetSource, rulesetPath } = await loadRuleset(
       spec.format,

@@ -1,7 +1,12 @@
-import { Document } from '@stoplight/spectral-core';
-import { Yaml, Json } from '@stoplight/spectral-parsers';
+import spectralCore from '@stoplight/spectral-core';
+import type { Document as SpectralDocument } from '@stoplight/spectral-core';
+import parsers from '@stoplight/spectral-parsers';
 
-export function createOpenApiDocument(content: string, filePath: string): Document {
-  const parser = content.trimStart().startsWith('{') ? Json : Yaml;
-  return new Document(content, parser, filePath);
+const { Document } = spectralCore;
+const { Yaml, Json } = parsers;
+
+export function createOpenApiDocument(content: string, filePath: string): SpectralDocument {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const parser: any = content.trimStart().startsWith('{') ? Json : Yaml;
+  return new Document(content, parser, filePath) as unknown as SpectralDocument;
 }
