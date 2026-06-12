@@ -85,10 +85,11 @@ specs/001-base-cli/
 ```text
 src/
 ├── core/
+│   ├── types.ts           # Shared TypeScript type definitions (all data-model.md types)
 │   ├── grader.ts          # GradeEngine: orchestrates spec load → lint → score
 │   ├── scorer.ts          # Computes numeric score + letter grade + label from diagnostics
 │   ├── summariser.ts      # Generates professional-tone DiagnosticSummary paragraph
-│   ├── formatter.ts       # Human-readable (3-section) and JSON output formatters
+│   ├── formatter.ts       # Human-readable (4-part) and JSON output formatters
 │   └── spec-loader.ts     # Reads file, detects API format (OAS/AsyncAPI)
 ├── formats/
 │   ├── openapi.ts         # Spectral Document + format config for OpenAPI

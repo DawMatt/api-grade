@@ -34,7 +34,7 @@ AsyncAPI specification (YAML or JSON).
 
 ## Human-Readable Output (stdout)
 
-The output is structured in three sections, always in this order:
+The output is structured in four parts, always in this order:
 
 ```
 Grade: F (57%) — Poor
@@ -71,18 +71,17 @@ Diagnostics (39 total — 1 error, 38 warnings):
   - Letter grade is the most visually prominent element.
   - Score is expressed as a percentage integer (e.g., `73%` not `73/100`).
   - Label is one of: Excellent / Good / OK / Below Standard / Poor.
-- **Section 2 — Quality Assessment + Recommendations**: two subsections.
-  - **Quality Assessment paragraph**: Opens with tone label (e.g., `Critical condition.`),
-    then error assessment (if any errors), then volume-aware warning language
-    (>20: "causing significant damage"; 11–20: "impacting"; 1–10: "affecting"),
-    then worst-performing category insight. All per Stage 4 of `api_diagnostic_algorithm_spec.md`.
-  - When no violations, or when all findings are hints only: `This specification is in excellent condition. No issues were detected.` No Recommendations subsection is emitted.
-  - **Recommendations subsection**: Printed when violations exist. Up to 4 numbered items
-    per Stage 6 of the algorithm spec. Item 1 includes the error rule ID(s) after the colon.
-    Item 2 focus rules show: `<id> — <N> violations (<IMPACT>)`. Item 4 lists up to 3
-    categories ranked by error count then violation count.
-  - Tone MUST be factual and professional (no colloquial or informal language).
-- **Section 3 — Diagnostics**: header line + ordered finding list.
+- **Part 2 — Quality Assessment**: Opens with tone label (e.g., `Critical condition.`),
+  then error assessment (if any errors), then volume-aware warning language
+  (>20: "causing significant damage"; 11–20: "impacting"; 1–10: "affecting"),
+  then worst-performing category insight. All per Stage 4 of `api_diagnostic_algorithm_spec.md`.
+  When no violations, or when all findings are hints only: `This specification is in excellent condition. No issues were detected.`
+  Tone MUST be factual and professional (no colloquial or informal language).
+- **Part 3 — Recommendations**: Printed when violations exist; omitted entirely when there are none. Up to 4 numbered items
+  per Stage 6 of the algorithm spec. Item 1 includes the error rule ID(s) after the colon.
+  Item 2 focus rules show: `<id> — <N> violations (<IMPACT>)`. Item 4 lists up to 3
+  categories ranked by error count then violation count.
+- **Part 4 — Diagnostics**: header line + ordered finding list.
   - Header: `Diagnostics (<total> total — <N> error[s], <N> warning[s][, <N> info[s][, <N> hint[s]]]):`
   - Each finding: `  <severity>  <rule-id>  <path>  Line <N>\n             <message>`
   - Ordered: errors → warnings → info → hints.
