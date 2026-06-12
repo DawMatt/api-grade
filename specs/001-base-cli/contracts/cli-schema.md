@@ -69,8 +69,7 @@ Diagnostics (39 total — 1 error, 38 warnings):
   - Label is one of: Excellent / Good / OK / Below Standard / Poor.
 - **Section 2 — Quality Assessment**: professional-tone paragraph.
   - States error count, warning count, and top rule IDs.
-  - When no violations: `This specification is in excellent condition. No issues were detected.`
-  - When only hints: `This specification is in good shape. Minor style suggestions only.`
+  - When no violations, or when all findings are hints only: `This specification is in excellent condition. No issues were detected.` (hints are shown in Section 3 only; they do not affect the summary narrative)
   - Tone MUST be factual and professional (no colloquial or informal language).
 - **Section 3 — Diagnostics**: header line + ordered finding list.
   - Header: `Diagnostics (<total> total — <N> error[s], <N> warning[s][, <N> info[s][, <N> hint[s]]]):`
@@ -140,6 +139,7 @@ Diagnostics (39 total — 1 error, 38 warnings):
 | `1` | Input file not found |
 | `1` | Input file is not a recognised OpenAPI or AsyncAPI specification |
 | `1` | Custom ruleset file not found |
+| `1` | Custom ruleset references an external URL that is unreachable at grading time |
 | `1` | `--url` flag supplied (reserved, not implemented) |
 | `1` | Any other unexpected error |
 
@@ -156,6 +156,7 @@ Error: Ruleset file not found: ./custom-rules.yaml
 Error: --url is not yet supported in this version.
 Error: Invalid --min-grade value "X". Must be one of: A, B, C, D, F.
 Error: Invalid --top value "abc". Must be a positive integer.
+Error: Ruleset could not be loaded: external URL unreachable: https://example.com/rules.yaml
 ```
 
 ---

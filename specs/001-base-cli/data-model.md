@@ -126,8 +126,10 @@ interface DiagnosticSummary {
 **Generation rules**:
 - When `errorCount === 0 && warnCount === 0`: summary text MUST state the spec
   is in excellent condition with no issues detected.
-- When only hints exist (no errors, warnings, or infos): summary MUST acknowledge
-  minor style suggestions only.
+- When only hints exist (no errors, warnings, or infos): summary MUST treat this
+  as "no violations" — stating the spec is in excellent condition. Hints are
+  listed in the diagnostic detail section only and do not appear in the summary
+  narrative.
 - `topRules` MUST list rules by descending violation count; maximum 5 rule IDs.
 - Summary text MUST be factual and professional — no colloquial language.
 
