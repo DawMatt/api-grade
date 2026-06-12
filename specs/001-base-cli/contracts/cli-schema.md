@@ -44,13 +44,13 @@ Critical condition. I detected 1 error, it should be your first concern. 38 warn
 are impacting the quality. The oas category has the most issues.
 
 Recommendations:
-  1. Fix all 1 error immediately — it blocks production readiness
+  1. Fix 1 error immediately — it blocks production readiness: oas-schema-check
   2. Focus on these rules (highest impact first):
        oas-schema-check — 15 violations (HIGH)
        operation_tags — 12 violations (HIGH)
        schema_validation — 11 violations (HIGH)
   3. Create a plan to address the 38 warnings incrementally
-  4. Start with the oas category — it has the most issues
+  4. Start with categories oas, operation and schema — they have the most impactful issues
 
 Diagnostics (39 total — 1 error, 38 warnings):
 
@@ -78,8 +78,9 @@ Diagnostics (39 total — 1 error, 38 warnings):
     then worst-performing category insight. All per Stage 4 of `api_diagnostic_algorithm_spec.md`.
   - When no violations, or when all findings are hints only: `This specification is in excellent condition. No issues were detected.` No Recommendations subsection is emitted.
   - **Recommendations subsection**: Printed when violations exist. Up to 4 numbered items
-    per Stage 6 of the algorithm spec (fix errors, focus rules, address warnings,
-    start with highest-violation category). Focus rules show: `<id> — <N> violations (<IMPACT>)`.
+    per Stage 6 of the algorithm spec. Item 1 includes the error rule ID(s) after the colon.
+    Item 2 focus rules show: `<id> — <N> violations (<IMPACT>)`. Item 4 lists up to 3
+    categories ranked by error count then violation count.
   - Tone MUST be factual and professional (no colloquial or informal language).
 - **Section 3 — Diagnostics**: header line + ordered finding list.
   - Header: `Diagnostics (<total> total — <N> error[s], <N> warning[s][, <N> info[s][, <N> hint[s]]]):`
@@ -114,15 +115,15 @@ Diagnostics (39 total — 1 error, 38 warnings):
     "total": 39
   },
   "focusRules": [
-    { "id": "oas-schema-check", "title": "Oas Schema Check", "category": "oas",       "count": 15, "impact": "HIGH", "url": "" },
-    { "id": "operation_tags",   "title": "Operation Tags",   "category": "operation", "count": 12, "impact": "HIGH", "url": "" },
-    { "id": "schema_validation","title": "Schema Validation","category": "schema",    "count": 11, "impact": "HIGH", "url": "" }
+    { "id": "oas-schema-check", "title": "Oas Schema Check", "category": "oas",       "count": 15, "impact": "HIGH", "url": null },
+    { "id": "operation_tags",   "title": "Operation Tags",   "category": "operation", "count": 12, "impact": "HIGH", "url": null },
+    { "id": "schema_validation","title": "Schema Validation","category": "schema",    "count": 11, "impact": "HIGH", "url": null }
   ],
   "recommendations": [
-    "Fix all 1 error immediately — it blocks production readiness",
+    "Fix 1 error immediately — it blocks production readiness: oas-schema-check",
     "Focus on these rules (highest impact first): oas-schema-check — 15 violations (HIGH), operation_tags — 12 violations (HIGH), schema_validation — 11 violations (HIGH)"
     "Create a plan to address the 38 warnings incrementally",
-    "Start with the oas category — it has the most issues"
+    "Start with categories oas, operation and schema — they have the most impactful issues"
   ],
   "diagnostics": [
     {
@@ -150,7 +151,7 @@ Diagnostics (39 total — 1 error, 38 warnings):
 - `tone` is one of `"Excellent" | "Good" | "OK effort" | "Needs work" | "Critical condition"`.
 - `severityLevel` is one of `"CRITICAL" | "WARNING" | "INFO"`.
 - `focusRules` is always an array (empty `[]` when no violations). Each entry has `id`, `title`,
-  `category`, `count`, `impact` (`"HIGH" | "MEDIUM" | "LOW"`), and `url` (always `""`).
+  `category`, `count`, `impact` (`"HIGH" | "MEDIUM" | "LOW"`), and `url` (always `null`).
 - `recommendations` is always an array (empty `[]` when no violations).
 - When `--top N` is set, `diagnostics` contains at most N items; `diagnosticCounts`,
   `focusRules`, and `recommendations` always reflect ALL findings regardless of `--top`.

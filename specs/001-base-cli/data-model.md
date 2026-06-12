@@ -105,7 +105,7 @@ interface RuleMetadata {
   category: string;       // First token before _ or - (e.g., "oas", "operation")
   count:    number;       // Total violation count for this rule
   impact:   ImpactLevel;  // HIGH if errors>0 OR count≥10; MEDIUM if count≥5; else LOW
-  url:      string;       // reserved for future use; always set to empty string ""
+  url:      null;         // reserved for future use; always null
 }
 ```
 
@@ -173,7 +173,12 @@ interface DiagnosticSummary {
 - `focusRules` MUST contain at most 5 entries, ranked by descending riskScore.
 - `commentary` warning volume language: >20 "causing significant damage to the quality";
   11–20 "impacting the quality"; 1–10 "affecting".
-- Stage 6 recommendation text patterns and conditions are defined in the algorithm spec.
+- `commentary` category insight (Stage 4 item 4): mentions up to 3 worst-performing
+  categories, ranked by error count first then total violation count.
+- Stage 6 recommendation patterns (per algorithm spec):
+  - Item 1 (errors present): includes the error rule ID(s) after the colon.
+  - Item 4 (focus rules present): lists up to 3 categories ranked by errors then
+    violations — "Start with categories {list} — they have the most impactful issues".
 - Summary MUST be factual and professional — no colloquial language.
 
 ---
