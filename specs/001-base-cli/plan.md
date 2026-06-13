@@ -6,19 +6,28 @@
 
 ## Summary
 
-Build a TypeScript/Node.js CLI tool (`api-grade`) that uses the Spectral linting
-engine to grade OpenAPI and AsyncAPI specifications on a letter scale (A–F) alongside
-a 0–100 numeric score. The core grading engine is a standalone module consumed by
-the CLI layer. The tool supports CI/CD pipeline integration via `--min-grade`, custom
-Spectral rulesets via `--ruleset`, optional diagnostic limiting via `--top`, and
-JSON output via `--format json`. A Dockerfile is provided for containerised execution.
+Build a TypeScript/Node.js CLI tool (`api-grade`) that uses a Spectral-compatible
+linting engine (reference: Spectral; candidate: vacuum) to grade OpenAPI and AsyncAPI
+specifications. Output presents three sections: an overall grade (letter A–F +
+percentage + label such as "Below Standard"), a professional-tone diagnostic summary
+identifying priority rules to address, and the full ordered diagnostic detail list.
+The core grading engine is a standalone module consumed by the CLI layer. The tool supports CI/CD pipeline integration via `--min-grade`, custom
+Spectral-compatible rulesets via `--ruleset`, optional diagnostic limiting via `--top`,
+JSON output via `--format json`, and verbose error detail via `--verbose`. In both
+modes, each unexpected runtime error is printed as a numbered header line
+`Error #N: [{source}:{line}:{col} — ]{message}` with source location when available
+(derived from Spectral's `RulesetValidationError` `.source` / `.range` properties);
+non-verbose mode adds the "Use --verbose flag" prompt and omits the call chain; verbose
+mode omits the prompt and appends the indented call chain stack frames. A Dockerfile
+is provided for containerised execution.
 
 ## Technical Context
 
 **Language/Version**: TypeScript 5.x, Node.js 20 LTS
 
-**Primary Dependencies**:
-- `@stoplight/spectral-core` — Spectral linting engine (programmatic API)
+**Primary Dependencies** (subject to linting engine evaluation — see research.md §8a):
+- `@stoplight/spectral-core` — reference Spectral linting engine (programmatic API);
+  may be replaced by vacuum (https://github.com/daveshanley/vacuum) pending evaluation
 - `@stoplight/spectral-formats` — format detection (OAS 2/3, AsyncAPI 2/3)
 - `@stoplight/spectral-rulesets` — built-in OAS and AsyncAPI rulesets
 - `@stoplight/spectral-parsers` — YAML/JSON document parsers
@@ -34,7 +43,12 @@ JSON output via `--format json`. A Dockerfile is provided for containerised exec
 **Project Type**: CLI tool (npm global package; binary entry point `api-grade`)
 
 **Performance Goals**: Grade a typical API spec (< 5 MB) within 30 seconds from
-CLI invocation to output (SC-001)
+CLI invocation to output (SC-001). No file-size gate; if linting exceeds 30 s a
+warning is emitted to stderr and processing continues.
+
+**Config File**: `.apigrade.json` in the current working directory (optional). All
+CLI flags settable as camelCase keys. CLI flags always take precedence over config
+file values.
 
 **Constraints**: All prerequisites $0 cost; cross-platform (Windows + macOS native);
 container image uses free base image (`node:20-alpine`)
@@ -56,6 +70,17 @@ container image uses free base image (`node:20-alpine`)
 
 **No violations. Complexity Tracking section not required.**
 
+*Updated 2026-06-13 (pass 1)*: FR-015 (`--verbose`) and FR-016 (missing-function test) added.
+All principles continue to pass — the verbose flag is additive to error handling
+(Principle IV: test-driven; Principle II: core-first — error formatting stays in
+`src/core/formatter.ts`).
+
+*Updated 2026-06-13 (pass 2)*: FR-015 / FR-016 / contracts refined — verbose output format
+now specifies source location prefix (`{source}:{line}:{col} — `) derived from Spectral's
+`RulesetValidationError` `.source`/`.range` properties; both modes show the numbered header
+line with location; verbose omits the prompt and appends call chain. No new constitution
+violations. All principles continue to pass.
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -76,9 +101,11 @@ specs/001-base-cli/
 ```text
 src/
 ├── core/
+│   ├── types.ts           # Shared TypeScript type definitions (all data-model.md types)
 │   ├── grader.ts          # GradeEngine: orchestrates spec load → lint → score
-│   ├── scorer.ts          # Computes numeric score + letter grade from diagnostics
-│   ├── formatter.ts       # Human-readable and JSON output formatters
+│   ├── scorer.ts          # Computes numeric score + letter grade + label from diagnostics
+│   ├── summariser.ts      # Generates professional-tone DiagnosticSummary paragraph
+│   ├── formatter.ts       # Human-readable (4-part) and JSON output formatters
 │   └── spec-loader.ts     # Reads file, detects API format (OAS/AsyncAPI)
 ├── formats/
 │   ├── openapi.ts         # Spectral Document + format config for OpenAPI
@@ -95,15 +122,22 @@ tests/
 │   └── spec-loader.test.ts    # Format detection and file reading
 ├── integration/
 │   ├── openapi-grading.test.ts   # End-to-end: grade fixtures, check output shape
-│   └── asyncapi-grading.test.ts  # End-to-end: grade fixtures, check output shape
+│   ├── asyncapi-grading.test.ts  # End-to-end: grade fixtures, check output shape
+│   └── verbose-errors.test.ts    # FR-016: missing-function ruleset exits non-zero;
+│                                 #   default mode shows numbered message (no call chain);
+│                                 #   --verbose mode shows full call chain
 └── fixtures/
     ├── openapi/
     │   ├── museum-api.yaml         # High quality (Redocly Museum API)
     │   ├── train-travel-api.yaml   # High quality (bump.sh Train Travel API)
     │   └── poor-quality.yaml       # Low quality — intentionally bad (labelled)
-    └── asyncapi/
-        ├── streetlights-api.yaml   # High quality (AsyncAPI Streetlights tutorial)
-        └── poor-quality.yaml       # Low quality — intentionally bad (labelled)
+    ├── asyncapi/
+    │   ├── streetlights-api.yaml   # High quality (AsyncAPI Streetlights tutorial)
+    │   └── poor-quality.yaml       # Low quality — intentionally bad (labelled)
+    └── rulesets/
+        ├── minimal.yaml            # Minimal valid ruleset (custom-ruleset tests)
+        ├── unreachable.yaml        # Ruleset referencing unreachable external URL
+        └── missingfunction.yaml    # Ruleset referencing undefined function — expected to fail
 
 Dockerfile                   # node:20-alpine; build + run instructions
 package.json                 # bin: { "api-grade": "./dist/cli/index.js" }

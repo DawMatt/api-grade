@@ -1,0 +1,10 @@
+# Custom ruleset fixture for integration tests — defines one rule that reliably
+# triggers on any spec that does not include an x-api-id extension in info.
+rules:
+  must-have-api-id:
+    message: "The info object must contain an x-api-id extension (custom rule)"
+    given: "$.info"
+    severity: warn
+    then:
+      field: x-api-id
+      function: truthy

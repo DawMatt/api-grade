@@ -67,12 +67,16 @@ api-grade tests/fixtures/asyncapi/streetlights-api.yaml
 Expected human-readable output:
 
 ```
-Grade: A  (92/100)
+Grade: A (92%) — Excellent
 
-⚠ 3 warnings
+Quality Assessment:
+Excellent. This specification is in excellent condition. No significant issues were detected.
 
-  warn  operation-tag-defined    paths » /museum » get  Line 14
-        Operation tags must be defined in global tags.
+Diagnostics (3 total — 0 errors, 3 warnings):
+
+  warn   operation-tag-defined    paths » /museum » get   Line 14
+         Operation tags must be defined in global tags.
+
   ...
 ```
 
@@ -120,24 +124,117 @@ api-grade openapi.yaml --top 10
 
 ---
 
-## Run with Docker
+## Use a project config file
+
+Create `.apigrade.json` in your project root to set defaults without repeating flags:
+
+```json
+{
+  "minGrade": "B",
+  "ruleset": "./api-standards.yaml"
+}
+```
 
 ```bash
-# Pull the image (or build locally — see Dockerfile in repo root)
-docker pull ghcr.io/<org>/api-grade:latest
+# Reads minGrade and ruleset from .apigrade.json automatically
+api-grade openapi.yaml
+```
 
-# Grade a spec file in the current directory
+CLI flags always override config file values:
+
+```bash
+# Overrides .apigrade.json minGrade with C for this run
+api-grade openapi.yaml --min-grade C
+```
+
+---
+
+## Run with Docker
+
+Build the image locally from the repository root (requires Docker Desktop or Docker Engine):
+
+```bash
+# Build the image
+docker build -t api-grade .
+
+# Grade a spec file in the current directory (macOS/Linux)
 docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml
 
 # With minimum grade gate
 docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml --min-grade B
+
+# JSON output
+docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml --format json
 ```
 
 **Windows (PowerShell)**:
 
 ```powershell
+# Build the image
+docker build -t api-grade .
+
+# Grade a spec
 docker run --rm -v "${PWD}:/work" api-grade /work/openapi.yaml
+
+# With minimum grade gate
+docker run --rm -v "${PWD}:/work" api-grade /work/openapi.yaml --min-grade B
 ```
+
+### Verifying Container Output
+
+To confirm the container produces identical output to the local CLI, run both against
+the same fixture and compare:
+
+```bash
+# Local CLI output
+node dist/cli/index.js tests/fixtures/openapi/museum-api.yaml > local-output.txt
+
+# Container output (mount repo root so the fixture is accessible)
+docker run --rm -v "$(pwd):/work" api-grade /work/tests/fixtures/openapi/museum-api.yaml > container-output.txt
+
+# Compare — should produce no differences in grade, score, or diagnostics
+diff local-output.txt container-output.txt
+```
+
+The only acceptable differences are ANSI colour codes (the container inherits the TTY
+environment of the calling shell). To compare without colour codes:
+
+```bash
+node dist/cli/index.js tests/fixtures/openapi/museum-api.yaml --format json > local.json
+docker run --rm -v "$(pwd):/work" api-grade /work/tests/fixtures/openapi/museum-api.yaml --format json > container.json
+diff local.json container.json
+```
+
+---
+
+## Windows Notes
+
+`api-grade` runs natively on Windows 10/11 with Node.js 20 LTS. Known caveats:
+
+**Path separators**: Use forward slashes (`/`) or double backslashes (`\\`) for file paths
+on the command line. Single backslashes are treated as escape characters by most shells.
+
+```cmd
+:: cmd.exe — use forward slashes or double backslashes
+api-grade path/to/openapi.yaml
+api-grade path\\to\\openapi.yaml
+```
+
+```powershell
+# PowerShell — forward slashes work natively
+api-grade path/to/openapi.yaml
+```
+
+**Exit code propagation**: Both cmd.exe and PowerShell propagate exit codes correctly.
+Use `echo %ERRORLEVEL%` (cmd.exe) or `echo $LASTEXITCODE` (PowerShell) to inspect them:
+
+```powershell
+api-grade openapi.yaml --min-grade B
+echo $LASTEXITCODE   # 0 = pass, 1 = fail/error
+```
+
+**Line endings**: YAML spec files with Windows line endings (CRLF) are parsed correctly
+by Spectral. No conversion is required.
 
 ---
 

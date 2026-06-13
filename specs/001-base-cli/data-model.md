@@ -65,32 +65,127 @@ group — mirroring OpenAPI Doctor's output order.
 
 ## ScoringWeights
 
-Configuration for the deduction-based scoring algorithm.
+Configuration for the deduction-based scoring algorithm (Stage 2 of
+`api_diagnostic_algorithm_spec.md`).
 
 ```typescript
 interface ScoringWeights {
   error: number;   // points deducted per error violation
   warn:  number;   // points deducted per warning violation
-  info:  number;   // points deducted per info violation
-  hint:  number;   // points deducted per hint violation (typically 0)
+  // info and hint violations do NOT affect the numeric score
 }
 ```
 
-**Default weights** (to be confirmed against OpenAPI Doctor source during implementation):
+**Default weights** (per `api_diagnostic_algorithm_spec.md` Stage 2):
 ```typescript
 const DEFAULT_WEIGHTS: ScoringWeights = {
-  error: 10,
-  warn:  5,
-  info:  1,
-  hint:  0,
+  error: 5,
+  warn:  1,
+};
+```
+
+**Score formula**: `score = MAX(0, 100 − (errorCount × 5) − (warningCount × 1))`
+Info and hint violations are excluded from scoring. No soft caps are applied.
+
+**Example** (algorithm spec §Example): 1 error + 38 warnings → `100 − 5 − 38 = 57` → grade F.
+
+---
+
+## RuleMetadata
+
+Enriched representation of a focus rule produced by Stage 5 of the diagnostic
+algorithm. Used in `DiagnosticSummary.focusRules` and in JSON output.
+
+```typescript
+type ImpactLevel = 'HIGH' | 'MEDIUM' | 'LOW';
+
+interface RuleMetadata {
+  id:       string;       // Spectral rule ID (e.g., "oas-schema-check")
+  title:    string;       // Human-readable title: id_to_title(id) e.g., "Oas Schema Check"
+  category: string;       // First token before _ or - (e.g., "oas", "operation")
+  count:    number;       // Total violation count for this rule
+  impact:   ImpactLevel;  // HIGH if errors>0 OR count≥10; MEDIUM if count≥5; else LOW
+  url:      null;         // reserved for future use; always null
+}
+```
+
+**Category extraction rule**: `category = first_token_before_underscore_or_dash(ruleId)`
+- `"operation_summary"` → `"operation"`
+- `"oas-schema-check"` → `"oas"`
+
+**Risk score** (used to rank focus rules in Stage 5):
+`riskScore = (errorViolationCount × 10) + totalCount`
+
+---
+
+## GradeLabel
+
+Short qualitative descriptor paired with each letter grade.
+
+```typescript
+type GradeLabel = 'Excellent' | 'Good' | 'OK' | 'Below Standard' | 'Poor';
+
+const GRADE_LABELS: Record<LetterGrade, GradeLabel> = {
+  A: 'Excellent',
+  B: 'Good',
+  C: 'OK',
+  D: 'Below Standard',
+  F: 'Poor',
 };
 ```
 
 ---
 
+## DiagnosticSummary
+
+Output of the 6-stage diagnostic algorithm (`api_diagnostic_algorithm_spec.md`).
+Generated programmatically; NOT human-authored per run.
+
+```typescript
+type DiagnosticSeverityLevel = 'CRITICAL' | 'WARNING' | 'INFO';
+
+interface DiagnosticSummary {
+  // Stage 3 outputs
+  tone:          string;                  // "Excellent" | "Good" | "OK effort" | "Needs work" | "Critical condition"
+  severityLevel: DiagnosticSeverityLevel; // CRITICAL if errors>0 OR score<60; WARNING if score<80; INFO otherwise
+
+  // Counts (Stage 1)
+  errorCount: number;
+  warnCount:  number;
+  infoCount:  number;
+  hintCount:  number;
+
+  // Stage 4 output
+  commentary: string;  // Multi-sentence narrative: tone-prefixed, error-first, volume-aware warnings, category insight
+
+  // Stage 5 output
+  focusRules: RuleMetadata[];  // Top 5 rules by risk score (errors×10 + totalCount)
+
+  // Stage 6 output
+  recommendations: string[];   // Numbered action items (up to 4); empty when no violations
+}
+```
+
+**Generation rules** (all per `api_diagnostic_algorithm_spec.md`):
+- When `errorCount === 0 && warnCount === 0` (including hints-only): `commentary`
+  MUST state the spec is in excellent condition; `focusRules` and `recommendations`
+  are empty arrays.
+- `focusRules` MUST contain at most 5 entries, ranked by descending riskScore.
+- `commentary` warning volume language: >20 "causing significant damage to the quality";
+  11–20 "impacting the quality"; 1–10 "affecting".
+- `commentary` category insight (Stage 4 item 4): mentions up to 3 worst-performing
+  categories, ranked by error count first then total violation count.
+- Stage 6 recommendation patterns (per algorithm spec):
+  - Item 1 (errors present): includes the error rule ID(s) after the colon.
+  - Item 4 (focus rules present): lists up to 3 categories ranked by errors then
+    violations — "Start with categories {list} — they have the most impactful issues".
+- Summary MUST be factual and professional — no colloquial language.
+
+---
+
 ## GradeBoundaries
 
-Maps numeric score ranges to letter grades.
+Maps numeric score ranges to letter grades and labels.
 
 ```typescript
 interface GradeBoundaries {
@@ -120,7 +215,9 @@ interface GradeResult {
   specPath: string;            // path to the graded spec file
   format: ApiFormat;           // detected API format
   letterGrade: LetterGrade;    // A | B | C | D | F
-  numericScore: number;        // 0–100 (integer)
+  gradeLabel: GradeLabel;      // Excellent | Good | OK | Below Standard | Poor
+  numericScore: number;        // 0–100 (integer, representing percentage)
+  summary: DiagnosticSummary;  // professional-tone assessment paragraph + counts
   diagnostics: Diagnostic[];   // ordered list (see Diagnostic ordering rule)
   rulesetSource: 'default' | 'custom';
   rulesetPath?: string;        // set when rulesetSource === 'custom'
@@ -132,7 +229,10 @@ type LetterGrade = 'A' | 'B' | 'C' | 'D' | 'F';
 **Invariants**:
 - `numericScore` is always in [0, 100].
 - `letterGrade` is always consistent with `numericScore` and `DEFAULT_BOUNDARIES`.
+- `gradeLabel` is always the label corresponding to `letterGrade` per `GRADE_LABELS`.
 - `diagnostics` is sorted per the Diagnostic ordering rule.
+- `summary.errorCount + summary.warnCount + summary.infoCount + summary.hintCount`
+  equals `diagnostics.length`.
 
 ---
 

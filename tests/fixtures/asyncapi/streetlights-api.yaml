@@ -1,0 +1,124 @@
+asyncapi: 2.6.0
+info:
+  title: Streetlights API
+  version: 1.0.0
+  description: >
+    The Streetlights API allows you to manage and monitor a network of smart
+    streetlights. It supports receiving light measurements and sending commands
+    to turn lights on or off.
+  contact:
+    name: Streetlights Support
+    email: support@example-streetlights.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  production:
+    url: mqtt://api.example-streetlights.com:1883
+    protocol: mqtt
+    description: Production MQTT broker
+
+defaultContentType: application/json
+
+channels:
+  smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured:
+    description: Channel for receiving light measurement events from streetlights.
+    parameters:
+      streetlightId:
+        $ref: '#/components/parameters/streetlightId'
+    subscribe:
+      operationId: receiveLightMeasurement
+      summary: Receive a light measurement event
+      description: >
+        Subscribes to light measurement events published by streetlight sensors.
+        Each message contains the lumen measurement and timestamp.
+      message:
+        $ref: '#/components/messages/LightMeasured'
+
+  smartylighting/streetlights/1/0/action/{streetlightId}/turn/on:
+    description: Channel for sending turn-on commands to a specific streetlight.
+    parameters:
+      streetlightId:
+        $ref: '#/components/parameters/streetlightId'
+    publish:
+      operationId: turnOn
+      summary: Turn on a streetlight
+      description: Sends a command to turn on the specified streetlight.
+      message:
+        $ref: '#/components/messages/TurnOnOff'
+
+  smartylighting/streetlights/1/0/action/{streetlightId}/turn/off:
+    description: Channel for sending turn-off commands to a specific streetlight.
+    parameters:
+      streetlightId:
+        $ref: '#/components/parameters/streetlightId'
+    publish:
+      operationId: turnOff
+      summary: Turn off a streetlight
+      description: Sends a command to turn off the specified streetlight.
+      message:
+        $ref: '#/components/messages/TurnOnOff'
+
+components:
+  messages:
+    LightMeasured:
+      name: lightMeasured
+      title: Light measured
+      summary: Inform about light intensity measured at a streetlight.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LightMeasuredPayload'
+
+    TurnOnOff:
+      name: turnOnOff
+      title: Turn on/off
+      summary: Command to turn a streetlight on or off.
+      payload:
+        $ref: '#/components/schemas/TurnOnOffPayload'
+
+  schemas:
+    LightMeasuredPayload:
+      type: object
+      description: Payload for a light measurement event
+      required:
+        - id
+        - lumens
+        - sentAt
+      properties:
+        id:
+          type: integer
+          minimum: 0
+          description: Unique identifier for the streetlight.
+        lumens:
+          type: integer
+          minimum: 0
+          description: Light intensity measured in lumens.
+        sentAt:
+          type: string
+          format: date-time
+          description: Date and time when the measurement was taken.
+
+    TurnOnOffPayload:
+      type: object
+      description: Payload for a turn on/off command
+      required:
+        - command
+        - sentAt
+      properties:
+        command:
+          type: string
+          enum:
+            - on
+            - off
+          description: The command to turn the streetlight on or off.
+        sentAt:
+          type: string
+          format: date-time
+          description: Date and time when the command was sent.
+
+  parameters:
+    streetlightId:
+      description: The ID of the streetlight to which the message applies.
+      schema:
+        type: string

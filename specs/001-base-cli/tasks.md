@@ -1,0 +1,357 @@
+---
+description: "Task list for Base CLI for API Quality Grading"
+---
+
+# Tasks: Base CLI for API Quality Grading
+
+**Input**: Design documents from `specs/001-base-cli/`
+
+**Prerequisites**: plan.md ✅ | spec.md ✅ | research.md ✅ | data-model.md ✅ | contracts/cli-schema.md ✅
+
+**Tests**: Included per Constitution Principle IV (Test-Driven Quality — mandatory).
+
+**Organization**: Tasks are grouped by user story to enable independent implementation
+and testing of each story. Tests MUST be written before or alongside implementation.
+
+## Format: `[ID] [P?] [Story?] Description`
+
+- **[P]**: Can run in parallel (different files, no dependencies)
+- **[Story]**: Which user story this task belongs to (US1–US5)
+- Paths shown are relative to repository root
+
+---
+
+## Phase 1: Setup (Project Initialization)
+
+**Purpose**: Initialize the TypeScript/Node.js project skeleton with all tooling.
+
+- [x] T001 Initialize Node.js project: create package.json with name `api-grade`, bin entry `{"api-grade": "./dist/cli/index.js"}`, and all dependency placeholders
+- [x] T002 Install npm dependencies: `@stoplight/spectral-core`, `@stoplight/spectral-formats`, `@stoplight/spectral-rulesets`, `@stoplight/spectral-parsers`, `commander`, `chalk` (devDeps: `vitest`, `typescript`, `@types/node`)
+- [x] T003 [P] Configure TypeScript: create `tsconfig.json` targeting Node.js 20, strict mode enabled, output to `dist/`
+- [x] T004 [P] Configure Vitest: create `vitest.config.ts` pointing at `tests/` with TypeScript support
+- [x] T005 [P] Add npm scripts to package.json: `build` (tsc), `test` (vitest), `test:watch` (vitest --watch), `test:coverage` (vitest --coverage), `start` (node dist/cli/index.js)
+
+---
+
+## Phase 2: Foundational (Blocking Prerequisites)
+
+**Purpose**: Core infrastructure that MUST be complete before any user story implementation.
+
+**⚠️ CRITICAL**: No user story work can begin until this phase is complete.
+
+- [x] T006 Evaluate vacuum vs Spectral: clone/install `vacuum` (https://github.com/daveshanley/vacuum), run against sample specs using both engines, compare diagnostic output (rule IDs, severities, paths), document decision in `specs/001-base-cli/research.md` §8a and proceed with the chosen engine
+- [x] T058 Create `src/core/types.ts`: define and export all shared TypeScript types from data-model.md — `ApiFormat`, `DiagnosticSeverity`, `Diagnostic`, `ScoringWeights`, `ImpactLevel`, `RuleMetadata`, `GradeLabel`, `LetterGrade`, `DiagnosticSeverityLevel`, `DiagnosticSummary`, `GradeBoundaries`, `GradeResult`, `GradeRequest`, `CliOptions`; this file MUST exist before T007–T012 are implemented
+- [x] T007 [P] Implement `src/core/spec-loader.ts`: reads file at given path (throws descriptive error if not found), returns raw content string; detects `ApiFormat` using `@stoplight/spectral-formats` detectors (`oas2`, `oas3`, `asyncapi2`, `asyncapi3`); throws descriptive error if format unrecognised
+- [x] T008 [P] Implement `src/formats/openapi.ts`: exports function that constructs a Spectral `Document` from raw content for OpenAPI 2/3 using appropriate parser
+- [x] T009 [P] Implement `src/formats/asyncapi.ts`: exports function that constructs a Spectral `Document` from raw content for AsyncAPI 2/3 using appropriate parser
+- [x] T010 [P] Implement `src/rulesets/loader.ts`: exports `loadRuleset(path?: string)` — when `path` is provided, loads from file (throws if not found); when absent, loads built-in default ruleset extending `spectral:oas` and `spectral:asyncapi`
+- [x] T011 [P] Add `.spectral.yaml` at repository root: `extends: ["spectral:oas", "spectral:asyncapi"]` — the built-in default ruleset used when `--ruleset` is omitted
+- [x] T012 Implement `src/core/scorer.ts`: exports `computeScore(diagnostics: Diagnostic[]): { numericScore: number; letterGrade: LetterGrade; gradeLabel: GradeLabel }` using deduction weights and DEFAULT_BOUNDARIES from data-model.md; confirms algorithm against OpenAPI Doctor source (https://github.com/pb33f/doctor) and documents final weights in `specs/001-base-cli/research.md` §5
+
+**Checkpoint**: Foundation ready — user story implementation can now begin in parallel.
+
+---
+
+## Phase 3: User Story 1 — Grade an API spec from the command line (Priority: P1) 🎯 MVP
+
+**Goal**: Running `api-grade <spec-file>` produces a grade line (letter + % + label),
+a professional-tone Quality Assessment paragraph, and a full ordered diagnostic list.
+
+**Independent Test**: Run `api-grade tests/fixtures/openapi/poor-quality.yaml` and verify:
+(a) output contains a grade line matching `Grade: [A-F] ([0-9]+%) — <label>`,
+(b) a "Quality Assessment:" section is present, and (c) a "Diagnostics" section follows.
+Repeat for an AsyncAPI fixture.
+
+### Fixtures for User Story 1
+
+- [x] T013 [P] [US1] Add `tests/fixtures/openapi/museum-api.yaml`: obtain Redocly Museum API spec (https://github.com/Redocly/museum-openapi-example), save to this path; add header comment `# High-quality OpenAPI 3.1 sample — Redocly Museum API`
+- [x] T014 [P] [US1] Add `tests/fixtures/openapi/poor-quality.yaml`: create a minimal OpenAPI 3.0 spec intentionally missing descriptions, examples, and schema types; add header comment `# Low-quality sample — intentionally violates common rules for grading demonstration`
+- [x] T015 [P] [US1] Add `tests/fixtures/asyncapi/streetlights-api.yaml`: obtain AsyncAPI Streetlights tutorial spec (https://www.asyncapi.com/docs/tutorials/getting-started/streetlights), save to this path; add header comment `# High-quality AsyncAPI 2.x sample — AsyncAPI Streetlights tutorial`
+- [x] T016 [P] [US1] Add `tests/fixtures/asyncapi/poor-quality.yaml`: create a minimal AsyncAPI 2.x spec intentionally missing descriptions and message schemas; add header comment `# Low-quality sample — intentionally violates common rules for grading demonstration`
+
+### Tests for User Story 1 ⚠️ Write BEFORE implementation
+
+> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+
+- [x] T017 [P] [US1] Write `tests/unit/scorer.test.ts`: tests for `computeScore()` — verify correct `numericScore`, `letterGrade`, and `gradeLabel` for known violation counts; verify boundary conditions (89 → B, 90 → A; 59 → F, 60 → D); verify all five labels map correctly
+- [x] T018 [P] [US1] Write `tests/unit/summariser.test.ts`: tests for `generateSummary()` — verify professional-tone output for (a) errors + warnings present, (b) errors only, (c) no violations, (d) hints only; verify `focusRules` contains max 5 entries sorted by risk score; verify no colloquial language *(description updated: `topRules` → `focusRules`; superseded by T048 full rewrite)*
+- [x] T019 [P] [US1] Write `tests/unit/formatter.test.ts`: tests for human-readable output — verify 4-section structure (grade line, Quality Assessment, Recommendations, Diagnostics); verify JSON output contains all required fields (`grade.letter`, `grade.score`, `grade.label`, `qualityAssessment`, `diagnosticCounts`, `focusRules`, `recommendations`, `diagnostics`); verify `--top N` truncates diagnostic list but not `diagnosticCounts` *(description updated: 3→4 sections, `topRules` → `focusRules`; superseded by T050 update)*
+- [x] T020 [P] [US1] Write `tests/unit/spec-loader.test.ts`: tests for `loadSpec()` — verify correct `ApiFormat` detection for OpenAPI 2/3 and AsyncAPI 2/3 YAML files; verify error thrown for missing file; verify error thrown for unrecognised format
+
+### Implementation for User Story 1
+
+- [x] T021 [US1] Implement `src/core/summariser.ts`: exports `generateSummary(diagnostics: Diagnostic[]): DiagnosticSummary` — computes error/warn/info/hint counts, identifies `focusRules` (max 5 by risk score), generates professional-tone `commentary` string per the rules in data-model.md; handles zero-violation and hints-only edge cases *(description updated: `topRules` → `focusRules`, `text` → `commentary`; superseded by T047 full rewrite)*
+- [x] T022 [US1] Implement `src/core/grader.ts`: exports `GradeEngine.grade(request: GradeRequest): Promise<GradeResult>` — loads spec, detects format, builds Document, loads ruleset, runs Spectral/vacuum, maps raw results to `Diagnostic[]`, calls `computeScore()` and `generateSummary()`, returns `GradeResult`
+- [x] T023 [US1] Implement `src/core/formatter.ts`: exports `formatHuman(result: GradeResult, top?: number): string` (4-section human output per contracts/cli-schema.md: Grade, Quality Assessment, Recommendations, Diagnostics) and `formatJson(result: GradeResult): string` (JSON output per contracts/cli-schema.md); `--top N` truncates diagnostics array in human output only *(description updated: 3→4 sections; Recommendations section added by T049)*
+- [x] T024 [US1] Implement `src/cli/index.ts`: Commander.js program with positional `<spec-file>`, flags `--format`, `--top`, `--url` (reserved — prints "not yet supported" and exits 1); calls `GradeEngine.grade()`, selects formatter, writes to stdout; all errors to stderr with exit 1
+- [x] T025 [US1] Write `tests/integration/openapi-grading.test.ts`: end-to-end tests grading both OpenAPI fixtures; verify museum-api.yaml scores higher than poor-quality.yaml; verify output structure matches contracts/cli-schema.md human and JSON formats
+- [x] T026 [US1] Write `tests/integration/asyncapi-grading.test.ts`: end-to-end tests grading both AsyncAPI fixtures; verify streetlights-api.yaml scores higher than poor-quality.yaml; verify output consistent with OpenAPI output format
+
+**Checkpoint**: User Story 1 is fully functional — `api-grade <spec-file>` works for OpenAPI and AsyncAPI with correct output format.
+
+---
+
+## Phase 3a: Clarification Fixes (spec clarified 2026-06-12, pass 2)
+
+**Purpose**: Retroactive fixes from spec clarification session — hints-only summary
+behavior changed from "good shape" to "excellent condition"; unreachable URL in custom
+ruleset must now fail hard with a named error. Must complete before US2–US4 work begins.
+
+- ~~T041~~ ~~Fix `src/core/summariser.ts` hints-only path~~ — **Superseded by T047** (full algorithm rewrite covers hints-only)
+- ~~T042~~ ~~Fix `tests/unit/summariser.test.ts` hints-only test~~ — **Superseded by T048** (full test rewrite)
+- [x] T052 [P] Write `tests/unit/loader.test.ts` BEFORE T043: test that `loadRuleset()` throws a descriptive error naming the URL when a network/fetch error occurs during ruleset loading; test that a missing local ruleset path also throws; test that a valid local path loads successfully — these tests MUST exist and FAIL before T043 implementation proceeds (Constitution Principle IV)
+- [x] T043 Update `src/rulesets/loader.ts`: wrap Spectral ruleset loading in a try/catch; when a network/fetch error occurs (indicating an unreachable external URL referenced by the ruleset), re-throw a descriptive `Error` that names the unreachable URL in the message — e.g. `'Ruleset could not be loaded: external URL unreachable: <URL>'`; grading with a partially-loaded ruleset MUST NOT proceed
+- [x] T044 Update `src/core/types.ts`: (a) add `ImpactLevel = 'HIGH' | 'MEDIUM' | 'LOW'` and `RuleMetadata` interface (`id`, `title`, `category`, `count`, `impact`, `url`) per data-model.md; (b) add exported `extractCategory(ruleId: string): string` pure function (first token before `_` or `-`); (c) add `DiagnosticSeverityLevel = 'CRITICAL' | 'WARNING' | 'INFO'`; (d) update `DiagnosticSummary`: replace `topRules: string[]` with `focusRules: RuleMetadata[]`, add `tone: string`, `severityLevel: DiagnosticSeverityLevel`, `commentary: string`, `recommendations: string[]`; rename `text` field to `commentary` (or keep `text` as alias for `commentary`)
+- [x] T053 Update `src/core/grader.ts` to match the updated `generateSummary()` signature from T047: pass `numericScore` (from `computeScore()` result) and `specType` (derived from `ApiSpecification.format` — `'openapi'` for `openapi-2`/`openapi-3`; `'asyncapi'` for `asyncapi-2`/`asyncapi-3`) as additional arguments; must be done after T044 (types) and T047 (summariser) are complete
+- [x] T045 Rewrite `src/core/scorer.ts`: replace the soft-capped deduction formula with the exact algorithm spec formula `score = MAX(0, 100 − errorCount × 5 − warningCount × 1)`; info and hint violations do NOT affect the score; remove all caps and per-severity deduction complexity; keep grade boundary logic unchanged
+- [x] T046 Rewrite `tests/unit/scorer.test.ts`: verify the algorithm spec canonical example (1 error + 38 warnings → score 57 → grade F → label "Poor"); verify grade boundaries with formula-derived counts (A: 0 violations → 100; B: 20 warnings → 80; C: 30 warnings → 70; D: 40 warnings → 60; F: 41 warnings → 59); remove all soft-cap tests; verify hints and infos are excluded from score
+- [x] T047 Rewrite `src/core/summariser.ts` implementing the full 6-stage algorithm per `api_diagnostic_algorithm_spec.md`: **Stage 1** aggregate errors/warnings/category counts using `extractCategory`; **Stage 3** compute `tone` (Excellent/Good/OK effort/Needs work/Critical condition) and `severityLevel` (CRITICAL/WARNING/INFO) from score; **Stage 4** build `commentary` — tone prefix, error assessment if errorCount>0, volume-aware warning language (>20 "causing significant damage", 11–20 "impacting", 1–10 "affecting"), worst-performing categories insight (up to 3, ranked by error count then violation count); **AsyncAPI vocabulary**: when `specType === 'asyncapi'` replace "operations" → "channels", "responses" → "messages", "security" → "bindings" in all generated narrative text; when `specType === 'openapi'` use "operations", "responses", "security"; **Stage 5** compute `focusRules` — group violations by rule, riskScore = (errorCount×10)+totalCount, sort descending, take top 5, classify impact (HIGH if errors>0 OR count≥10; MEDIUM if count≥5; else LOW), build RuleMetadata with `title` = id_to_title(id) and `url` = `null`; **Stage 6** build `recommendations` array — (1) if errorCount>0: "Fix (all) {N} error(s) immediately — it(they) block(s) production readiness: " + error rule ID(s); (2) top-3 focusRules if non-empty; (3) address warnings if warningCount>10; (4) if focusRules non-empty: list up to 3 categories ranked by errors then violations — "Start with categories {list} — they have the most impactful issues"; add `numericScore` and `specType` parameters; hints-only and no-violations both return empty focusRules/recommendations and "excellent condition" commentary
+- [x] T048 Rewrite `tests/unit/summariser.test.ts` covering all algorithm stages: Stage 3 tone labels for each of the 5 score bands; severityLevel classification (CRITICAL when errors>0, CRITICAL when score<60, WARNING when score 60–79, INFO when score≥80); Stage 4 volume-aware warning language (test all three thresholds: 1, 11, 21 warnings); Stage 4 category insight lists up to 3 categories ranked by error count then violation count; Stage 5 risk-score ordering (verify 1 error + 14 warnings (riskScore=25) outranks 0 errors + 20 warnings (riskScore=20)); Stage 5 impact classification (HIGH/MEDIUM/LOW thresholds); Stage 5 category extraction for underscored and hyphenated rule IDs; Stage 5 url field is always `null`; Stage 6 item 1 includes error rule ID(s) after colon; Stage 6 item 4 lists up to 3 categories with "most impactful issues" wording; singular/plural grammar in items 1 and 4; hints-only → "excellent condition" and empty recommendations; no-violations → empty recommendations
+- [x] T049 Update `src/core/formatter.ts`: (a) human output — render `result.summary.commentary` as Quality Assessment paragraph; add Recommendations section below it (numbered list, item 1 includes error rule ID(s) after colon, item 2 focus rules as `<id> — <N> violations (<IMPACT>)`, item 4 lists up to 3 categories; omit section when `recommendations` is empty); (b) JSON output — replace `topRules: string[]` with `focusRules: RuleMetadata[]` (each entry with `url: null`), add `tone`, `severityLevel`, and `recommendations: string[]` fields per updated contracts/cli-schema.md
+- [x] T050 Update `tests/unit/formatter.test.ts`: update Quality Assessment test expectations to include tone prefix and Recommendations section; verify `focusRules` array (with impact/url fields) and `recommendations` array in JSON output; verify Recommendations section is omitted for no-violations case
+- [x] T051 Re-verify integration tests: run `tests/integration/openapi-grading.test.ts` and `tests/integration/asyncapi-grading.test.ts`; update any grade/score expectations that relied on the old soft-capped formula (poor-quality spec now expected to score lower — likely F instead of C); update output structure checks to expect `focusRules`/`recommendations` in JSON and `Recommendations:` section in human output
+- [x] T054 [P] Write `tests/unit/config-loader.test.ts` BEFORE T055: (a) no `.apigrade.json` in CWD → returns empty object and no error; (b) valid `.apigrade.json` with `minGrade`, `ruleset`, `format`, `top` keys → returns typed partial `CliOptions`; (c) valid `.apigrade.json` with `verbose: true` → returns `CliOptions.verbose = true` (added per M1 remediation — T063 adds `verbose` to the loader); (d) malformed JSON → throws descriptive error; (e) unknown keys in config are ignored — these tests MUST FAIL before T055 implementation proceeds
+- [x] T055 Implement `src/cli/config-loader.ts` (after T054): exports `loadConfig(cwd: string): Partial<CliOptions>` — reads `.apigrade.json` from `cwd` if it exists; returns `{}` when file is absent; parses JSON and maps camelCase keys (`minGrade`, `ruleset`, `format`, `top`) to `Partial<CliOptions>` fields; throws with descriptive message if JSON is malformed
+- [x] T056 Update `src/cli/index.ts` (after T055): call `loadConfig(process.cwd())` before parsing CLI flags; merge config values with Commander.js parsed values so that CLI flags always override config file values for the same key; propagate any config-load error to stderr with exit 1
+- [x] T057 [P] Update `src/core/grader.ts` (can run in parallel with T049/T050): wrap the `Spectral.run()` call in a timer; after 30 seconds have elapsed without completion, emit `'Warning: linting is taking longer than expected (>30s). Large or complex specs may take more time.'` to stderr; continue and await completion normally — do NOT interrupt linting
+
+**Checkpoint**: Clarification and algorithm fixes verified — run `npm test`, confirm all tests pass, and verify the algorithm spec canonical example (1 error + 38 warnings → F, 57%) matches CLI output. Verify `.apigrade.json` config file is loaded when present and that CLI flags override it.
+
+---
+
+## Phase 4: User Story 2 — Enforce a minimum grade in CI/CD (Priority: P2)
+
+**Goal**: `api-grade <spec-file> --min-grade B` exits 0 when grade ≥ B, exits 1 when grade < B,
+with a clear message identifying achieved vs. required grade.
+
+**Independent Test**: Run `api-grade tests/fixtures/openapi/poor-quality.yaml --min-grade A`;
+verify exit code is 1 and stderr contains the achieved letter grade and the required grade `A`.
+Run with `--min-grade F`; verify exit code is 0.
+
+### Tests for User Story 2 ⚠️ Write BEFORE implementation
+
+- [x] T027 [P] [US2] Write `tests/integration/min-grade.test.ts`: test that poor-quality.yaml with `--min-grade A` exits 1 with message; test that high-quality fixture with `--min-grade F` exits 0; test that invalid grade letter (e.g., `--min-grade X`) exits 1 with error message; test no `--min-grade` always exits 0
+
+### Implementation for User Story 2
+
+- [x] T028 [US2] Add `--min-grade <A|B|C|D|F>` flag to `src/cli/index.ts`: validate input is one of A/B/C/D/F (exit 1 with error on invalid); after grading, compare achieved `letterGrade` against threshold using `GRADE_LABELS` order; if below threshold, print failure message to stderr and exit 1
+
+**Checkpoint**: User Stories 1 AND 2 independently functional — CI/CD gate works.
+
+---
+
+## Phase 5: User Story 3 — Use a custom Spectral ruleset (Priority: P3)
+
+**Goal**: `api-grade <spec-file> --ruleset ./my-rules.yaml` grades using the custom rules
+only, not the built-in defaults.
+
+**Independent Test**: Provide `tests/fixtures/custom-ruleset.yaml` (a minimal ruleset with
+one rule that flags a pattern present in museum-api.yaml). Run
+`api-grade tests/fixtures/openapi/museum-api.yaml --ruleset tests/fixtures/custom-ruleset.yaml`
+and verify the custom rule ID appears in diagnostics.
+
+### Tests for User Story 3 ⚠️ Write BEFORE implementation
+
+- [x] T029 [P] [US3] Add `tests/fixtures/custom-ruleset.yaml`: a minimal valid Spectral ruleset defining one custom rule that reliably triggers on museum-api.yaml; include header comment explaining the fixture's purpose
+- [x] T030 [P] [US3] Write `tests/integration/custom-ruleset.test.ts`: test that grading museum-api.yaml with the custom ruleset produces the custom rule ID in diagnostics; test that built-in rules are NOT present (custom ruleset replaces default); test that missing ruleset path exits 1 with error; test that a ruleset referencing an unreachable external URL exits 1 with a message naming the URL
+
+### Implementation for User Story 3
+
+- [x] T031 [US3] Add `--ruleset <path>` flag to `src/cli/index.ts`: validate file exists (exit 1 with error if not); pass path through `CliOptions` to `GradeRequest`; verify `src/rulesets/loader.ts` correctly loads the custom file and passes it to the linting engine
+
+**Checkpoint**: All of User Stories 1, 2, and 3 independently functional — custom rulesets work.
+
+---
+
+## Phase 6: User Story 4 — Diagnose unexpected runtime errors with verbose output (Priority: P4)
+
+**Goal**: When the CLI encounters an unexpected runtime error (e.g., a ruleset referencing
+an undefined function), default mode prints a concise numbered message; `--verbose` prints
+the full call chain. Both modes exit non-zero.
+
+**Independent Test**: Run `api-grade tests/fixtures/openapi/poor-quality.yaml --ruleset tests/fixtures/rulesets/missingfunction.yaml` without `--verbose` — verify exit code 1, stderr contains "Error running api-grade!" and "Error #1:" but does NOT contain a call chain. Repeat with `--verbose` — verify stderr contains the full call chain.
+
+### Fixtures for User Story 4
+
+- [x] T060 [P] [US4] Confirm `tests/fixtures/rulesets/missingfunction.yaml` exists; add header comment `# Test fixture — references an undefined custom function; any run against this ruleset is expected to fail` if not already present
+
+### Tests for User Story 4 ⚠️ Write BEFORE implementation
+
+> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+
+- [x] T061 [P] [US4] Write `tests/integration/verbose-errors.test.ts`: (a) grading with `missingfunction.yaml` ruleset exits non-zero in default mode; (b) default mode stderr contains "Error running api-grade! Use --verbose flag to print the error stack." and "Error #1:" but does NOT contain a multi-line call chain; (c) `--verbose` mode stderr contains the call chain (file paths, line numbers, function names); all three assertions MUST FAIL before T062 is implemented
+
+### Implementation for User Story 4
+
+- [x] T062 [US4] Update `src/cli/index.ts`: add `--verbose` boolean flag; wrap the `GradeEngine.grade()` call in a top-level try/catch — on error, without `--verbose` print "Error running api-grade! Use --verbose flag to print the error stack.\nError #N: <message>" to stderr + exit 1; with `--verbose` print the full error stack to stderr + exit 1; handle multiple errors by iterating with incrementing N
+- [x] T063 [US4] Update `src/cli/config-loader.ts` to recognise `verbose: boolean` as a valid config key and map it to `CliOptions.verbose`; update `src/cli/index.ts` config merge to include `verbose`; update `src/core/types.ts` `CliOptions` to include `verbose?: boolean`
+
+**Checkpoint**: All four primary user stories independently functional — verbose error mode verified.
+
+---
+
+## Phase 6a: User Story 4 — Verbose Format Revision (spec updated 2026-06-13)
+
+**Goal**: Revise the `--verbose` error format to match the updated FR-015 / US4 spec:
+both modes display `Error #N: [{source}:{line}:{col} — ]{message}` with source location
+when available; non-verbose adds the "Use --verbose flag" prompt and omits the call chain;
+verbose omits the prompt and appends indented call chain stack frames.
+
+**Independent Test**: Run against `missingfunction.yaml` without `--verbose` — stderr
+contains the prompt AND `Error #1: /path/to/missingfunction.yaml:NN:NN — Function is not
+defined` (with location) but NO `at ` stack frames. Repeat with `--verbose` — stderr
+contains the same `Error #1:` header line followed by `at ` stack frames, and does NOT
+contain the "Use --verbose flag" prompt.
+
+### Tests for Phase 6a ⚠️ Write BEFORE implementation
+
+> **NOTE: Write these tests FIRST, ensure they FAIL before T065 is implemented**
+
+- [x] T064 [P] [US4] Update `tests/integration/verbose-errors.test.ts`: replace/augment existing assertions — (a) default mode: "Use --verbose flag to print the error stack." IS present; `Error #1:` header includes source location prefix when error carries location data (e.g., matches pattern `/Error #1: .+missingfunction\.yaml:\d+:\d+ — /`); no `    at ` call-chain frames in stderr; (b) verbose mode: same `Error #1:` header with location IS present; `    at ` call-chain frames ARE present below the header; "Use --verbose flag" prompt IS NOT present; these assertions MUST FAIL before T065 is implemented
+
+### Implementation for Phase 6a
+
+- [x] T065 [US4] Update `src/cli/index.ts` verbose error handler: (1) **Unwrap errors** — check `'errors' in err` to handle `AggregateError` and iterate `err.errors`; for each, also check `'cause' in err` to get the actual underlying error; fallback to treating the thrown value as a single-item array; (2) **Add `formatErrorLocation(error: unknown): string` helper** — if error is an object with `.source` (string) and `.range.start.line` / `.range.start.character` (numbers, 0-indexed), return `${source}:${line+1}:${char+1} — `; else if error has `.source` (string) only, return `${source} — `; else return `''`; (3) **Non-verbose mode**: print "Error running api-grade! Use --verbose flag to print the error stack." once, then each `Error #N: ${formatErrorLocation(e)}${message}` header line; (4) **Verbose mode**: omit the prompt entirely; for each error, print the `Error #N: ${formatErrorLocation(e)}${message}` header line, then the call chain stack frames from `e.stack` — strip the leading `Error: message\n` line (if present) to avoid duplicating the message; each frame should be printed as-is (they begin with `    at `)
+
+**Checkpoint**: Verbose format revised — both modes show source location in `Error #N:` header; non-verbose shows prompt only; verbose shows call chain only.
+
+---
+
+## Phase 7: User Story 5 — Run the CLI in a container (Priority: P5)
+
+**Goal**: `docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml` produces
+identical grade output to the local CLI for the same input file.
+
+**Independent Test**: Build the container image locally with `docker build -t api-grade .`,
+then run it against `tests/fixtures/openapi/museum-api.yaml` mounted as a volume and
+compare output to local `api-grade` run against the same file.
+
+### Implementation for User Story 5
+
+- [x] T032 [US5] Write `Dockerfile` at repository root: multi-stage build using `node:20-alpine`; stage 1 installs deps and runs `npm run build`; stage 2 copies `dist/` and runs as non-root user; ENTRYPOINT is `["node", "/app/dist/cli/index.js"]`
+- [x] T033 [US5] Update `quickstart.md` Docker section with correct image name, build command, and volume mount examples for both macOS/Linux and Windows PowerShell (per quickstart.md template)
+- [x] T034 [US5] Verify container produces identical output: build image, run museum-api.yaml through container and local CLI, document verification steps in `specs/001-base-cli/quickstart.md` under a "Verifying Container Output" subsection
+
+**Checkpoint**: All five user stories independently functional.
+
+---
+
+## Phase N: Polish & Cross-Cutting Concerns
+
+**Purpose**: Improvements that apply across all stories.
+
+- [x] T035 [P] Add `tests/fixtures/openapi/train-travel-api.yaml`: obtain Train Travel API spec (https://github.com/bump-sh-examples/train-travel-api), save to this path; add header comment `# High-quality OpenAPI 3.1 sample — Train Travel API`
+- [x] T036 [P] Add `.gitignore`: exclude `node_modules/`, `dist/`, `coverage/`, `.env`
+- [x] T037 [P] Add `README.md` at repository root: brief project description, installation, basic usage example, link to quickstart.md
+- [x] T038 Run full test suite (`npm test`) and verify all tests pass; fix any failures
+- [x] T039 Run `npm run build` and verify `dist/` is produced and `api-grade --version` runs correctly
+- [x] T040 End-to-end quickstart validation: follow `specs/001-base-cli/quickstart.md` from a clean directory, verify completion in under 15 minutes (SC-006); time `api-grade` against bundled fixtures and confirm output appears within 30 seconds (SC-001)
+- [x] T059 [P] Windows compatibility validation (FR-010): on Windows 10/11 (or via WSL if native unavailable), run `npm install -g api-grade` and `api-grade tests/fixtures/openapi/poor-quality.yaml`; verify exit codes propagate correctly in cmd.exe and PowerShell; document any Windows-specific caveats (path separators, line endings) in `specs/001-base-cli/quickstart.md` under a "Windows Notes" subsection
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+
+- **Setup (Phase 1)**: No dependencies — can start immediately
+- **Foundational (Phase 2)**: Depends on Setup completion — BLOCKS all user stories
+  - T058 (types.ts) MUST complete before T007–T012 (all depend on shared types); T006 (vacuum evaluation) can run in parallel with T058; T007–T012 [P] once T058 is done
+- **Clarification Fixes (Phase 3a)**: Retroactive corrections to completed Phase 2/3 work; T043–T057 MUST be completed before US2–US4 work begins. Within Phase 3a: T052 (loader test) FIRST → T043 (loader impl); T044 (types) independently; then T045/T046/T047/T048 in parallel after T044; then T053 (grader signature) after T044+T047; then T049/T050 (formatter) + T057 (30s warning) in parallel after T053; then T051 (integration re-verify) last. Config file: T054 (test) → T055 (impl) → T056 (CLI integration) — can run in parallel with the formatter/scorer stream after T044
+- **User Stories (Phase 3+)**: All depend on Foundational phase completion
+  - Stories can proceed in priority order (P1 → P2 → P3 → P4) or in parallel if staffed
+- **Polish (Phase N)**: Depends on all desired user stories being complete
+
+### User Story Dependencies
+
+- **US1 (P1)**: Can start after Phase 2 — no dependencies on other stories
+- **US2 (P2)**: Depends on US1 CLI entry point (`src/cli/index.ts`); extends it with `--min-grade`
+- **US3 (P3)**: Depends on US1 rulesets/loader.ts and CLI entry point; extends with `--ruleset`
+- **US4 (P4)**: Depends on US1 CLI entry point; extends it with `--verbose` error handler; T063 depends on T062 (needs `verbose` in CliOptions before config-loader update); **Phase 6a revision**: T064 (updated test) MUST fail before T065 (updated implementation); T065 depends on T062 being complete (it revises the same handler)
+- **US5 (P5)**: Depends on US1 being complete (needs working CLI to containerise)
+
+### Within Each User Story
+
+- Write tests FIRST (they must FAIL before implementation begins)
+- Fixtures before tests that depend on them
+- Models/data layer before engine
+- Engine before CLI
+- CLI before integration tests
+- Story complete and passing before moving to next priority
+
+---
+
+## Parallel Opportunities
+
+### Phase 2 (after T006 engine decision)
+
+```bash
+# These can run in parallel once the engine choice is made:
+Task: T007 - src/core/spec-loader.ts
+Task: T008 - src/formats/openapi.ts
+Task: T009 - src/formats/asyncapi.ts
+Task: T010 - src/rulesets/loader.ts
+Task: T011 - .spectral.yaml default ruleset
+# Then sequentially:
+Task: T012 - src/core/scorer.ts (depends on Diagnostic type from spec-loader)
+```
+
+### Phase 3 (US1)
+
+```bash
+# Fixtures in parallel:
+Task: T013 - museum-api.yaml
+Task: T014 - poor-quality.yaml (OpenAPI)
+Task: T015 - streetlights-api.yaml
+Task: T016 - poor-quality.yaml (AsyncAPI)
+
+# Unit tests in parallel (after fixtures):
+Task: T017 - scorer.test.ts
+Task: T018 - summariser.test.ts
+Task: T019 - formatter.test.ts
+Task: T020 - spec-loader.test.ts
+
+# Then implementation sequentially (T021 → T022 → T023 → T024):
+# (each builds on the previous)
+
+# Then integration tests (after T024):
+Task: T025 - openapi-grading.test.ts
+Task: T026 - asyncapi-grading.test.ts
+```
+
+---
+
+## Implementation Strategy
+
+### MVP First (User Story 1 Only)
+
+1. Complete Phase 1: Setup
+2. Complete Phase 2: Foundational (CRITICAL — blocks everything)
+3. Complete Phase 3: User Story 1
+4. **STOP and VALIDATE**: `api-grade tests/fixtures/openapi/museum-api.yaml` — check all 3 output sections
+5. **STOP and VALIDATE**: `api-grade tests/fixtures/asyncapi/streetlights-api.yaml` — same check
+6. Run `npm test` — all unit and integration tests pass
+
+### Incremental Delivery
+
+1. Setup + Foundational → Foundation ready
+2. US1 → Grading works for both spec formats → **Demo-ready MVP**
+3. US2 → CI/CD gate works → **Pipeline-ready**
+4. US3 → Custom rulesets work → **Enterprise-ready**
+5. US4 → Verbose error mode works → **Debuggable**
+6. US5 → Containerised → **Ops-ready**
+
+---
+
+## Notes
+
+- `[P]` tasks operate on different files and have no incomplete dependencies
+- `[US?]` label maps each task to its user story for traceability and independent delivery
+- Constitution Principle IV requires tests — include them in every user story phase
+- T006 (vacuum evaluation) is a decision gate; if vacuum is chosen, replace
+  `@stoplight/spectral-core` references in T007–T012 accordingly
+- T060–T063 implement FR-015/FR-016 (verbose error flag); T061 MUST fail before T062
+- T064–T065 (Phase 6a) revise the verbose format per updated spec (2026-06-13): source location prefix in `Error #N:` header; prompt absent in verbose mode; call chain formatted without the leading "Error: message" line. T064 MUST fail before T065
+- US4 (verbose) and US5 (container) were originally both labelled US4 in prior task iterations; container tasks T032–T034 have been relabelled US5 to match the updated spec
+- Verify tests FAIL before implementing the code they test
+- Commit after each phase or logical group completes

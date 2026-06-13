@@ -1,0 +1,8 @@
+# Minimal local ruleset fixture for loader unit tests — no external URLs
+rules:
+  test-rule:
+    message: "Test rule for loader unit tests"
+    given: "$.info"
+    severity: warn
+    then:
+      function: truthy

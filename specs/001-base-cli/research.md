@@ -93,19 +93,26 @@ the box on Node.js, requires zero extra configuration for TypeScript, and is MIT
 
 ## Decision 5: Grading Algorithm
 
-**Decision**: Mirror OpenAPI Doctor's scoring approach. Grade boundaries: A=90–100,
-B=80–89, C=70–79, D=60–69, F=0–59. Scoring formula to be confirmed by studying
-the pb33f/doctor source code (https://github.com/pb33f/doctor) during implementation.
+**Decision**: Use the formula specified in `api_diagnostic_algorithm_spec.md` (confirmed
+in spec Assumptions). Grade boundaries: A ≥ 90, B ≥ 80, C ≥ 70, D ≥ 60, F < 60.
 
-**Working approach** (default if source study yields no cleaner formula):
-- Start at 100 points
-- Deduct per violation by severity: error=−10, warn=−5, info=−1, hint=0
-- Apply a floor of 0 (score cannot go negative)
-- Map final score to letter grade using the boundaries above
+**Scoring formula** (confirmed — no further study needed):
+- `score = MAX(0, 100 − (errorCount × 5) − (warningCount × 1))`
+- Info and hint violations do NOT affect the numeric score
+- Floor of 0 (score cannot go negative)
 
-**Implementation note**: The OpenAPI Doctor source must be studied during task T-core-scorer
-to confirm whether the deduction model or a ratio model is used. The exact weights above
-are a reasonable default; the implementation MUST document the final formula chosen.
+**Deduction weights**:
+| Severity | Deduction per violation |
+|----------|------------------------|
+| error    | −5                      |
+| warn     | −1                      |
+| info     | 0                       |
+| hint     | 0                       |
+
+**Example** (from algorithm spec): 1 error + 38 warnings → `100 − 5 − 38 = 57` → grade F.
+
+**Focus-rule risk score**: `(errorCount × 10) + totalCount` — top 5 by risk score are
+surfaced as focus rules; top 3 displayed in Recommendations.
 
 **Diagnostic ordering** (mirrors OpenAPI Doctor / Spectral natural sort):
 1. Severity ascending (errors=0 first, hints=3 last)
@@ -142,7 +149,43 @@ prerequisite constraint and is the standard for production Node.js containers.
 
 ---
 
-## Decision 8: Package Distribution
+## Decision 8a: Linting Engine — vacuum Evaluation (OPEN)
+
+**Decision**: Use `@stoplight/spectral-core` as the primary linting engine for this
+feature. vacuum was evaluated and rejected for this implementation (see below).
+
+**Why vacuum is worth evaluating**:
+- vacuum is written in Go and compiled to a native binary, offering significantly faster
+  execution than Node.js-based Spectral for large specs.
+- vacuum claims full Spectral ruleset compatibility — existing `.spectral.yaml` files
+  and custom rulesets should work without modification.
+- It is actively maintained and open-source ($0 cost).
+- pb33f (the author of OpenAPI Doctor) is also a primary contributor to vacuum, making
+  it the closest reference implementation to our grading target.
+
+**Evaluation criteria** (to be assessed during implementation task T-core-engine-eval):
+1. Does vacuum correctly parse and execute the same Spectral rulesets as Spectral core?
+2. Do diagnostic results (rule IDs, severities, paths) match Spectral's output for
+   identical input files?
+3. Is there a usable Go or Node.js SDK, or must vacuum be called as a subprocess?
+4. Is vacuum actively maintained with recent releases?
+
+**Evaluation outcome** (T006 complete):
+- `@quobix/vacuum` (v0.29.2) is a thin Node.js wrapper that shells out to a Go
+  binary — it does not expose a typed programmatic API equivalent to spectral-core.
+- Criterion 3 (usable TypeScript/Node.js SDK) fails: subprocess integration adds
+  latency, process management complexity, and makes result types untyped.
+- `@stoplight/spectral-core` (v1.23.0) provides full programmatic access with
+  TypeScript types — no subprocess, no platform binary distribution issue.
+- **Decision**: Use `@stoplight/spectral-core`. vacuum remains a candidate for a
+  future performance-optimisation pass if specs are very large.
+
+**Note**: Regardless of which engine is chosen, the `--ruleset` flag MUST accept
+Spectral-format ruleset files and they MUST work without modification.
+
+---
+
+## Decision 9: Package Distribution
 
 **Decision**: Distribute as a standard npm package. Local installation via `npm install -g`
 or execution via `npx`. The binary entry point is `api-grade`.
@@ -150,3 +193,55 @@ or execution via `npx`. The binary entry point is `api-grade`.
 **Rationale**: npm global install is the standard pattern for Node.js CLI tools. It
 requires no build step for the end user, works identically on Windows and macOS, and
 requires only Node.js LTS (free) as a prerequisite.
+
+---
+
+## Decision 10: `--verbose` Error Format — Spectral CLI Pattern
+
+**Decision**: Model the `--verbose` error output format on the `@stoplight/spectral-cli`
+implementation. Both modes (verbose and non-verbose) print each error as a numbered
+header line `Error #N: [location]message`; non-verbose adds the "Use --verbose flag"
+prompt and omits the call chain; verbose omits the prompt and appends the call chain.
+
+**Rationale**: Spectral CLI ships a well-tested `fail()` function in
+`@stoplight/spectral-cli/dist/commands/lint.js` that implements exactly this pattern.
+Adopting the same approach means our error output is familiar to Spectral users and
+leverages a proven design.
+
+**Key implementation findings** (from Spectral CLI source inspection):
+
+1. **Error unwrapping**: `bundleAndLoadRuleset` may throw an `AggregateError` whose
+   `.errors` array contains one or more `RulesetValidationError` instances. The error
+   handler MUST check for `'errors' in err` and iterate over `err.errors` when present;
+   otherwise treat the thrown value as a single-error array. It should also check
+   `'cause' in error` to unwrap nested errors.
+
+2. **Source location extraction** (`formatErrorLocation` equivalent):
+   ```typescript
+   function formatErrorLocation(error: unknown): string {
+     if (typeof error !== 'object' || error === null) return '';
+     const src = (error as any).source;
+     if (typeof src !== 'string') return '';
+     const range = (error as any).range;
+     const start = range?.start;
+     if (typeof start?.line === 'number' && typeof start?.character === 'number') {
+       return `${src}:${start.line + 1}:${start.character + 1} — `;
+     }
+     return `${src} — `;
+   }
+   ```
+   Line and character values in the error object are 0-indexed; add 1 for display.
+
+3. **Stack trace rendering**: Spectral CLI uses the `stacktracey` library for table-
+   formatted stacks. Our implementation MAY use `error.stack` (native V8 format) for
+   simplicity — this is an implementation detail not mandated by the spec.
+
+4. **Prompt suppression**: The "Use --verbose flag" prompt MUST be printed ONLY in
+   non-verbose mode; it MUST be omitted entirely when `--verbose` is active.
+
+**Alternatives considered**:
+- **Always print raw `err.stack`** (original approach): Loses source location prefix
+  and the `Error #N:` header structure in verbose mode. Rejected — inconsistent with
+  Spectral CLI behaviour and less useful for users.
+- **Use `stacktracey`** for formatted table output: More visually polished but adds a
+  dependency; native `err.stack` is sufficient and universally available.
