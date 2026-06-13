@@ -26,7 +26,7 @@ AsyncAPI specification (YAML or JSON).
 | `--ruleset` | `<path>` | _(built-in)_ | Path to a custom Spectral ruleset file |
 | `--format` | `<human\|json>` | `human` | Output format |
 | `--top` | `<N>` | _(all)_ | Limit diagnostic output to the top N findings |
-| `--verbose` | — | _(off)_ | On unexpected runtime errors, print full call chain (file paths, line numbers, function names) to stderr instead of the default concise numbered message |
+| `--verbose` | — | _(off)_ | On unexpected runtime errors, print the complete error chain to stderr — including call frames from inside any library that threw the error — instead of the default concise numbered message |
 | `--url` | `<URL>` | — | **Reserved — not implemented.** Exits 1 with "not yet supported" message |
 | `--version` | — | — | Print tool version and exit 0 |
 | `--help` | — | — | Print usage and exit 0 |
@@ -209,9 +209,13 @@ Error #2: [second error message]
 
 **With `--verbose`**:
 
-The full error object is printed to stderr, including the complete call chain with file
-paths, line numbers, and function names. The exact format is determined by the runtime
-environment but MUST include the call chain.
+The complete error chain is printed to stderr. The output MUST include call frames from
+inside any library that originated the error (file paths, line numbers, and function
+names from within the library code) — not only frames from `api-grade`'s own code.
+
+If an error carries a causal chain (`cause` property), each error in the chain MUST be
+printed with its own complete call stack so the root cause is traceable from the
+outermost error back to the originating library call.
 
 In both modes the process exits with code 1.
 

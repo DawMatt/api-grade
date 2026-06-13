@@ -185,7 +185,55 @@ Spectral-format ruleset files and they MUST work without modification.
 
 ---
 
-## Decision 9: Package Distribution
+## Decision 9: Verbose Error Output — Full Library Stack Capture
+
+**Decision**: To guarantee that `--verbose` output includes call frames from inside
+third-party libraries (not only from `api-grade`'s own code), apply two techniques
+at CLI entry-point startup:
+
+1. **Raise `Error.stackTraceLimit`**: Node.js caps stack traces at 10 frames by
+   default. Library errors that originate deep in a dependency call graph are silently
+   truncated. Setting `Error.stackTraceLimit = 100` (or `Infinity`) before any
+   `require`/`import` side-effects ensures all subsequently created Error objects
+   capture a complete chain.
+
+2. **Traverse `err.cause`**: The ES2022 `Error.cause` property allows a library to
+   wrap its own internal error in a higher-level error. When `--verbose` is active,
+   the handler MUST walk the full cause chain and print each error's stack separately
+   so the developer can see both the outer wrapping message and the originating library
+   exception.
+
+**Rationale**: Without raising the stack limit, errors thrown inside Spectral (which
+has a call depth of 15–25 frames for a typical linting run) are truncated before the
+library frames are captured, making `--verbose` output look identical to api-grade's
+own call stack and defeating its purpose. Walking `err.cause` ensures wrapping
+patterns used by library authors do not hide the root cause.
+
+**Alternatives considered**:
+- **`--stack-trace-limit` Node CLI flag**: Would require callers to pass an extra flag;
+  not transparent to users. Rejected — must work out of the box via `--verbose` alone.
+- **Print only `err.message` + `err.stack`**: Insufficient when the root cause is in
+  `err.cause`. Rejected per FR-015 requirement to show causal chains.
+- **Serialise the full error object via `JSON.stringify`**: Not human-readable for
+  debugging. Rejected.
+
+**Implementation notes** (for `src/cli/index.ts`):
+- Set `Error.stackTraceLimit = 100` as the first executable line of the entry point.
+- In the `--verbose` error handler, iterate the cause chain:
+  ```
+  while (current) {
+    print current.stack (or message if no stack)
+    if current.cause is an Error → advance current = current.cause
+    else if current.errors is an array (AggregateError) → print each entry
+    else break
+  }
+  ```
+- `AggregateError` (thrown by some async library patterns) is handled by iterating
+  `err.errors[]` and printing each sub-error's stack.
+
+---
+
+## Decision 10: Package Distribution
 
 **Decision**: Distribute as a standard npm package. Local installation via `npm install -g`
 or execution via `npx`. The binary entry point is `api-grade`.
