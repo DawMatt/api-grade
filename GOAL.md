@@ -33,7 +33,13 @@ Feature 1 - Base CLI
 - Support both local and containerised execution of the CLI.
 - Allow users to supply a custom spectral ruleset to use as the basis for assessing grades
 
-Feature 2 - Backstage API page
+Feature 2 - Package refactoring
+
+- Extract the core API grading algorithm into a separate, dependency-light npm package
+- CLI is updated to leverage the grading package
+- API grading package is now available for use by feature 3
+
+Feature 3 - Backstage API page
 
 - Enable the same API quality grading and diagnostic information to be exposed on a Backstage API page. Default to showing this in the Info column below the About entry. 
 - Allow users to supply a custom spectral ruleset to use as the basis for assessing grades. This may be located in a secured location such as a private GitHub Enterprise repository.
