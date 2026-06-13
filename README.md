@@ -236,6 +236,32 @@ Pass any flag as you would with the local CLI:
 docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml --min-grade B --format json
 ```
 
+## Monorepo structure
+
+This repository is an npm workspaces monorepo with two packages:
+
+| Package | Path | Purpose |
+|---------|------|---------|
+| `api-grade` (root) | `/` | CLI tool (`api-grade` binary) |
+| `api-grade-core` | `packages/api-grade-core/` | Standalone grading library |
+
+### Using `api-grade-core` directly
+
+The grading engine is published as an independent library for use in tooling (Backstage plugins, CI scripts, custom integrations) without installing the CLI:
+
+```bash
+npm install api-grade-core
+```
+
+```typescript
+import { GradeEngine, formatJson } from 'api-grade-core';
+
+const engine = new GradeEngine();
+const result = await engine.grade({ specPath: './openapi.yaml' });
+console.log(formatJson(result));
+// or use result.letterGrade, result.numericScore, result.summary directly
+```
+
 ## Running from source
 
 ```bash

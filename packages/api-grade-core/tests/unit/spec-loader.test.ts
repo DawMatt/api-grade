@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { loadSpec } from '../../src/core/spec-loader.js';
+import { loadSpec } from '../../src/spec-loader.js';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const FIXTURES = resolve(__dirname, '../fixtures');
+const FIXTURES = resolve(__dirname, '../../../../tests/fixtures');
 
 describe('loadSpec', () => {
   it('loads an OpenAPI 3.1 spec and detects format', async () => {

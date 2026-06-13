@@ -1,8 +1,17 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { CliOptions } from '../core/types.js';
+import type { LetterGrade } from 'api-grade-core';
 
 const CONFIG_FILENAME = '.apigrade.json';
+
+export interface CliOptions {
+  specPath: string;
+  minGrade?: LetterGrade;
+  rulesetPath?: string;
+  format: 'human' | 'json';
+  top?: number;
+  verbose?: boolean;
+}
 
 export function loadConfig(cwd: string): Partial<CliOptions> {
   const configPath = join(cwd, CONFIG_FILENAME);

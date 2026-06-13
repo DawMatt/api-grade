@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { GradeEngine } from '../core/grader.js';
-import { formatHuman, formatJson } from '../core/formatter.js';
-import { LETTER_GRADE_ORDER, gradeToNumber } from '../core/scorer.js';
+import { GradeEngine, formatHuman, formatJson, LETTER_GRADE_ORDER, gradeToNumber } from 'api-grade-core';
 import { loadConfig } from './config-loader.js';
-import type { LetterGrade } from '../core/types.js';
+import type { LetterGrade } from 'api-grade-core';
 
 // Returns "source:line:col — " when error carries Spectral location data, else "" or "source — "
 function formatErrorLocation(error: unknown): string {

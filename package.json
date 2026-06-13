@@ -4,23 +4,19 @@
   "description": "Grade API quality and share diagnostics using Spectral-compatible linting",
   "license": "MIT",
   "type": "module",
+  "workspaces": ["packages/*"],
   "bin": {
     "api-grade": "./dist/cli/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "npm run build --workspaces --if-present && tsc",
     "start": "node dist/cli/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@stoplight/spectral-core": "^1.23.0",
-    "@stoplight/spectral-formats": "^1.8.3",
-    "@stoplight/spectral-parsers": "^1.0.5",
-    "@stoplight/spectral-ruleset-bundler": "^1.7.0",
-    "@stoplight/spectral-rulesets": "^1.22.4",
-    "chalk": "^5.3.0",
+    "api-grade-core": "*",
     "commander": "^12.1.0"
   },
   "devDependencies": {

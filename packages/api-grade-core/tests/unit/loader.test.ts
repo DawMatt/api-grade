@@ -12,7 +12,7 @@ import * as bundlerModule from '@stoplight/spectral-ruleset-bundler/with-loader'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const RULESETS = resolve(__dirname, '../fixtures/rulesets');
+const RULESETS = resolve(__dirname, '../../../../tests/fixtures/rulesets');
 
 describe('loadRuleset', () => {
   beforeEach(() => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { computeScore } from '../../src/core/scorer.js';
-import type { Diagnostic } from '../../src/core/types.js';
+import { computeScore } from '../../src/scorer.js';
+import type { Diagnostic } from '../../src/types.js';
 
 function makeDiagnostic(severity: Diagnostic['severity'], ruleId = 'test-rule'): Diagnostic {
   return {

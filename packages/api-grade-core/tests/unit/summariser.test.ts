@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { generateSummary } from '../../src/core/summariser.js';
-import { extractCategory } from '../../src/core/types.js';
-import type { Diagnostic } from '../../src/core/types.js';
+import { generateSummary } from '../../src/summariser.js';
+import { extractCategory } from '../../src/types.js';
+import type { Diagnostic } from '../../src/types.js';
 
 function makeDiag(severity: Diagnostic['severity'], ruleId = 'test-rule'): Diagnostic {
   return {
