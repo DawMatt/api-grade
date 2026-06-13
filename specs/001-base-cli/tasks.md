@@ -7,7 +7,6 @@ description: "Task list for Base CLI for API Quality Grading"
 **Input**: Design documents from `specs/001-base-cli/`
 
 **Prerequisites**: plan.md ✅ | spec.md ✅ | research.md ✅ | data-model.md ✅ | contracts/cli-schema.md ✅
-**Updated**: 2026-06-13 — T064/T065 added (Phase 6a) for FR-015/FR-016 library-frame enhancement
 
 **Tests**: Included per Constitution Principle IV (Test-Driven Quality — mandatory).
 
@@ -191,33 +190,6 @@ the full call chain. Both modes exit non-zero.
 
 ---
 
-## Phase 6a: User Story 4 Enhancement — Library-Level Stack Frames (spec update 2026-06-13)
-
-**Purpose**: Strengthen `--verbose` output to include call frames from inside third-party
-libraries, not only from `api-grade` code (FR-015 / FR-016 updated, research.md §9).
-
-**Goal**: `api-grade <spec-file> --ruleset tests/fixtures/rulesets/missingfunction.yaml --verbose`
-produces stderr output that contains at least one stack frame whose file path references
-a library inside `node_modules/`.
-
-**Independent Test**: Run the same `missingfunction.yaml` grading with `--verbose` and
-verify stderr includes a line matching `node_modules/` (confirming library frames are
-present). Repeat without `--verbose` — verify no `node_modules/` path appears.
-
-### Tests for User Story 4 Enhancement ⚠️ Write BEFORE implementation
-
-> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
-
-- [ ] T064 [P] [US4] Update `tests/integration/verbose-errors.test.ts`: add assertion (a) `--verbose` stderr contains at least one stack frame whose path includes `node_modules/` (confirming library-level frames are present); add assertion (b) default mode stderr does NOT contain any `node_modules/` path; add assertion (c) default mode has zero lines matching `^\s+at ` — these new assertions MUST FAIL before T065 is implemented
-
-### Implementation for User Story 4 Enhancement
-
-- [ ] T065 [US4] Update `src/cli/index.ts`: (1) set `Error.stackTraceLimit = 100` as the first executable statement before any imports take effect; (2) update the `--verbose` error handler to traverse the full causal chain — for each error print its `stack` (or `message` if no stack), then advance to `err.cause` if it is an `Error`; if `err` is an `AggregateError` iterate `err.errors[]` and print each sub-error's stack — continue until the chain is exhausted; the default (non-verbose) handler is unchanged
-
-**Checkpoint**: `--verbose` output confirmed to include library-level call frames; existing 111 tests continue to pass.
-
----
-
 ## Phase 7: User Story 5 — Run the CLI in a container (Priority: P5)
 
 **Goal**: `docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml` produces
@@ -268,7 +240,7 @@ compare output to local `api-grade` run against the same file.
 - **US1 (P1)**: Can start after Phase 2 — no dependencies on other stories
 - **US2 (P2)**: Depends on US1 CLI entry point (`src/cli/index.ts`); extends it with `--min-grade`
 - **US3 (P3)**: Depends on US1 rulesets/loader.ts and CLI entry point; extends with `--ruleset`
-- **US4 (P4)**: Depends on US1 CLI entry point; extends it with `--verbose` error handler; T063 depends on T062 (needs `verbose` in CliOptions before config-loader update); T064 (updated test) MUST fail before T065 (library-frame implementation)
+- **US4 (P4)**: Depends on US1 CLI entry point; extends it with `--verbose` error handler; T063 depends on T062 (needs `verbose` in CliOptions before config-loader update)
 - **US5 (P5)**: Depends on US1 being complete (needs working CLI to containerise)
 
 ### Within Each User Story
@@ -352,7 +324,6 @@ Task: T026 - asyncapi-grading.test.ts
 - T006 (vacuum evaluation) is a decision gate; if vacuum is chosen, replace
   `@stoplight/spectral-core` references in T007–T012 accordingly
 - T060–T063 implement FR-015/FR-016 (verbose error flag); T061 MUST fail before T062
-- T064–T065 strengthen FR-015/FR-016 to require library-level stack frames (spec update 2026-06-13, research.md §9); T064 MUST fail before T065
 - US4 (verbose) and US5 (container) were originally both labelled US4 in prior task iterations; container tasks T032–T034 have been relabelled US5 to match the updated spec
 - Verify tests FAIL before implementing the code they test
 - Commit after each phase or logical group completes

@@ -13,8 +13,8 @@ percentage + label such as "Below Standard"), a professional-tone diagnostic sum
 identifying priority rules to address, and the full ordered diagnostic detail list.
 The core grading engine is a standalone module consumed by the CLI layer. The tool supports CI/CD pipeline integration via `--min-grade`, custom
 Spectral-compatible rulesets via `--ruleset`, optional diagnostic limiting via `--top`,
-JSON output via `--format json`, and verbose error detail via `--verbose` (complete error chain including library-level
-call frames on unexpected runtime errors; concise numbered message by default). A Dockerfile
+JSON output via `--format json`, and verbose error detail via `--verbose` (full call
+chain on unexpected runtime errors; concise numbered message by default). A Dockerfile
 is provided for containerised execution.
 
 ## Technical Context
@@ -67,10 +67,9 @@ container image uses free base image (`node:20-alpine`)
 **No violations. Complexity Tracking section not required.**
 
 *Updated 2026-06-13*: FR-015 (`--verbose`) and FR-016 (missing-function test) added.
-*Updated 2026-06-13 (pass 2)*: FR-015/FR-016 strengthened — `--verbose` must now show
-complete error chain including library-level call frames (not only api-grade frames);
-`Error.stackTraceLimit` raised at startup; `err.cause` chain traversal required (see
-research.md §9). All principles continue to pass — additive to error handling only.
+All principles continue to pass — the verbose flag is additive to error handling
+(Principle IV: test-driven; Principle II: core-first — error formatting stays in
+`src/core/formatter.ts`).
 
 ## Project Structure
 
@@ -116,7 +115,7 @@ tests/
 │   ├── asyncapi-grading.test.ts  # End-to-end: grade fixtures, check output shape
 │   └── verbose-errors.test.ts    # FR-016: missing-function ruleset exits non-zero;
 │                                 #   default mode shows numbered message (no call chain);
-│                                 #   --verbose mode shows complete chain incl. library frames
+│                                 #   --verbose mode shows full call chain
 └── fixtures/
     ├── openapi/
     │   ├── museum-api.yaml         # High quality (Redocly Museum API)
