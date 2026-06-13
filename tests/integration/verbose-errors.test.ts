@@ -16,25 +16,42 @@ function runCli(args: string[]): { status: number | null; stdout: string; stderr
   return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
 }
 
-describe('--verbose flag (US4)', () => {
+describe('--verbose flag (US4 / FR-015 / FR-016)', () => {
   it('exits non-zero when grading with a ruleset referencing an undefined function (default mode)', () => {
     const { status } = runCli([POOR_QUALITY_SPEC, '--ruleset', MISSING_FUNCTION_RULESET]);
     expect(status).not.toBe(0);
   }, 30000);
 
-  it('default mode stderr contains structured error header and Error #1 but not a call chain', () => {
+  it('exits non-zero when grading with a ruleset referencing an undefined function (--verbose mode)', () => {
+    const { status } = runCli([POOR_QUALITY_SPEC, '--ruleset', MISSING_FUNCTION_RULESET, '--verbose']);
+    expect(status).not.toBe(0);
+  }, 30000);
+
+  it('default mode: shows prompt, numbered header with source location, and no call chain', () => {
     const { stderr } = runCli([POOR_QUALITY_SPEC, '--ruleset', MISSING_FUNCTION_RULESET]);
+
+    // Prompt MUST be present in default mode
     expect(stderr).toContain('Error running api-grade! Use --verbose flag to print the error stack.');
-    expect(stderr).toContain('Error #1:');
-    // Must NOT contain a multi-line call chain (stack frames with "at " and file paths)
+
+    // Error #1 header MUST include source location prefix: "Error #1: /path/to/file:line:col — message"
+    // The ruleset file path and line:col come from Spectral's RulesetValidationError .source/.range
+    expect(stderr).toMatch(/Error #1: .+missingfunction\.yaml:\d+:\d+ — /);
+
+    // MUST NOT contain indented call-chain stack frames
     const stackFrameLines = stderr.split('\n').filter((line) => /^\s+at /.test(line));
     expect(stackFrameLines.length).toBe(0);
   }, 30000);
 
-  it('--verbose mode stderr contains the full call chain with file paths and line numbers', () => {
-    const { status, stderr } = runCli([POOR_QUALITY_SPEC, '--ruleset', MISSING_FUNCTION_RULESET, '--verbose']);
-    expect(status).not.toBe(0);
-    // Full stack trace should include "at " frames
+  it('--verbose mode: shows numbered header with source location, call chain, and no prompt', () => {
+    const { stderr } = runCli([POOR_QUALITY_SPEC, '--ruleset', MISSING_FUNCTION_RULESET, '--verbose']);
+
+    // "Use --verbose flag" prompt MUST be absent in verbose mode
+    expect(stderr).not.toContain('Use --verbose flag to print the error stack.');
+
+    // Error #1 header MUST include source location prefix (same format as default mode)
+    expect(stderr).toMatch(/Error #1: .+missingfunction\.yaml:\d+:\d+ — /);
+
+    // Call chain (indented "at " frames) MUST be present below the header
     const stackFrameLines = stderr.split('\n').filter((line) => /^\s+at /.test(line));
     expect(stackFrameLines.length).toBeGreaterThan(0);
   }, 30000);

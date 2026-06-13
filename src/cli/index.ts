@@ -7,6 +7,41 @@ import { LETTER_GRADE_ORDER, gradeToNumber } from '../core/scorer.js';
 import { loadConfig } from './config-loader.js';
 import type { LetterGrade } from '../core/types.js';
 
+// Returns "source:line:col — " when error carries Spectral location data, else "" or "source — "
+function formatErrorLocation(error: unknown): string {
+  if (typeof error !== 'object' || error === null) return '';
+  const e = error as Record<string, unknown>;
+  const source = e['source'];
+  if (typeof source !== 'string') return '';
+  const range = e['range'] as Record<string, unknown> | undefined;
+  const start = range?.['start'] as Record<string, unknown> | undefined;
+  if (typeof start?.['line'] === 'number' && typeof start?.['character'] === 'number') {
+    return `${source}:${(start['line'] as number) + 1}:${(start['character'] as number) + 1} — `;
+  }
+  return `${source} — `;
+}
+
+// Unwraps AggregateError (.errors) and resolves .cause chains on individual errors
+function unwrapErrors(err: unknown): unknown[] {
+  if (typeof err === 'object' && err !== null && 'errors' in err) {
+    const agg = err as { errors: unknown[] };
+    return agg.errors.map((e) =>
+      typeof e === 'object' && e !== null && 'cause' in e
+        ? (e as { cause: unknown }).cause
+        : e
+    );
+  }
+  return [err];
+}
+
+// Returns the call-chain frames from error.stack without the leading "ErrorType: message" line
+function extractStackFrames(error: unknown): string {
+  if (!(error instanceof Error) || !error.stack) return '';
+  const lines = error.stack.split('\n');
+  const frames = lines.slice(1).filter((l) => l.length > 0);
+  return frames.join('\n');
+}
+
 const program = new Command();
 
 program
@@ -97,18 +132,22 @@ program
         }
       }
     } catch (err: unknown) {
-      const errors = Array.isArray(err) ? err : [err];
+      const errors = unwrapErrors(err);
       if (verbose) {
-        for (const e of errors) {
-          const stack = e instanceof Error ? (e.stack ?? e.message) : String(e);
-          console.error(chalk.red(stack));
+        for (const [i, e] of errors.entries()) {
+          const message = e instanceof Error ? e.message : String(e);
+          const location = formatErrorLocation(e);
+          console.error(chalk.red(`Error #${i + 1}: ${location}${message}`));
+          const frames = extractStackFrames(e);
+          if (frames) console.error(chalk.red(frames));
         }
       } else {
         console.error(chalk.red('Error running api-grade! Use --verbose flag to print the error stack.'));
-        errors.forEach((e, i) => {
+        for (const [i, e] of errors.entries()) {
           const message = e instanceof Error ? e.message : String(e);
-          console.error(chalk.red(`Error #${i + 1}: ${message}`));
-        });
+          const location = formatErrorLocation(e);
+          console.error(chalk.red(`Error #${i + 1}: ${location}${message}`));
+        }
       }
       process.exit(1);
     }

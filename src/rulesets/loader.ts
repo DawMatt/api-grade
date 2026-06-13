@@ -3,6 +3,7 @@ import { asyncapi } from '@stoplight/spectral-rulesets';
 import { existsSync, promises as fsPromises } from 'node:fs';
 import { resolve } from 'node:path';
 import type { ApiFormat } from '../core/types.js';
+import { parseWithPointers, getLocationForJsonPath } from '@stoplight/yaml';
 
 export interface LoadedRuleset {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,11 +46,38 @@ export async function loadRuleset(format: ApiFormat, rulesetPath?: string): Prom
     if (url) {
       throw new Error(`Ruleset could not be loaded: external URL unreachable: ${url}`);
     }
-    throw new Error(`Ruleset could not be loaded: ${errMsg}`);
+    // Enrich sub-errors with source location derived from the ruleset YAML,
+    // since bundleAndLoadRuleset does not populate .source/.range at runtime.
+    await enrichErrorsWithLocation(err, absolutePath, rulesetContent);
+    throw err;
   }
 }
 
 function extractExternalUrls(content: string): string[] {
   const matches = content.match(/https?:\/\/[^\s'">\]]+/g) ?? [];
   return [...new Set(matches)];
+}
+
+async function enrichErrorsWithLocation(err: unknown, absolutePath: string, content: string): Promise<void> {
+  const parseResult = parseWithPointers(content);
+
+  const subErrors: unknown[] = [];
+  if (typeof err === 'object' && err !== null && 'errors' in err) {
+    subErrors.push(...(err as { errors: unknown[] }).errors);
+  } else {
+    subErrors.push(err);
+  }
+
+  for (const sub of subErrors) {
+    if (typeof sub !== 'object' || sub === null) continue;
+    const e = sub as Record<string, unknown>;
+    if (e['source'] !== undefined || e['range'] !== undefined) continue;
+    const path = e['path'];
+    if (!Array.isArray(path)) continue;
+    const location = getLocationForJsonPath(parseResult, path as string[], true);
+    if (location) {
+      e['source'] = absolutePath;
+      e['range'] = location.range;
+    }
+  }
 }
