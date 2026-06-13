@@ -1,0 +1,12 @@
+rules:
+  missing-function-test:
+    id: missing-function-test
+    description: Test missing function handling
+    given: $
+    formats:
+      - oas3
+      - oas3_1
+    type: validation
+    severity: error
+    then:
+      function: missing-function

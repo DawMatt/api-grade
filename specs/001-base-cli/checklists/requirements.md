@@ -31,9 +31,12 @@
 
 ## Notes
 
-- All items pass. Spec is ready for `/speckit-tasks`.
+- All items pass. Spec is ready for `/speckit-tasks` or `/speckit-plan`.
 - 5 clarifications applied (2026-06-12): grade scale, diagnostic ordering, input
   source, output detail level, min-grade format.
+- Spec updated (2026-06-13, branch 002-update-spec-output-format): added `--verbose`
+  error-detail flag (US4/FR-015/FR-016/SC-007); container use case renumbered P4→P5;
+  added missing-function edge case. No clarifications required.
 - Spec updated (2026-06-12, branch 002-update-spec-output-format): added vacuum as
   alternative linting engine to evaluate (FR-014); expanded output format to include
   grade label and professional-tone diagnostic summary (FR-006); added GradeLabel and
