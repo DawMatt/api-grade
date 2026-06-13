@@ -38,4 +38,17 @@ describe('--verbose flag (US4)', () => {
     const stackFrameLines = stderr.split('\n').filter((line) => /^\s+at /.test(line));
     expect(stackFrameLines.length).toBeGreaterThan(0);
   }, 30000);
+
+  it('--verbose mode stderr contains library-level frames (node_modules paths)', () => {
+    const { stderr } = runCli([POOR_QUALITY_SPEC, '--ruleset', MISSING_FUNCTION_RULESET, '--verbose']);
+    // At least one frame must reference a library inside node_modules
+    const libraryFrames = stderr.split('\n').filter((line) => /node_modules/.test(line));
+    expect(libraryFrames.length).toBeGreaterThan(0);
+  }, 30000);
+
+  it('default mode stderr does not contain any node_modules paths', () => {
+    const { stderr } = runCli([POOR_QUALITY_SPEC, '--ruleset', MISSING_FUNCTION_RULESET]);
+    const libraryLines = stderr.split('\n').filter((line) => /node_modules/.test(line));
+    expect(libraryLines.length).toBe(0);
+  }, 30000);
 });

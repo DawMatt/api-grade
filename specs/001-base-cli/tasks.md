@@ -208,11 +208,11 @@ present). Repeat without `--verbose` — verify no `node_modules/` path appears.
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T064 [P] [US4] Update `tests/integration/verbose-errors.test.ts`: add assertion (a) `--verbose` stderr contains at least one stack frame whose path includes `node_modules/` (confirming library-level frames are present); add assertion (b) default mode stderr does NOT contain any `node_modules/` path; add assertion (c) default mode has zero lines matching `^\s+at ` — these new assertions MUST FAIL before T065 is implemented
+- [x] T064 [P] [US4] Update `tests/integration/verbose-errors.test.ts`: add assertion (a) `--verbose` stderr contains at least one stack frame whose path includes `node_modules/` (confirming library-level frames are present); add assertion (b) default mode stderr does NOT contain any `node_modules/` path; add assertion (c) default mode has zero lines matching `^\s+at ` — these new assertions MUST FAIL before T065 is implemented
 
 ### Implementation for User Story 4 Enhancement
 
-- [ ] T065 [US4] Update `src/cli/index.ts`: (1) set `Error.stackTraceLimit = 100` as the first executable statement before any imports take effect; (2) update the `--verbose` error handler to traverse the full causal chain — for each error print its `stack` (or `message` if no stack), then advance to `err.cause` if it is an `Error`; if `err` is an `AggregateError` iterate `err.errors[]` and print each sub-error's stack — continue until the chain is exhausted; the default (non-verbose) handler is unchanged
+- [x] T065 [US4] Update `src/cli/index.ts`: (1) set `Error.stackTraceLimit = 100` as the first executable statement before any imports take effect; (2) update the `--verbose` error handler to traverse the full causal chain — for each error print its `stack` (or `message` if no stack), then advance to `err.cause` if it is an `Error`; if `err` is an `AggregateError` iterate `err.errors[]` and print each sub-error's stack — continue until the chain is exhausted; the default (non-verbose) handler is unchanged
 
 **Checkpoint**: `--verbose` output confirmed to include library-level call frames; existing 111 tests continue to pass.
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+Error.stackTraceLimit = 100;
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { GradeEngine } from '../core/grader.js';
@@ -99,10 +100,21 @@ program
     } catch (err: unknown) {
       const errors = Array.isArray(err) ? err : [err];
       if (verbose) {
-        for (const e of errors) {
-          const stack = e instanceof Error ? (e.stack ?? e.message) : String(e);
-          console.error(chalk.red(stack));
-        }
+        const printChain = (e: unknown): void => {
+          if (!(e instanceof Error)) {
+            console.error(chalk.red(String(e)));
+            return;
+          }
+          console.error(chalk.red(e.stack ?? e.message));
+          if (e instanceof AggregateError) {
+            for (const sub of e.errors) printChain(sub);
+          }
+          if (e.cause instanceof Error) {
+            console.error(chalk.red('Caused by:'));
+            printChain(e.cause);
+          }
+        };
+        for (const e of errors) printChain(e);
       } else {
         console.error(chalk.red('Error running api-grade! Use --verbose flag to print the error stack.'));
         errors.forEach((e, i) => {
