@@ -68,8 +68,9 @@ api-grade <spec-file> [options]
 | `--ruleset <path>` | Path to a custom Spectral-compatible ruleset file |
 | `--format <type>` | Output format: `human` (default) or `json` |
 | `--top <n>` | Show only the top N diagnostics (useful for large specs) |
-| `--version` | Print the version number |
-| `--help` | Show usage information |
+| `--verbose` | Print the full error stack when a runtime error occurs |
+| `-V, --version` | Print the version number |
+| `-h, --help` | Show usage information |
 
 ### Exit codes
 
@@ -115,6 +116,42 @@ api-grade openapi.yaml --ruleset ./my-rules.yaml
 ```bash
 api-grade asyncapi.yaml
 ```
+
+**Debug a ruleset loading error with the full stack trace:**
+
+```bash
+api-grade openapi.yaml --ruleset ./my-rules.yaml --verbose
+```
+
+**Run from a Docker container:**
+
+```bash
+docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml
+```
+
+## Configuration file
+
+You can persist options in a `.apigrade.json` file in your working directory. CLI flags always take precedence over config file values.
+
+```json
+{
+  "minGrade": "B",
+  "ruleset": "./my-rules.yaml",
+  "format": "human",
+  "top": 20,
+  "verbose": false
+}
+```
+
+All keys are optional. Supported keys:
+
+| Key | Type | Equivalent flag |
+|-----|------|-----------------|
+| `minGrade` | string | `--min-grade` |
+| `ruleset` | string | `--ruleset` |
+| `format` | `"human"` or `"json"` | `--format` |
+| `top` | number | `--top` |
+| `verbose` | boolean | `--verbose` |
 
 ## Grading scale
 
@@ -179,6 +216,26 @@ api-grade openapi.yaml --ruleset my-rules.yaml
 }
 ```
 
+## Docker
+
+Build the image locally:
+
+```bash
+docker build -t api-grade .
+```
+
+Grade a spec by mounting the current directory:
+
+```bash
+docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml
+```
+
+Pass any flag as you would with the local CLI:
+
+```bash
+docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml --min-grade B --format json
+```
+
 ## Running from source
 
 ```bash
@@ -192,6 +249,10 @@ node dist/cli/index.js openapi.yaml
 ## Development
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, code style, and how to submit changes.
+
+## Acknowledgements
+
+Grading algorithm inspired by [OpenAPI Doctor](https://github.com/pb33f/doctor).
 
 ## License
 
