@@ -193,3 +193,55 @@ or execution via `npx`. The binary entry point is `api-grade`.
 **Rationale**: npm global install is the standard pattern for Node.js CLI tools. It
 requires no build step for the end user, works identically on Windows and macOS, and
 requires only Node.js LTS (free) as a prerequisite.
+
+---
+
+## Decision 10: `--verbose` Error Format — Spectral CLI Pattern
+
+**Decision**: Model the `--verbose` error output format on the `@stoplight/spectral-cli`
+implementation. Both modes (verbose and non-verbose) print each error as a numbered
+header line `Error #N: [location]message`; non-verbose adds the "Use --verbose flag"
+prompt and omits the call chain; verbose omits the prompt and appends the call chain.
+
+**Rationale**: Spectral CLI ships a well-tested `fail()` function in
+`@stoplight/spectral-cli/dist/commands/lint.js` that implements exactly this pattern.
+Adopting the same approach means our error output is familiar to Spectral users and
+leverages a proven design.
+
+**Key implementation findings** (from Spectral CLI source inspection):
+
+1. **Error unwrapping**: `bundleAndLoadRuleset` may throw an `AggregateError` whose
+   `.errors` array contains one or more `RulesetValidationError` instances. The error
+   handler MUST check for `'errors' in err` and iterate over `err.errors` when present;
+   otherwise treat the thrown value as a single-error array. It should also check
+   `'cause' in error` to unwrap nested errors.
+
+2. **Source location extraction** (`formatErrorLocation` equivalent):
+   ```typescript
+   function formatErrorLocation(error: unknown): string {
+     if (typeof error !== 'object' || error === null) return '';
+     const src = (error as any).source;
+     if (typeof src !== 'string') return '';
+     const range = (error as any).range;
+     const start = range?.start;
+     if (typeof start?.line === 'number' && typeof start?.character === 'number') {
+       return `${src}:${start.line + 1}:${start.character + 1} — `;
+     }
+     return `${src} — `;
+   }
+   ```
+   Line and character values in the error object are 0-indexed; add 1 for display.
+
+3. **Stack trace rendering**: Spectral CLI uses the `stacktracey` library for table-
+   formatted stacks. Our implementation MAY use `error.stack` (native V8 format) for
+   simplicity — this is an implementation detail not mandated by the spec.
+
+4. **Prompt suppression**: The "Use --verbose flag" prompt MUST be printed ONLY in
+   non-verbose mode; it MUST be omitted entirely when `--verbose` is active.
+
+**Alternatives considered**:
+- **Always print raw `err.stack`** (original approach): Loses source location prefix
+  and the `Error #N:` header structure in verbose mode. Rejected — inconsistent with
+  Spectral CLI behaviour and less useful for users.
+- **Use `stacktracey`** for formatted table output: More visually polished but adds a
+  dependency; native `err.stack` is sufficient and universally available.

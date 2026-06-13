@@ -13,8 +13,12 @@ percentage + label such as "Below Standard"), a professional-tone diagnostic sum
 identifying priority rules to address, and the full ordered diagnostic detail list.
 The core grading engine is a standalone module consumed by the CLI layer. The tool supports CI/CD pipeline integration via `--min-grade`, custom
 Spectral-compatible rulesets via `--ruleset`, optional diagnostic limiting via `--top`,
-JSON output via `--format json`, and verbose error detail via `--verbose` (full call
-chain on unexpected runtime errors; concise numbered message by default). A Dockerfile
+JSON output via `--format json`, and verbose error detail via `--verbose`. In both
+modes, each unexpected runtime error is printed as a numbered header line
+`Error #N: [{source}:{line}:{col} — ]{message}` with source location when available
+(derived from Spectral's `RulesetValidationError` `.source` / `.range` properties);
+non-verbose mode adds the "Use --verbose flag" prompt and omits the call chain; verbose
+mode omits the prompt and appends the indented call chain stack frames. A Dockerfile
 is provided for containerised execution.
 
 ## Technical Context
@@ -66,10 +70,16 @@ container image uses free base image (`node:20-alpine`)
 
 **No violations. Complexity Tracking section not required.**
 
-*Updated 2026-06-13*: FR-015 (`--verbose`) and FR-016 (missing-function test) added.
+*Updated 2026-06-13 (pass 1)*: FR-015 (`--verbose`) and FR-016 (missing-function test) added.
 All principles continue to pass — the verbose flag is additive to error handling
 (Principle IV: test-driven; Principle II: core-first — error formatting stays in
 `src/core/formatter.ts`).
+
+*Updated 2026-06-13 (pass 2)*: FR-015 / FR-016 / contracts refined — verbose output format
+now specifies source location prefix (`{source}:{line}:{col} — `) derived from Spectral's
+`RulesetValidationError` `.source`/`.range` properties; both modes show the numbered header
+line with location; verbose omits the prompt and appends call chain. No new constitution
+violations. All principles continue to pass.
 
 ## Project Structure
 

@@ -26,7 +26,7 @@ AsyncAPI specification (YAML or JSON).
 | `--ruleset` | `<path>` | _(built-in)_ | Path to a custom Spectral ruleset file |
 | `--format` | `<human\|json>` | `human` | Output format |
 | `--top` | `<N>` | _(all)_ | Limit diagnostic output to the top N findings |
-| `--verbose` | — | _(off)_ | On unexpected runtime errors, print full call chain (file paths, line numbers, function names) to stderr instead of the default concise numbered message |
+| `--verbose` | — | _(off)_ | On unexpected runtime errors, prepend source location (when available) to each numbered error line and follow it with the full call chain (file paths, line numbers, function names); default mode shows numbered lines only |
 | `--url` | `<URL>` | — | **Reserved — not implemented.** Exits 1 with "not yet supported" message |
 | `--version` | — | — | Print tool version and exit 0 |
 | `--help` | — | — | Print usage and exit 0 |
@@ -192,26 +192,45 @@ Error: Ruleset could not be loaded: external URL unreachable: https://example.co
 When an unexpected runtime error occurs (e.g., a ruleset references an undefined function),
 the output format depends on whether `--verbose` is set.
 
+**Error header line format**: Every reported error begins with:
+`Error #N: [location prefix]message`
+
+The optional location prefix is derived from the error object's source location and formatted as:
+- `{source}:{line}:{col} — ` when the error carries `.source` (string), `.range.start.line`, and `.range.start.character` (numbers; 1-indexed in output)
+- `{source} — ` when the error carries `.source` but no `.range`
+- Absent when no location is available
+
+Spectral's `RulesetValidationError` (from `@stoplight/spectral-core`) carries these properties for ruleset validation failures such as undefined custom functions.
+
 **Default (no `--verbose`)**:
 
 ```
 Error running api-grade! Use --verbose flag to print the error stack.
-Error #1: [error message]
+Error #1: /path/to/ruleset.yaml:13:17 — Function is not defined
 ```
 
 Multiple errors are each printed on their own numbered line:
 
 ```
 Error running api-grade! Use --verbose flag to print the error stack.
-Error #1: [first error message]
+Error #1: /path/to/ruleset.yaml:13:17 — Function is not defined
 Error #2: [second error message]
 ```
 
+When no source location is available, the line is simply `Error #N: [message]`.
+
 **With `--verbose`**:
 
-The full error object is printed to stderr, including the complete call chain with file
-paths, line numbers, and function names. The exact format is determined by the runtime
-environment but MUST include the call chain.
+The "Use --verbose flag" prompt is omitted. Each numbered error header line is followed
+immediately by the complete call chain for that error (indented stack frames showing file
+paths, line numbers, and function names):
+
+```
+Error #1: /path/to/ruleset.yaml:13:17 — Function is not defined
+    at loadRuleset (file:///dist/rulesets/loader.js:34:15)
+    at async GradeEngine.grade (file:///dist/core/grader.js:28:57)
+    at async Command.<anonymous> (file:///dist/cli/index.js:63:24)
+```
 
 In both modes the process exits with code 1.
 

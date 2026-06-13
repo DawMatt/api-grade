@@ -190,6 +190,33 @@ the full call chain. Both modes exit non-zero.
 
 ---
 
+## Phase 6a: User Story 4 — Verbose Format Revision (spec updated 2026-06-13)
+
+**Goal**: Revise the `--verbose` error format to match the updated FR-015 / US4 spec:
+both modes display `Error #N: [{source}:{line}:{col} — ]{message}` with source location
+when available; non-verbose adds the "Use --verbose flag" prompt and omits the call chain;
+verbose omits the prompt and appends indented call chain stack frames.
+
+**Independent Test**: Run against `missingfunction.yaml` without `--verbose` — stderr
+contains the prompt AND `Error #1: /path/to/missingfunction.yaml:NN:NN — Function is not
+defined` (with location) but NO `at ` stack frames. Repeat with `--verbose` — stderr
+contains the same `Error #1:` header line followed by `at ` stack frames, and does NOT
+contain the "Use --verbose flag" prompt.
+
+### Tests for Phase 6a ⚠️ Write BEFORE implementation
+
+> **NOTE: Write these tests FIRST, ensure they FAIL before T065 is implemented**
+
+- [ ] T064 [P] [US4] Update `tests/integration/verbose-errors.test.ts`: replace/augment existing assertions — (a) default mode: "Use --verbose flag to print the error stack." IS present; `Error #1:` header includes source location prefix when error carries location data (e.g., matches pattern `/Error #1: .+missingfunction\.yaml:\d+:\d+ — /`); no `    at ` call-chain frames in stderr; (b) verbose mode: same `Error #1:` header with location IS present; `    at ` call-chain frames ARE present below the header; "Use --verbose flag" prompt IS NOT present; these assertions MUST FAIL before T065 is implemented
+
+### Implementation for Phase 6a
+
+- [ ] T065 [US4] Update `src/cli/index.ts` verbose error handler: (1) **Unwrap errors** — check `'errors' in err` to handle `AggregateError` and iterate `err.errors`; for each, also check `'cause' in err` to get the actual underlying error; fallback to treating the thrown value as a single-item array; (2) **Add `formatErrorLocation(error: unknown): string` helper** — if error is an object with `.source` (string) and `.range.start.line` / `.range.start.character` (numbers, 0-indexed), return `${source}:${line+1}:${char+1} — `; else if error has `.source` (string) only, return `${source} — `; else return `''`; (3) **Non-verbose mode**: print "Error running api-grade! Use --verbose flag to print the error stack." once, then each `Error #N: ${formatErrorLocation(e)}${message}` header line; (4) **Verbose mode**: omit the prompt entirely; for each error, print the `Error #N: ${formatErrorLocation(e)}${message}` header line, then the call chain stack frames from `e.stack` — strip the leading `Error: message\n` line (if present) to avoid duplicating the message; each frame should be printed as-is (they begin with `    at `)
+
+**Checkpoint**: Verbose format revised — both modes show source location in `Error #N:` header; non-verbose shows prompt only; verbose shows call chain only.
+
+---
+
 ## Phase 7: User Story 5 — Run the CLI in a container (Priority: P5)
 
 **Goal**: `docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml` produces
@@ -240,7 +267,7 @@ compare output to local `api-grade` run against the same file.
 - **US1 (P1)**: Can start after Phase 2 — no dependencies on other stories
 - **US2 (P2)**: Depends on US1 CLI entry point (`src/cli/index.ts`); extends it with `--min-grade`
 - **US3 (P3)**: Depends on US1 rulesets/loader.ts and CLI entry point; extends with `--ruleset`
-- **US4 (P4)**: Depends on US1 CLI entry point; extends it with `--verbose` error handler; T063 depends on T062 (needs `verbose` in CliOptions before config-loader update)
+- **US4 (P4)**: Depends on US1 CLI entry point; extends it with `--verbose` error handler; T063 depends on T062 (needs `verbose` in CliOptions before config-loader update); **Phase 6a revision**: T064 (updated test) MUST fail before T065 (updated implementation); T065 depends on T062 being complete (it revises the same handler)
 - **US5 (P5)**: Depends on US1 being complete (needs working CLI to containerise)
 
 ### Within Each User Story
@@ -324,6 +351,7 @@ Task: T026 - asyncapi-grading.test.ts
 - T006 (vacuum evaluation) is a decision gate; if vacuum is chosen, replace
   `@stoplight/spectral-core` references in T007–T012 accordingly
 - T060–T063 implement FR-015/FR-016 (verbose error flag); T061 MUST fail before T062
+- T064–T065 (Phase 6a) revise the verbose format per updated spec (2026-06-13): source location prefix in `Error #N:` header; prompt absent in verbose mode; call chain formatted without the leading "Error: message" line. T064 MUST fail before T065
 - US4 (verbose) and US5 (container) were originally both labelled US4 in prior task iterations; container tasks T032–T034 have been relabelled US5 to match the updated spec
 - Verify tests FAIL before implementing the code they test
 - Commit after each phase or logical group completes
