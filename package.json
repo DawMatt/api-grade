@@ -2,6 +2,7 @@
   "name": "api-grade",
   "version": "0.1.0",
   "description": "Grade API quality and share diagnostics using Spectral-compatible linting",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "api-grade": "./dist/cli/index.js"
