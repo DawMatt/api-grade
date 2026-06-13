@@ -38,22 +38,14 @@ export async function loadRuleset(format: ApiFormat, rulesetPath?: string): Prom
     const ruleset = await bundleAndLoadRuleset(absolutePath, io);
     return { ruleset, rulesetSource: 'custom', rulesetPath: absolutePath };
   } catch (err) {
-    // Flatten AggregateError sub-messages for a readable default-mode summary
-    let errMsg: string;
-    if (err instanceof AggregateError && err.errors.length > 0) {
-      errMsg = err.errors
-        .map((e: unknown) => (e instanceof Error ? e.message : String(e)))
-        .join('; ');
-    } else {
-      errMsg = err instanceof Error ? err.message : String(err);
-    }
+    const errMsg = err instanceof Error ? err.message : String(err);
     // Prefer a URL found in the error message itself, fall back to URLs from ruleset content
     const urlInError = errMsg.match(/https?:\/\/[^\s'">\]]+/)?.[0];
     const url = urlInError ?? externalUrls[0];
     if (url) {
-      throw new Error(`Ruleset could not be loaded: external URL unreachable: ${url}`, { cause: err });
+      throw new Error(`Ruleset could not be loaded: external URL unreachable: ${url}`);
     }
-    throw new Error(`Ruleset could not be loaded: ${errMsg}`, { cause: err });
+    throw new Error(`Ruleset could not be loaded: ${errMsg}`);
   }
 }
 
