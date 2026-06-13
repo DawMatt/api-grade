@@ -81,6 +81,7 @@ export interface CliOptions {
   rulesetPath?: string;
   format: 'human' | 'json';
   top?: number;
+  verbose?: boolean;
 }
 
 export function extractCategory(ruleId: string): string {

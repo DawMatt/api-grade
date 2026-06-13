@@ -26,12 +26,14 @@ program
     return n;
   })
   .option('--url <url>', '(reserved for future use)')
+  .option('--verbose', 'Print full error stack on failure')
   .action(async (specFile: string, cliOpts: {
     minGrade?: string;
     ruleset?: string;
     format?: string;
     top?: number;
     url?: string;
+    verbose?: boolean;
   }) => {
     if (cliOpts.url) {
       console.error(chalk.red('Error: --url is not yet supported in this version.'));
@@ -57,6 +59,7 @@ program
 
     const topN = cliOpts.top ?? fileConfig.top;
     const rulesetPath = cliOpts.ruleset ?? fileConfig.rulesetPath;
+    const verbose = cliOpts.verbose ?? fileConfig.verbose ?? false;
 
     let minGrade: LetterGrade | undefined;
     const minGradeRaw = cliOpts.minGrade ?? fileConfig.minGrade;
@@ -94,8 +97,19 @@ program
         }
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(chalk.red(`Error: ${message}`));
+      const errors = Array.isArray(err) ? err : [err];
+      if (verbose) {
+        for (const e of errors) {
+          const stack = e instanceof Error ? (e.stack ?? e.message) : String(e);
+          console.error(chalk.red(stack));
+        }
+      } else {
+        console.error(chalk.red('Error running api-grade! Use --verbose flag to print the error stack.'));
+        errors.forEach((e, i) => {
+          const message = e instanceof Error ? e.message : String(e);
+          console.error(chalk.red(`Error #${i + 1}: ${message}`));
+        });
+      }
       process.exit(1);
     }
   });

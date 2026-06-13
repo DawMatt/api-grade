@@ -35,6 +35,9 @@ export function loadConfig(cwd: string): Partial<CliOptions> {
   if (typeof parsed.top === 'number' && parsed.top > 0) {
     config.top = parsed.top;
   }
+  if (typeof parsed.verbose === 'boolean') {
+    config.verbose = parsed.verbose;
+  }
 
   return config;
 }

@@ -1,3 +1,4 @@
+# Test fixture — references an undefined custom function; any run against this ruleset is expected to fail
 rules:
   missing-function-test:
     id: missing-function-test

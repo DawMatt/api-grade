@@ -173,18 +173,18 @@ the full call chain. Both modes exit non-zero.
 
 ### Fixtures for User Story 4
 
-- [ ] T060 [P] [US4] Confirm `tests/fixtures/rulesets/missingfunction.yaml` exists; add header comment `# Test fixture — references an undefined custom function; any run against this ruleset is expected to fail` if not already present
+- [x] T060 [P] [US4] Confirm `tests/fixtures/rulesets/missingfunction.yaml` exists; add header comment `# Test fixture — references an undefined custom function; any run against this ruleset is expected to fail` if not already present
 
 ### Tests for User Story 4 ⚠️ Write BEFORE implementation
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T061 [P] [US4] Write `tests/integration/verbose-errors.test.ts`: (a) grading with `missingfunction.yaml` ruleset exits non-zero in default mode; (b) default mode stderr contains "Error running api-grade! Use --verbose flag to print the error stack." and "Error #1:" but does NOT contain a multi-line call chain; (c) `--verbose` mode stderr contains the call chain (file paths, line numbers, function names); all three assertions MUST FAIL before T062 is implemented
+- [x] T061 [P] [US4] Write `tests/integration/verbose-errors.test.ts`: (a) grading with `missingfunction.yaml` ruleset exits non-zero in default mode; (b) default mode stderr contains "Error running api-grade! Use --verbose flag to print the error stack." and "Error #1:" but does NOT contain a multi-line call chain; (c) `--verbose` mode stderr contains the call chain (file paths, line numbers, function names); all three assertions MUST FAIL before T062 is implemented
 
 ### Implementation for User Story 4
 
-- [ ] T062 [US4] Update `src/cli/index.ts`: add `--verbose` boolean flag; wrap the `GradeEngine.grade()` call in a top-level try/catch — on error, without `--verbose` print "Error running api-grade! Use --verbose flag to print the error stack.\nError #N: <message>" to stderr + exit 1; with `--verbose` print the full error stack to stderr + exit 1; handle multiple errors by iterating with incrementing N
-- [ ] T063 [US4] Update `src/cli/config-loader.ts` to recognise `verbose: boolean` as a valid config key and map it to `CliOptions.verbose`; update `src/cli/index.ts` config merge to include `verbose`; update `src/core/types.ts` `CliOptions` to include `verbose?: boolean`
+- [x] T062 [US4] Update `src/cli/index.ts`: add `--verbose` boolean flag; wrap the `GradeEngine.grade()` call in a top-level try/catch — on error, without `--verbose` print "Error running api-grade! Use --verbose flag to print the error stack.\nError #N: <message>" to stderr + exit 1; with `--verbose` print the full error stack to stderr + exit 1; handle multiple errors by iterating with incrementing N
+- [x] T063 [US4] Update `src/cli/config-loader.ts` to recognise `verbose: boolean` as a valid config key and map it to `CliOptions.verbose`; update `src/cli/index.ts` config merge to include `verbose`; update `src/core/types.ts` `CliOptions` to include `verbose?: boolean`
 
 **Checkpoint**: All four primary user stories independently functional — verbose error mode verified.
 
