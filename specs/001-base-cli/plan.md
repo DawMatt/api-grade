@@ -11,10 +11,11 @@ linting engine (reference: Spectral; candidate: vacuum) to grade OpenAPI and Asy
 specifications. Output presents three sections: an overall grade (letter A–F +
 percentage + label such as "Below Standard"), a professional-tone diagnostic summary
 identifying priority rules to address, and the full ordered diagnostic detail list.
-The core grading engine is a standalone module consumed by the CLI layer. The tool
-supports CI/CD pipeline integration via `--min-grade`, custom Spectral-compatible
-rulesets via `--ruleset`, optional diagnostic limiting via `--top`, and JSON output
-via `--format json`. A Dockerfile is provided for containerised execution.
+The core grading engine is a standalone module consumed by the CLI layer. The tool supports CI/CD pipeline integration via `--min-grade`, custom
+Spectral-compatible rulesets via `--ruleset`, optional diagnostic limiting via `--top`,
+JSON output via `--format json`, and verbose error detail via `--verbose` (full call
+chain on unexpected runtime errors; concise numbered message by default). A Dockerfile
+is provided for containerised execution.
 
 ## Technical Context
 
@@ -65,6 +66,11 @@ container image uses free base image (`node:20-alpine`)
 
 **No violations. Complexity Tracking section not required.**
 
+*Updated 2026-06-13*: FR-015 (`--verbose`) and FR-016 (missing-function test) added.
+All principles continue to pass — the verbose flag is additive to error handling
+(Principle IV: test-driven; Principle II: core-first — error formatting stays in
+`src/core/formatter.ts`).
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -106,15 +112,22 @@ tests/
 │   └── spec-loader.test.ts    # Format detection and file reading
 ├── integration/
 │   ├── openapi-grading.test.ts   # End-to-end: grade fixtures, check output shape
-│   └── asyncapi-grading.test.ts  # End-to-end: grade fixtures, check output shape
+│   ├── asyncapi-grading.test.ts  # End-to-end: grade fixtures, check output shape
+│   └── verbose-errors.test.ts    # FR-016: missing-function ruleset exits non-zero;
+│                                 #   default mode shows numbered message (no call chain);
+│                                 #   --verbose mode shows full call chain
 └── fixtures/
     ├── openapi/
     │   ├── museum-api.yaml         # High quality (Redocly Museum API)
     │   ├── train-travel-api.yaml   # High quality (bump.sh Train Travel API)
     │   └── poor-quality.yaml       # Low quality — intentionally bad (labelled)
-    └── asyncapi/
-        ├── streetlights-api.yaml   # High quality (AsyncAPI Streetlights tutorial)
-        └── poor-quality.yaml       # Low quality — intentionally bad (labelled)
+    ├── asyncapi/
+    │   ├── streetlights-api.yaml   # High quality (AsyncAPI Streetlights tutorial)
+    │   └── poor-quality.yaml       # Low quality — intentionally bad (labelled)
+    └── rulesets/
+        ├── minimal.yaml            # Minimal valid ruleset (custom-ruleset tests)
+        ├── unreachable.yaml        # Ruleset referencing unreachable external URL
+        └── missingfunction.yaml    # Ruleset referencing undefined function — expected to fail
 
 Dockerfile                   # node:20-alpine; build + run instructions
 package.json                 # bin: { "api-grade": "./dist/cli/index.js" }

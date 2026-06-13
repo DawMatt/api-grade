@@ -16,7 +16,7 @@ and testing of each story. Tests MUST be written before or alongside implementat
 ## Format: `[ID] [P?] [Story?] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to (US1–US4)
+- **[Story]**: Which user story this task belongs to (US1–US5)
 - Paths shown are relative to repository root
 
 ---
@@ -163,7 +163,34 @@ and verify the custom rule ID appears in diagnostics.
 
 ---
 
-## Phase 6: User Story 4 — Run the CLI in a container (Priority: P4)
+## Phase 6: User Story 4 — Diagnose unexpected runtime errors with verbose output (Priority: P4)
+
+**Goal**: When the CLI encounters an unexpected runtime error (e.g., a ruleset referencing
+an undefined function), default mode prints a concise numbered message; `--verbose` prints
+the full call chain. Both modes exit non-zero.
+
+**Independent Test**: Run `api-grade tests/fixtures/openapi/poor-quality.yaml --ruleset tests/fixtures/rulesets/missingfunction.yaml` without `--verbose` — verify exit code 1, stderr contains "Error running api-grade!" and "Error #1:" but does NOT contain a call chain. Repeat with `--verbose` — verify stderr contains the full call chain.
+
+### Fixtures for User Story 4
+
+- [ ] T060 [P] [US4] Confirm `tests/fixtures/rulesets/missingfunction.yaml` exists; add header comment `# Test fixture — references an undefined custom function; any run against this ruleset is expected to fail` if not already present
+
+### Tests for User Story 4 ⚠️ Write BEFORE implementation
+
+> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+
+- [ ] T061 [P] [US4] Write `tests/integration/verbose-errors.test.ts`: (a) grading with `missingfunction.yaml` ruleset exits non-zero in default mode; (b) default mode stderr contains "Error running api-grade! Use --verbose flag to print the error stack." and "Error #1:" but does NOT contain a multi-line call chain; (c) `--verbose` mode stderr contains the call chain (file paths, line numbers, function names); all three assertions MUST FAIL before T062 is implemented
+
+### Implementation for User Story 4
+
+- [ ] T062 [US4] Update `src/cli/index.ts`: add `--verbose` boolean flag; wrap the `GradeEngine.grade()` call in a top-level try/catch — on error, without `--verbose` print "Error running api-grade! Use --verbose flag to print the error stack.\nError #N: <message>" to stderr + exit 1; with `--verbose` print the full error stack to stderr + exit 1; handle multiple errors by iterating with incrementing N
+- [ ] T063 [US4] Update `src/cli/config-loader.ts` to recognise `verbose: boolean` as a valid config key and map it to `CliOptions.verbose`; update `src/cli/index.ts` config merge to include `verbose`; update `src/core/types.ts` `CliOptions` to include `verbose?: boolean`
+
+**Checkpoint**: All four primary user stories independently functional — verbose error mode verified.
+
+---
+
+## Phase 7: User Story 5 — Run the CLI in a container (Priority: P5)
 
 **Goal**: `docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml` produces
 identical grade output to the local CLI for the same input file.
@@ -172,13 +199,13 @@ identical grade output to the local CLI for the same input file.
 then run it against `tests/fixtures/openapi/museum-api.yaml` mounted as a volume and
 compare output to local `api-grade` run against the same file.
 
-### Implementation for User Story 4
+### Implementation for User Story 5
 
-- [x] T032 [US4] Write `Dockerfile` at repository root: multi-stage build using `node:20-alpine`; stage 1 installs deps and runs `npm run build`; stage 2 copies `dist/` and runs as non-root user; ENTRYPOINT is `["node", "/app/dist/cli/index.js"]`
-- [x] T033 [US4] Update `quickstart.md` Docker section with correct image name, build command, and volume mount examples for both macOS/Linux and Windows PowerShell (per quickstart.md template)
-- [x] T034 [US4] Verify container produces identical output: build image, run museum-api.yaml through container and local CLI, document verification steps in `specs/001-base-cli/quickstart.md` under a "Verifying Container Output" subsection
+- [x] T032 [US5] Write `Dockerfile` at repository root: multi-stage build using `node:20-alpine`; stage 1 installs deps and runs `npm run build`; stage 2 copies `dist/` and runs as non-root user; ENTRYPOINT is `["node", "/app/dist/cli/index.js"]`
+- [x] T033 [US5] Update `quickstart.md` Docker section with correct image name, build command, and volume mount examples for both macOS/Linux and Windows PowerShell (per quickstart.md template)
+- [x] T034 [US5] Verify container produces identical output: build image, run museum-api.yaml through container and local CLI, document verification steps in `specs/001-base-cli/quickstart.md` under a "Verifying Container Output" subsection
 
-**Checkpoint**: All four user stories independently functional.
+**Checkpoint**: All five user stories independently functional.
 
 ---
 
@@ -211,9 +238,10 @@ compare output to local `api-grade` run against the same file.
 ### User Story Dependencies
 
 - **US1 (P1)**: Can start after Phase 2 — no dependencies on other stories
-- **US2 (P2)**: Depends on US1 CLI entry point (src/cli/index.ts); extends it with --min-grade
-- **US3 (P3)**: Depends on US1 rulesets/loader.ts and CLI entry point; extends with --ruleset
-- **US4 (P4)**: Depends on US1 being complete (needs working CLI to containerise)
+- **US2 (P2)**: Depends on US1 CLI entry point (`src/cli/index.ts`); extends it with `--min-grade`
+- **US3 (P3)**: Depends on US1 rulesets/loader.ts and CLI entry point; extends with `--ruleset`
+- **US4 (P4)**: Depends on US1 CLI entry point; extends it with `--verbose` error handler; T063 depends on T062 (needs `verbose` in CliOptions before config-loader update)
+- **US5 (P5)**: Depends on US1 being complete (needs working CLI to containerise)
 
 ### Within Each User Story
 
@@ -283,7 +311,8 @@ Task: T026 - asyncapi-grading.test.ts
 2. US1 → Grading works for both spec formats → **Demo-ready MVP**
 3. US2 → CI/CD gate works → **Pipeline-ready**
 4. US3 → Custom rulesets work → **Enterprise-ready**
-5. US4 → Containerised → **Ops-ready**
+5. US4 → Verbose error mode works → **Debuggable**
+6. US5 → Containerised → **Ops-ready**
 
 ---
 
@@ -294,5 +323,7 @@ Task: T026 - asyncapi-grading.test.ts
 - Constitution Principle IV requires tests — include them in every user story phase
 - T006 (vacuum evaluation) is a decision gate; if vacuum is chosen, replace
   `@stoplight/spectral-core` references in T007–T012 accordingly
+- T060–T063 implement FR-015/FR-016 (verbose error flag); T061 MUST fail before T062
+- US4 (verbose) and US5 (container) were originally both labelled US4 in prior task iterations; container tasks T032–T034 have been relabelled US5 to match the updated spec
 - Verify tests FAIL before implementing the code they test
 - Commit after each phase or logical group completes
