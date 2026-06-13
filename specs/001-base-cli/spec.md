@@ -146,31 +146,47 @@ that pattern, and confirming the diagnostic appears in the output.
 
 A developer encounters an unexpected runtime error — such as a ruleset that references
 a function that does not exist — and needs to understand exactly what went wrong. By
-default the CLI prints a short, friendly numbered message so the output stays clean. By
-adding `--verbose` the developer sees the complete call chain, making it possible to
-pinpoint the exact source of the failure without reading source code.
+default the CLI prints a short, numbered message (with source location when available)
+so the output stays clean. By adding `--verbose` the developer also sees the complete
+call chain beneath each error, making it possible to pinpoint the exact source of the
+failure without reading source code.
 
 **Why this priority**: Debugging broken rulesets or other unexpected failures is a real
 workflow need, but it is secondary to the core grading experience. The default output
 should remain clean for everyday use; the full detail is opt-in.
 
 **Independent Test**: Can be tested by running the CLI against a fixture ruleset that
-references a missing or undefined function, first without `--verbose` (expect a short
-user-friendly numbered message) and then with `--verbose` (expect a full call chain in
-the output). Both runs must exit non-zero.
+references a missing or undefined function, first without `--verbose` (expect a
+numbered message with source location but no call chain) and then with `--verbose`
+(expect the same numbered message followed by the full call chain). Both runs must
+exit non-zero.
 
 **Acceptance Scenarios**:
 
 1. **Given** a ruleset that references a missing or undefined function,
    **When** the user runs the CLI without `--verbose`,
    **Then** stderr contains the prompt "Error running api-grade! Use --verbose flag to
-   print the error stack." followed by a concise numbered message in the form
-   "Error #N: [message]", and the process exits non-zero.
+   print the error stack." followed by a concise numbered message per error in the form
+   `Error #N: {source}:{line}:{col} — {message}` when the error carries source
+   location information (e.g. `Error #1: /path/to/ruleset.yaml:13:17 — Function is
+   not defined`), or `Error #N: {message}` when no location is available. The output
+   MUST NOT contain the call chain (stack frames). The process exits non-zero.
 
 2. **Given** the same broken ruleset,
    **When** the user runs the CLI with `--verbose`,
-   **Then** stderr contains the full error detail including the complete call chain with
-   file paths, line numbers, and function names, and the process exits non-zero.
+   **Then** stderr contains each numbered error line in the same
+   `Error #N: [{source}:{line}:{col} — ]{message}` format (with source location when
+   available), followed immediately by the complete call chain for that error (indented
+   stack frames showing file paths, line numbers, and function names). The "Use
+   --verbose flag" prompt MUST be omitted. The process exits non-zero.
+
+   Example verbose output for a missing-function error:
+   ```
+   Error #1: /path/to/ruleset.yaml:13:17 — Function is not defined
+       at loadRuleset (file:///dist/rulesets/loader.js:34:15)
+       at async GradeEngine.grade (file:///dist/core/grader.js:28:57)
+       at async Command.<anonymous> (file:///dist/cli/index.js:63:24)
+   ```
 
 3. **Given** a run that completes without errors,
    **When** `--verbose` is supplied,
@@ -211,7 +227,7 @@ run.
 - **Large spec files**: No file-size gate is applied. If linting takes longer than 30 seconds, the CLI MUST emit a warning to stderr (e.g., "Warning: linting is taking longer than expected") and continue processing. The process exits normally once linting completes.
 - **Unreachable ruleset URL**: If a custom Spectral ruleset references external URLs that are unreachable at grading time, the CLI MUST print a descriptive error to stderr naming the unreachable URL and exit with a non-zero exit code. Partial grading with an incomplete ruleset is not permitted.
 - **Conflicting ruleset rules**: Conflict resolution is delegated entirely to the linting engine. The CLI applies all rules as-is and outputs whatever the engine reports. No custom conflict detection is performed.
-- **Ruleset references missing function**: If a ruleset references a custom function that cannot be resolved, the CLI MUST surface a clear error. Default mode shows a concise numbered message; `--verbose` mode shows the full call chain. Both exit non-zero.
+- **Ruleset references missing function**: If a ruleset references a custom function that cannot be resolved, the CLI MUST surface a clear error. Both modes show a numbered error header line with source location when the Spectral error carries location data (e.g., `Error #1: /path/to/ruleset.yaml:13:17 — Function is not defined`). Default mode shows only the header line (plus the "Use --verbose flag" prompt); `--verbose` mode additionally shows the call chain stack frames and omits the prompt. Both exit non-zero.
 - **Perfect score / no violations**: The diagnostic summary narrative MUST open with the "Excellent" tone label and state the specification is in excellent condition. The Recommendations section MUST be omitted entirely. Hints (if any) are listed in the diagnostic detail section only. (Defined in FR-006.)
 - **Hints-only**: When a spec produces only hints (severity below warning) and no errors or warnings, the diagnostic summary MUST treat this as "no violations" — stating the spec is in excellent condition. Hints are listed in the diagnostic detail section only and do not affect the summary narrative.
 
@@ -294,17 +310,37 @@ run.
   The flag MUST NOT be implemented in this feature; if supplied, the CLI MUST
   print a "not yet supported" message and exit non-zero.
 - **FR-015**: The CLI MUST support a `--verbose` flag that controls the level of
-  detail shown when an unexpected runtime error occurs. Without `--verbose`, the
-  CLI MUST print a prompt "Error running api-grade! Use --verbose flag to print
-  the error stack." followed by a concise numbered message per error in the form
-  "Error #N: [message]", then exit non-zero. With `--verbose`, the CLI MUST print
-  the full error detail including the complete call chain (file paths, line numbers,
-  function names) to stderr, then exit non-zero.
+  detail shown when an unexpected runtime error occurs.
+
+  **Error header line format**: Every reported error MUST begin with a numbered
+  header line: `Error #N: [location prefix]message`. The optional location prefix
+  is derived from the error object's source location properties and formatted as:
+  - `{source}:{line}:{col} — ` when the error carries a `.source` string and
+    `.range.start.line` / `.range.start.character` numbers (both 0-indexed in
+    the error object; displayed as 1-indexed in the output)
+  - `{source} — ` when the error carries `.source` but no `.range`
+  - Absent when neither `.source` nor `.range` is present
+
+  Spectral's `RulesetValidationError` (thrown by `bundleAndLoadRuleset` in
+  `@stoplight/spectral-ruleset-bundler`) carries these properties for ruleset
+  validation failures; the source is the ruleset file path and the range
+  identifies the offending construct within that file.
+
+  **Without `--verbose`**: The CLI MUST first print the prompt "Error running
+  api-grade! Use --verbose flag to print the error stack.", then print each error
+  header line (without call chain), then exit non-zero.
+
+  **With `--verbose`**: The CLI MUST print each error header line followed
+  immediately by the complete call chain for that error (indented stack frames
+  showing file paths, line numbers, and function names), then exit non-zero.
+  The "Use --verbose flag" prompt MUST be omitted in verbose mode.
 - **FR-016**: The test suite MUST include at least one test that runs the CLI
   against a ruleset referencing a missing function, verifying: (a) the process
   exits non-zero in both modes; (b) default mode output contains the prompt and a
-  numbered message but does NOT contain the call chain; (c) `--verbose` mode output
-  contains the call chain.
+  numbered error header line (with source location prefix if the error carries
+  location data) but does NOT contain call chain stack frames; (c) `--verbose`
+  mode output contains the same numbered error header line followed by the call
+  chain stack frames, and does NOT contain the "Use --verbose flag" prompt.
 
 ### Key Entities
 
@@ -392,6 +428,14 @@ run.
   (e.g., `node:lts-alpine`).
 - The CLI will be implemented as a single executable invoked via command line;
   no GUI or web server component is in scope for this feature.
+- Spectral's `RulesetValidationError` (from `@stoplight/spectral-core`) carries
+  `.source` (string — absolute path to the ruleset file) and `.range` (object with
+  `.start.line` and `.start.character`, both 0-indexed) when a ruleset validation
+  failure has a known location. The `bundleAndLoadRuleset` function from
+  `@stoplight/spectral-ruleset-bundler` may throw an `AggregateError` whose `.errors`
+  array contains one or more `RulesetValidationError` instances. The `--verbose`
+  error header format (source:line:col) is derived from these properties, converting
+  to 1-indexed display values.
 - The CLI accepts only local file paths as input in this feature. URL-based input
   is out of scope; a `--url` flag is reserved and documented but not implemented.
 - The container image will use a publicly available, free base image (e.g.,

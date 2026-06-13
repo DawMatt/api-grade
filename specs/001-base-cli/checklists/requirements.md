@@ -34,6 +34,13 @@
 - All items pass. Spec is ready for `/speckit-tasks` or `/speckit-plan`.
 - 5 clarifications applied (2026-06-12): grade scale, diagnostic ordering, input
   source, output detail level, min-grade format.
+- Spec updated (2026-06-13, branch 002-update-spec-output-format, second pass):
+  revised `--verbose` output format (US4/FR-015/FR-016/edge case) to specify that
+  both modes show `Error #N: [{source}:{line}:{col} — ]{message}` with source
+  location derived from Spectral's `RulesetValidationError` properties; verbose mode
+  additionally shows indented call chain frames and omits the "Use --verbose flag"
+  prompt. Added Spectral `RulesetValidationError`/`AggregateError` implementation
+  note to Assumptions. No clarifications required.
 - Spec updated (2026-06-13, branch 002-update-spec-output-format): added `--verbose`
   error-detail flag (US4/FR-015/FR-016/SC-007); container use case renumbered P4→P5;
   added missing-function edge case. No clarifications required.
