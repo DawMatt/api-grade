@@ -1,6 +1,21 @@
 # Documentation Architecture for api-grade Project
 
-## Overall Structure
+## Root Documentation Structure
+
+The root folder will retain the following standard repository documentation items:
+
+- README.md - project overview and links to remainder of the documentation. See "Main README" sub-section for further detail.
+- CONTRIBUTING.md - Standard document describing how to get involved with the project.
+- LICENSE.md - Project license.
+
+## Transition from Root Documentation to Documentation Architecture
+
+Migrate the existing root README.md content: extract CLI docs → docs/cli, extract package docs → docs/package, keep any Backstage content separate for docs/backstage-plugins. 
+
+Shrink (aim: 300-500 words) the root README to a landing page with links to these three sections. See "Main README" sub-section for further detail.
+
+## Main Documentation Structure
+
 Create a `/docs` directory with the following structure:
 
 ```
@@ -24,10 +39,11 @@ docs/
 ```
 
 ## Main README (`index.md` / root README.md)
-**Keep this concise** — aim for ~200-500 words:
+**Keep this concise** — aim for ~300-500 words:
+- Project name & one-sentence description
 - Single paragraph: What is api-grade? (problem it solves)
 - Example of grading output from the CLI
-- Quick visual: ASCII diagram showing the three components
+- Quick visual: diagram showing the three components - CLI + Package + Plugins
 - Three bullet sections linking to:
   - **CLI Tool** — Quick install & example command
   - **Core Package** — What it does, one install/import example
@@ -71,14 +87,3 @@ docs/
 - Include "further reading" section at end of each doc linking to related pages
 - Add version/last-updated info to plugin docs (they change with Backstage)
 - Use clear link text like "→ Full CLI Documentation"
-
-## Transition from initial documentation architecture
-
-Migrate the existing root README.md content: extract CLI docs → docs/cli, extract package docs → docs/package, keep any Backstage content separate for docs/backstage-plugins. 
-
-Shrink (aim: 300-400 words) the root README to a landing page with links to these three sections.
-- Project name & one-sentence description
-- Problem statement (what problem does api-grade solve?)
-- Three-part visual showing CLI + Package + Plugins
-- Quick links to the three component docs
-- Links to: Contributing, License, Discussions/Issues

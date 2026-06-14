@@ -181,12 +181,12 @@ This feature adds two new packages to the monorepo:
 
 ### Documentation — FR-023 to FR-028
 
-- [ ] T055 [P] Create `docs/backstage-plugins/README.md` covering: plugin architecture overview (frontend card + backend router), prerequisites (Node ≥ 20, Backstage New Backend System), and navigation links to quick-start and plugin-setup guides (FR-023)
-- [ ] T056 [P] Create `docs/backstage-plugins/quick-start.md` by adapting `specs/004-backstage-api-page/quickstart.md` — verify steps against final implementation, ensure relative links to sibling docs work, and add "Common next steps" pointers (FR-024)
-- [ ] T057 [P] Create `docs/backstage-plugins/plugin-setup.md` with detailed installation and wiring steps for `backstage-plugin-api-grade` (frontend, `EntityPage.tsx` integration) and `backstage-plugin-api-grade-backend` (backend `index.ts` registration), covering all config options (FR-025)
-- [ ] T058 [P] Create `docs/backstage-plugins/configuration.md` documenting the full `apiGrade` config schema from `contracts/plugin-config.md` and research R-006: `ruleset.url`, `ruleset.token`, `visibility.allowAll`, `visibility.groups`, with examples and environment-variable conventions (FR-026)
-- [ ] T059 [P] Create `docs/backstage-plugins/troubleshooting.md` covering: card shows "grading unavailable", custom ruleset not applied, detailed section not visible, unsupported spec formats, guest/unauthenticated user behaviour, and spec.definition not inlined (FR-027)
-- [ ] T060 [P] Update root `README.md` with a "Backstage Plugins" section: one-sentence description of the integration, link to `docs/backstage-plugins/README.md`, and quick-start link (FR-028)
+- [X] T055 [P] Create `docs/backstage-plugins/README.md` covering: plugin architecture overview (frontend card + backend router), prerequisites (Node ≥ 20, Backstage New Backend System), and navigation links to quick-start and plugin-setup guides (FR-023)
+- [X] T056 [P] Create `docs/backstage-plugins/quick-start.md` by adapting `specs/004-backstage-api-page/quickstart.md` — verify steps against final implementation, ensure relative links to sibling docs work, and add "Common next steps" pointers (FR-024)
+- [X] T057 [P] Create `docs/backstage-plugins/plugin-setup.md` with detailed installation and wiring steps for `backstage-plugin-api-grade` (frontend, `EntityPage.tsx` integration) and `backstage-plugin-api-grade-backend` (backend `index.ts` registration), covering all config options (FR-025)
+- [X] T058 [P] Create `docs/backstage-plugins/configuration.md` documenting the full `apiGrade` config schema from `contracts/plugin-config.md` and research R-006: `ruleset.url`, `ruleset.token`, `visibility.allowAll`, `visibility.groups`, with examples and environment-variable conventions (FR-026)
+- [X] T059 [P] Create `docs/backstage-plugins/troubleshooting.md` covering: card shows "grading unavailable", custom ruleset not applied, detailed section not visible, unsupported spec formats, guest/unauthenticated user behaviour, and spec.definition not inlined (FR-027)
+- [X] T060 [P] Update root `README.md` with a "Backstage Plugins" section: one-sentence description of the integration, link to `docs/backstage-plugins/README.md`, and quick-start link (FR-028)
 
 ---
 

@@ -236,6 +236,15 @@ Pass any flag as you would with the local CLI:
 docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml --min-grade B --format json
 ```
 
+## Backstage Plugins
+
+Integrate API grading directly into your [Backstage](https://backstage.io) developer portal. The `backstage-plugin-api-grade` frontend card displays the grade on any API entity page; `backstage-plugin-api-grade-backend` grades the spec server-side using `api-grade-core`.
+
+- [Backstage Plugins overview](docs/backstage-plugins/README.md)
+- [Quick start](docs/backstage-plugins/quick-start.md)
+
+---
+
 ## Monorepo structure
 
 This repository is an npm workspaces monorepo with two packages:
