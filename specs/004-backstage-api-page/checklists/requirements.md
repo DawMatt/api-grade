@@ -31,4 +31,5 @@
 
 ## Notes
 
+- Updated 2026-06-14: Added card layout requirements (FR-016 to FR-022) and corresponding key entities and acceptance scenario updates.
 - All items pass. Specification is ready for `/speckit-clarify` or `/speckit-plan`.
