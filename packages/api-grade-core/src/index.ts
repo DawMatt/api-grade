@@ -10,6 +10,7 @@ export type {
   DiagnosticSeverity,
   DiagnosticSeverityLevel,
   DiagnosticSummary,
+  GradeContentRequest,
   GradeLabel,
   GradeRequest,
   GradeResult,

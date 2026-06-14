@@ -75,6 +75,13 @@ export interface GradeRequest {
   rulesetPath?: string;
 }
 
+export interface GradeContentRequest {
+  content: string;
+  rulesetPath?: string;
+  rulesetUrl?: string;
+  rulesetToken?: string;
+}
+
 export function extractCategory(ruleId: string): string {
   const match = ruleId.match(/^([^_-]+)/);
   return match ? match[1] : ruleId;
