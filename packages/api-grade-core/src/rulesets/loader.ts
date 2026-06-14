@@ -53,6 +53,29 @@ export async function loadRuleset(format: ApiFormat, rulesetPath?: string): Prom
   }
 }
 
+export async function loadRulesetFromUrl(format: ApiFormat, url: string, token?: string): Promise<LoadedRuleset> {
+  const { bundleAndLoadRuleset } = await import(
+    '@stoplight/spectral-ruleset-bundler/with-loader'
+  );
+
+  const authFetch: typeof globalThis.fetch = (input, init) => {
+    const headers = new Headers((init?.headers as HeadersInit) ?? {});
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    return globalThis.fetch(input, { ...init, headers });
+  };
+
+  const io = { fs: { promises: { readFile: fsPromises.readFile } }, fetch: authFetch };
+
+  try {
+    const ruleset = await bundleAndLoadRuleset(url, io);
+    return { ruleset, rulesetSource: 'custom', rulesetPath: url };
+  } catch {
+    return getDefaultRuleset(format);
+  }
+}
+
 function extractExternalUrls(content: string): string[] {
   const matches = content.match(/https?:\/\/[^\s'">\]]+/g) ?? [];
   return [...new Set(matches)];

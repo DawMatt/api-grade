@@ -1,0 +1,42 @@
+{
+  "name": "backstage-plugin-api-grade",
+  "version": "0.1.0",
+  "description": "Backstage frontend plugin — displays API quality grades on API entity pages",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "api-grade-core": "*"
+  },
+  "peerDependencies": {
+    "@backstage/core-plugin-api": "^1.0.0",
+    "@backstage/plugin-catalog-react": "^1.0.0",
+    "react": "^18"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^20.12.0",
+    "@types/react": "^18.0.0",
+    "@vitest/coverage-v8": "^1.6.0",
+    "jsdom": "^29.1.1",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist"
+  ]
+}

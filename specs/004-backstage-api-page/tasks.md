@@ -29,14 +29,14 @@ This feature adds two new packages to the monorepo:
 
 **Purpose**: Create both new Backstage plugin packages with correct manifests and test infrastructure. All tasks are independent; T001/T003 can run in parallel, T002/T004 in parallel, T005/T006 in parallel, T007/T008 in parallel.
 
-- [ ] T001 Create `packages/backstage-plugin-api-grade/package.json` with peerDeps `@backstage/core-plugin-api`, `@backstage/plugin-catalog-react`, `react@^18`; dep `api-grade-core: *`; scripts: `build`, `test`
-- [ ] T002 [P] Create `packages/backstage-plugin-api-grade-backend/package.json` with peerDeps `@backstage/backend-plugin-api`, `@backstage/catalog-client`; dep `api-grade-core: *`; scripts: `build`, `test`
-- [ ] T003 Create `packages/backstage-plugin-api-grade/tsconfig.json` with `"jsx": "react-jsx"`, `NodeNext` modules, extending root tsconfig paths
-- [ ] T004 [P] Create `packages/backstage-plugin-api-grade-backend/tsconfig.json` with `NodeNext` modules, no JSX
-- [ ] T005 Create `packages/backstage-plugin-api-grade/vitest.config.ts` with `environment: 'jsdom'` and `include: ['tests/**/*.test.{ts,tsx}']`
-- [ ] T006 [P] Create `packages/backstage-plugin-api-grade-backend/vitest.config.ts` with `environment: 'node'` and `include: ['tests/**/*.test.ts']`
-- [ ] T007 Create `packages/backstage-plugin-api-grade/src/index.ts` as an empty barrel (stub `export {}`)
-- [ ] T008 [P] Create `packages/backstage-plugin-api-grade-backend/src/index.ts` as an empty barrel (stub `export {}`)
+- [X] T001 Create `packages/backstage-plugin-api-grade/package.json` with peerDeps `@backstage/core-plugin-api`, `@backstage/plugin-catalog-react`, `react@^18`; dep `api-grade-core: *`; scripts: `build`, `test`
+- [X] T002 [P] Create `packages/backstage-plugin-api-grade-backend/package.json` with peerDeps `@backstage/backend-plugin-api`, `@backstage/catalog-client`; dep `api-grade-core: *`; scripts: `build`, `test`
+- [X] T003 Create `packages/backstage-plugin-api-grade/tsconfig.json` with `"jsx": "react-jsx"`, `NodeNext` modules, extending root tsconfig paths
+- [X] T004 [P] Create `packages/backstage-plugin-api-grade-backend/tsconfig.json` with `NodeNext` modules, no JSX
+- [X] T005 Create `packages/backstage-plugin-api-grade/vitest.config.ts` with `environment: 'jsdom'` and `include: ['tests/**/*.test.{ts,tsx}']`
+- [X] T006 [P] Create `packages/backstage-plugin-api-grade-backend/vitest.config.ts` with `environment: 'node'` and `include: ['tests/**/*.test.ts']`
+- [X] T007 Create `packages/backstage-plugin-api-grade/src/index.ts` as an empty barrel (stub `export {}`)
+- [X] T008 [P] Create `packages/backstage-plugin-api-grade-backend/src/index.ts` as an empty barrel (stub `export {}`)
 
 **Checkpoint**: Both packages scaffold correctly; `yarn install` resolves workspaces
 
@@ -48,11 +48,11 @@ This feature adds two new packages to the monorepo:
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T009 Add `GradeContentRequest` interface to `packages/api-grade-core/src/types.ts` (fields: `content: string`, `rulesetPath?: string`, `rulesetUrl?: string`, `rulesetToken?: string`)
-- [ ] T010 Implement `GradeEngine.gradeContent(request: GradeContentRequest): Promise<GradeResult>` in `packages/api-grade-core/src/grader.ts` — reuse `detectFormat`, existing `Document` constructor, `loadRuleset`, `computeScore`, `generateSummary`; set `result.specPath = 'inline'`
-- [ ] T011 Export `GradeContentRequest` from `packages/api-grade-core/src/index.ts`
-- [ ] T012 Write unit tests for `GradeEngine.gradeContent()` covering inline OpenAPI 3 and AsyncAPI 2 content in `packages/api-grade-core/tests/unit/grader-content.test.ts`
-- [ ] T013 Run `packages/api-grade-core` test suite (`yarn workspace api-grade-core test`) and confirm all existing tests still pass alongside T012
+- [X] T009 Add `GradeContentRequest` interface to `packages/api-grade-core/src/types.ts` (fields: `content: string`, `rulesetPath?: string`, `rulesetUrl?: string`, `rulesetToken?: string`)
+- [X] T010 Implement `GradeEngine.gradeContent(request: GradeContentRequest): Promise<GradeResult>` in `packages/api-grade-core/src/grader.ts` — reuse `detectFormat`, existing `Document` constructor, `loadRuleset`, `computeScore`, `generateSummary`; set `result.specPath = 'inline'`
+- [X] T011 Export `GradeContentRequest` from `packages/api-grade-core/src/index.ts`
+- [X] T012 Write unit tests for `GradeEngine.gradeContent()` covering inline OpenAPI 3 and AsyncAPI 2 content in `packages/api-grade-core/tests/unit/grader-content.test.ts`
+- [X] T013 Run `packages/api-grade-core` test suite (`yarn workspace api-grade-core test`) and confirm all existing tests still pass alongside T012
 
 **Checkpoint**: `gradeContent()` implemented, tested, and exported; all core tests green
 
@@ -66,25 +66,25 @@ This feature adds two new packages to the monorepo:
 
 ### Backend — User Story 1
 
-- [ ] T014 [US1] Implement Express router scaffold with `GET /grade` route signature in `packages/backstage-plugin-api-grade-backend/src/router.ts`
-- [ ] T015 [US1] Add catalog client call to fetch `ApiEntity` by `entityRef` query param; validate entity kind is `API` and `spec.type` is `openapi` or `asyncapi`; extract `spec.definition` in `packages/backstage-plugin-api-grade-backend/src/router.ts`
-- [ ] T016 [US1] Call `GradeEngine.gradeContent()` and return a summary-only `BackstageGradeResponse` (strip `summary.commentary`, `summary.recommendations`, and `diagnostics`) in `packages/backstage-plugin-api-grade-backend/src/router.ts`
-- [ ] T017 [US1] Export `createPlugin()` (Backstage backend plugin registration with `httpRouter`) from `packages/backstage-plugin-api-grade-backend/src/index.ts`
+- [X] T014 [US1] Implement Express router scaffold with `GET /grade` route signature in `packages/backstage-plugin-api-grade-backend/src/router.ts`
+- [X] T015 [US1] Add catalog client call to fetch `ApiEntity` by `entityRef` query param; validate entity kind is `API` and `spec.type` is `openapi` or `asyncapi`; extract `spec.definition` in `packages/backstage-plugin-api-grade-backend/src/router.ts`
+- [X] T016 [US1] Call `GradeEngine.gradeContent()` and return a summary-only `BackstageGradeResponse` (strip `summary.commentary`, `summary.recommendations`, and `diagnostics`) in `packages/backstage-plugin-api-grade-backend/src/router.ts`
+- [X] T017 [US1] Export `createPlugin()` (Backstage backend plugin registration with `httpRouter`) from `packages/backstage-plugin-api-grade-backend/src/index.ts`
 
 ### Frontend — User Story 1
 
-- [ ] T018 [P] [US1] Implement `ApiGradeClient.fetchGrade(entityRef: string): Promise<BackstageGradeResponse>` using Backstage `discoveryApi` + `fetchApi` in `packages/backstage-plugin-api-grade/src/api/ApiGradeClient.ts`
-- [ ] T019 [P] [US1] Implement `useApiGrade(entityRef: string): UseApiGradeResult` hook (loading, grade, error, rulesetWarning state) in `packages/backstage-plugin-api-grade/src/hooks/useApiGrade.ts`
-- [ ] T020 [US1] Implement `OverallGradeSection` component — summary mode: letter (bold, large font), percentage and label beside the letter in a horizontal row — in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx`
-- [ ] T021 [US1] Implement `ApiGradeCard` container: uses `useEntity()` for `entityRef`, `useApiGrade()` for grade data; renders loading state, error message (FR-015), and `OverallGradeSection` in summary mode in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
-- [ ] T022 [US1] Export `ApiGradeCard` from `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/index.ts` and re-export from `packages/backstage-plugin-api-grade/src/index.ts`
+- [X] T018 [P] [US1] Implement `ApiGradeClient.fetchGrade(entityRef: string): Promise<BackstageGradeResponse>` using Backstage `discoveryApi` + `fetchApi` in `packages/backstage-plugin-api-grade/src/api/ApiGradeClient.ts`
+- [X] T019 [P] [US1] Implement `useApiGrade(entityRef: string): UseApiGradeResult` hook (loading, grade, error, rulesetWarning state) in `packages/backstage-plugin-api-grade/src/hooks/useApiGrade.ts`
+- [X] T020 [US1] Implement `OverallGradeSection` component — summary mode: letter (bold, large font), percentage and label beside the letter in a horizontal row — in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx`
+- [X] T021 [US1] Implement `ApiGradeCard` container: uses `useEntity()` for `entityRef`, `useApiGrade()` for grade data; renders loading state, error message (FR-015), and `OverallGradeSection` in summary mode in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
+- [X] T022 [US1] Export `ApiGradeCard` from `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/index.ts` and re-export from `packages/backstage-plugin-api-grade/src/index.ts`
 
 ### Tests — User Story 1
 
-- [ ] T023 [P] [US1] Write unit tests for `ApiGradeClient.fetchGrade()` (correct URL construction, handles error response) in `packages/backstage-plugin-api-grade/tests/unit/api/ApiGradeClient.test.ts`
-- [ ] T024 [P] [US1] Write unit tests for `OverallGradeSection` summary mode (letter, percentage, label visible; horizontal layout) in `packages/backstage-plugin-api-grade/tests/unit/components/OverallGradeSection.test.tsx`
-- [ ] T025 [P] [US1] Write integration tests for `GET /grade` summary response shape (correct fields present; `diagnostics` is `[]`; `summary.commentary` is `''`) in `packages/backstage-plugin-api-grade-backend/tests/integration/router.test.ts`
-- [ ] T026 [US1] Verify FR-015: `ApiGradeCard` renders a user-friendly unavailability message (not a blank section or thrown error) when `useApiGrade` returns an error state in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
+- [X] T023 [P] [US1] Write unit tests for `ApiGradeClient.fetchGrade()` (correct URL construction, handles error response) in `packages/backstage-plugin-api-grade/tests/unit/api/ApiGradeClient.test.ts`
+- [X] T024 [P] [US1] Write unit tests for `OverallGradeSection` summary mode (letter, percentage, label visible; horizontal layout) in `packages/backstage-plugin-api-grade/tests/unit/components/OverallGradeSection.test.tsx`
+- [X] T025 [P] [US1] Write integration tests for `GET /grade` summary response shape (correct fields present; `diagnostics` is `[]`; `summary.commentary` is `''`) in `packages/backstage-plugin-api-grade-backend/tests/integration/router.test.ts`
+- [X] T026 [US1] Verify FR-015: `ApiGradeCard` renders a user-friendly unavailability message (not a blank section or thrown error) when `useApiGrade` returns an error state in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
 
 **Checkpoint**: API grade summary visible on any API entity page; non-owner sees grade only; error state is user-friendly
 
