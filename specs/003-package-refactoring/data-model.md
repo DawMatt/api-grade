@@ -143,3 +143,25 @@ GradeRequest ──(input to)──► GradeEngine.grade() ──(produces)─�
 | 70–79 | C | OK |
 | 60–69 | D | Below Standard |
 | 0–59 | F | Poor |
+
+---
+
+## Risk Score Formula (Stage 5 — for test verification)
+
+Used to rank focus rules. The authoritative formula per `api_diagnostic_algorithm_spec.md` (v1.0.1):
+
+```
+riskScore = (errorCount × 10) + warningCount
+```
+
+where `warningCount` counts only warning-severity violations (errors are **not** added again).
+
+**Verification examples**:
+
+| Rule violations | riskScore | Calculation |
+|----------------|-----------|-------------|
+| 1 error + 14 warnings | 24 | (1×10) + 14 |
+| 0 errors + 20 warnings | 20 | (0×10) + 20 |
+| 5 errors + 0 warnings | 50 | (5×10) + 0 |
+
+Note: the Stage 5 pseudocode in `api_diagnostic_algorithm_spec.md` previously used `totalCount` (errors + warnings), which produced wrong values. FR-016 requires correcting that pseudocode to match this formula.

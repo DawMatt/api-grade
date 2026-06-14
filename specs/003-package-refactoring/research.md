@@ -99,6 +99,56 @@ Options for addressing unit test imports:
 
 ---
 
+---
+
+## Decision 7: Algorithm Spec Corrections (FR-011, FR-012, FR-013, FR-016)
+
+**Decision**: Address three categories of correction derived from the algorithm spec update (commit `003cf3a`) as part of this feature.
+
+### 7a — Risk Score Formula (FR-011, FR-016)
+
+The `api_diagnostic_algorithm_spec.md` Stage 5 pseudocode states:
+```
+riskScore = (errorViolations.length × 10) + totalCount
+```
+where `totalCount = errorViolations.length + warningViolations.length`
+
+The "Risk Score Formula Explained" section and its corrected examples (commit `003cf3a`) establish the authoritative formula as:
+```
+riskScore = (errorCount × 10) + warningCount
+```
+
+These two formulas produce different results. For 1 error + 14 warnings:
+- Pseudocode: (1×10) + (1+14) = 25 ← wrong
+- Authoritative: (1×10) + 14 = 24 ← correct
+
+The current `summariser.ts` implementation uses `data.errorCount * 10 + data.totalCount` (= pseudocode formula, wrong).
+
+**Actions required**:
+1. Fix the pseudocode in `api_diagnostic_algorithm_spec.md` Stage 5 to use `warningViolations.length` instead of `totalCount` (FR-016).
+2. Fix `summariser.ts` `buildFocusRules()` to compute `riskScore = errorCount * 10 + warningCount` (where `warningCount = totalCount - errorCount`) (FR-011).
+
+**Alternatives considered**: Accept the pseudocode as-is and change only the examples — rejected; the pseudocode is what implementors follow; leaving it wrong creates a latent re-introduction risk.
+
+### 7b — Recommendation Item 2 Grammar (FR-012)
+
+Current implementation always outputs `"Focus on these rules (highest impact first):"` regardless of focus rule count. The corrected spec requires:
+- 0 focus rules → item absent (already correct: condition is `focusRules.length > 0`)
+- 1 focus rule → `"Focus on this rule (highest impact first):"`
+- 2+ focus rules → `"Focus on these rules (highest impact first):"`
+
+**Action required**: Update `buildRecommendations()` item 2 branch to check `top3.length` and use singular/plural accordingly (FR-012).
+
+### 7c — Recommendation Item 4 Grammar (FR-013)
+
+Current implementation always outputs `"Start with categories ${cats.join(', ')} — they have the most impactful issues"`. The corrected spec requires:
+- 1 category → `"Start with this category ${cat} — it has the most impactful issues"`
+- 2+ categories → `"Start with categories ${cats.join(', ')} — they have the most impactful issues"`
+
+**Action required**: Update `buildRecommendations()` item 4 branch to check `cats.length` and branch on singular/plural (FR-013).
+
+---
+
 ## Summary of Dependencies After Refactoring
 
 | Package | Runtime Dependencies |

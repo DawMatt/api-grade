@@ -38,14 +38,14 @@ Extract the grading and diagnostics logic from the single-package `api-grade` CL
 |-----------|--------|-------|
 | I. Multi-Format API Support | ✅ PASS | Library explicitly supports OpenAPI 2/3 and AsyncAPI 2/3. Format detection moves with `spec-loader.ts`. |
 | II. Core-First Architecture | ✅ PASS | This feature IS the Core-First implementation. All grading logic moves to `api-grade-core`; CLI has zero grading logic. |
-| III. Spectral-Ruleset Based Grading | ✅ PASS | `rulesets/loader.ts` and full Spectral pipeline move to library unchanged. Custom ruleset support preserved. |
-| IV. Test-Driven Quality | ✅ PASS | Existing tests migrated/updated. New library-level unit test added. No coverage reduction. |
+| III. Spectral-Ruleset Based Grading | ✅ PASS | `rulesets/loader.ts` and full Spectral pipeline move to library unchanged. Custom ruleset support preserved. Phase F corrects the risk score formula to match the canonical `api_diagnostic_algorithm_spec.md` and fixes internal pseudocode contradiction. |
+| IV. Test-Driven Quality | ✅ PASS | Existing tests migrated/updated. New library-level unit test added. Phase F adds targeted tests for riskScore exact values and singular/plural grammar at 0/1/1+ boundaries (FR-014, SC-006–SC-009). |
 | V. Cross-Platform & Zero-Cost Prerequisites | ✅ PASS | npm workspaces is a zero-cost native Node feature. No new paid dependencies. |
-| VI. Educational Excellence | ✅ PASS | No change to grading output, sample fixtures, or educational content. |
-| CI/CD: machine-readable output | ✅ PASS | `formatJson` moves to library; JSON output schema unchanged. |
-| Development Workflow: YAGNI | ✅ PASS | Exactly two packages. No third package, no shared config package, no plugin system introduced. |
+| VI. Educational Excellence | ✅ PASS | Phase F improves diagnostic output quality: correct risk-score ordering, grammatically precise singular/plural text. Single-rule fixture added and labelled as intentional test fixture. |
+| CI/CD: machine-readable output | ✅ PASS | `formatJson` moves to library; JSON output schema unchanged. Grammar corrections affect `recommendations[]` string values only, not JSON keys or structure. |
+| Development Workflow: YAGNI | ✅ PASS | Exactly two packages. Phase F adds no new abstractions — only corrects existing logic and adds one fixture file. |
 
-**Post-design re-check**: No constitution violations found in the design. `@stoplight/yaml` explicit declaration is a hygiene addition, not a complexity violation.
+**Post-design re-check**: No constitution violations found. Phase F corrections are required by the constitution (Principle III mandates the canonical algorithm spec; Principle VI mandates quality diagnostic output). `@stoplight/yaml` explicit declaration is a hygiene addition, not a complexity violation.
 
 ## Project Structure
 
@@ -159,6 +159,108 @@ specs/003-package-refactoring/
 5. Manually verify CLI binary output is byte-for-byte identical against baseline: `node dist/cli/index.js tests/fixtures/openapi/museum-api.yaml`.
 6. Verify library standalone use: write a quick smoke test that imports `api-grade-core` and calls `GradeEngine.grade()`.
 
+### Phase F — Algorithm Corrections & Grammar Fixes
+
+These changes address FR-011 through FR-016 and are independent of the package-restructuring phases (A–E). They can be applied before, after, or alongside the refactoring phases.
+
+#### F1 — Fix Stage 5 Pseudocode in Algorithm Spec (FR-016)
+
+File: `specs/001-base-cli/api_diagnostic_algorithm_spec.md`
+
+In Stage 5, Step 2, replace:
+```
+riskScore = (errorViolations.length × 10) + totalCount
+```
+with:
+```
+riskScore = (errorViolations.length × 10) + warningViolations.length
+```
+
+This aligns the pseudocode with the "Risk Score Formula Explained" section and the corrected examples from commit `003cf3a`.
+
+#### F2 — Fix Risk Score Formula in `summariser.ts` (FR-011)
+
+File: `packages/api-grade-core/src/summariser.ts` — `buildFocusRules()`
+
+Current (wrong):
+```typescript
+riskScore: data.errorCount * 10 + data.totalCount,
+```
+
+Replace with:
+```typescript
+riskScore: data.errorCount * 10 + (data.totalCount - data.errorCount),
+```
+
+`data.totalCount - data.errorCount` = warningCount. No new field needed; the existing `RuleAccum` shape suffices.
+
+#### F3 — Fix Recommendation Item 2 Grammar (FR-012)
+
+File: `packages/api-grade-core/src/summariser.ts` — `buildRecommendations()`
+
+Current (always plural):
+```typescript
+recs.push(`Focus on these rules (highest impact first): ${ruleStr}`);
+```
+
+Replace with:
+```typescript
+const ruleWord = top3.length === 1 ? 'this rule' : 'these rules';
+recs.push(`Focus on ${ruleWord} (highest impact first): ${ruleStr}`);
+```
+
+#### F4 — Fix Recommendation Item 4 Grammar (FR-013)
+
+File: `packages/api-grade-core/src/summariser.ts` — `buildRecommendations()`
+
+Current (always plural):
+```typescript
+recs.push(`Start with categories ${cats.join(', ')} — they have the most impactful issues`);
+```
+
+Replace with:
+```typescript
+if (cats.length === 1) {
+  recs.push(`Start with this category ${cats[0]} — it has the most impactful issues`);
+} else {
+  recs.push(`Start with categories ${cats.join(', ')} — they have the most impactful issues`);
+}
+```
+
+#### F5 — Add Single-Rule Fixture (FR-015)
+
+Create `tests/fixtures/openapi/single-rule.yaml` — a minimal OpenAPI 3.0 document in which all operations are missing summaries. When graded this produces violations exclusively from the `operation_summary` rule (category: `operation`), exercising the 1-focus-rule / 1-category singular grammar paths.
+
+Design constraints:
+- 3–6 operations, none with a `summary` field → 3–6 violations of `operation_summary` → impact = LOW or MEDIUM (count < 10)
+- No other specification problems (valid schema, valid info, valid paths)
+- Clearly labelled in the `info.description` field as an intentional test fixture
+
+#### F6 — Add/Update Unit Tests for Corrections (FR-014, SC-006–SC-009)
+
+File: `packages/api-grade-core/tests/unit/summariser.test.ts`
+
+New tests to add:
+
+1. **Risk score exact value** (SC-006):
+   ```
+   1 error + 14 warnings → riskScore 24 (not 25)
+   5 errors + 0 warnings → riskScore 50 (not 55)
+   ```
+   Assert ordering still holds AND assert the ranking is driven by correct values.
+
+2. **Item 2 singular** (SC-007): 1 violation of a single rule → recommendation contains `"Focus on this rule"`.
+
+3. **Item 2 plural** (SC-007): 2 violations of 2 different rules → recommendation contains `"Focus on these rules"`.
+
+4. **Item 4 singular** (SC-008): all violations from one category → recommendation contains `"this category"` and `"it has"`.
+
+5. **Item 4 plural** (SC-008): violations across 2+ categories → recommendation contains `"categories"` and `"they have"`.
+
+6. **Item 2 absent** (boundary): 0 violations → `recommendations` array has no entry containing `"Focus on"`.
+
+Update the existing comment on the risk-score ordering test (line 175 of summariser.test.ts) to reflect the corrected riskScore values (25 → 24).
+
 ## Complexity Tracking
 
 No constitution violations. No unjustified complexity.
@@ -167,3 +269,4 @@ No constitution violations. No unjustified complexity.
 |--------------------|------------|--------------------------------------|
 | `@stoplight/yaml` explicit dep | Already used in `rulesets/loader.ts`; must be declared to avoid fragile transitive reliance | Cannot remove usage — it provides error location enrichment required by existing tests |
 | `packages/api-grade-core/vitest.config.ts` | Library needs its own test runner config to resolve imports correctly | Cannot reuse root config — root config doesn't know about `packages/` source tree |
+| `tests/fixtures/openapi/single-rule.yaml` (new fixture) | Required by FR-015 to exercise singular grammar path (1 focus rule, 1 category) in unit and manual tests | No existing fixture isolates violations to a single rule; reusing poor-quality.yaml would not test the singular branch |
