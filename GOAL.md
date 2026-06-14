@@ -43,7 +43,8 @@ Feature 4 - Backstage API page
 
 - Enable the same API quality grading and diagnostic information to be exposed on a Backstage API page. Default to showing this in the Info column below the About entry. 
 - Allow users to supply a custom spectral ruleset to use as the basis for assessing grades. This may be located in a secured location such as a private GitHub Enterprise repository.
-- By default all detailed API quality features (e.g. Spectral and detailed API grading information) will be visible only to the API owner. Additional groups can be granted visibility as well, or visibility can be made allow all. General users of backstage will default to only seeing the grade letter, percentage and label.
+- Most users of backstage will only see the highest level of grade information - grade letter, percentage and label.
+- By default, detailed API quality features (e.g. quality assessment, recommendations, and detailed diagnostic information) will be visible only to the API owner. Configuration will allow additional groups to be granted visibility as well, or visibility can be made allow all. 
 
 ## Constitution
 
