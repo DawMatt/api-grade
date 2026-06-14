@@ -94,7 +94,7 @@ A Backstage administrator grants the platform engineering team visibility of det
 - **FR-006**: Administrators MUST be able to set visibility to "allow all", making detailed quality information visible to all authenticated users.
 - **FR-007**: The integration MUST allow administrators to configure a custom spectral ruleset as the basis for grading.
 - **FR-008**: The custom ruleset source MUST support rulesets stored in secured locations, including private GitHub Enterprise repositories, with appropriate credential configuration.
-- **FR-009**: When no custom ruleset is configured, the integration MUST produce meaningful grades using a default ruleset.
+- **FR-009**: When no custom ruleset is configured, the integration MUST produce meaningful grades using a default ruleset — "meaningful" means a valid letter grade, a score in the range 0–100, and non-empty commentary for any compliant OpenAPI or AsyncAPI input.
 - **FR-010**: Diagnostic output in the detailed view MUST implement error-first prioritisation — errors are presented before warnings in both scoring impact and recommendation ordering.
 - **FR-011**: Diagnostic output MUST be volume-aware — the commentary language MUST reflect the severity implied by violation volume.
 - **FR-012**: Diagnostic output MUST identify the API domain (e.g., operations, schemas) requiring the most attention.
@@ -119,6 +119,7 @@ This feature MUST produce documentation for the Backstage Plugins integration as
 - **FR-026**: A configuration reference MUST be produced covering all shared configuration options — including custom ruleset URL, credential configuration, and visibility group settings — with examples.
 - **FR-027**: A troubleshooting guide MUST be produced covering the most common installation, configuration, and runtime issues encountered by adopters of the integration.
 - **FR-028**: The main project README MUST include a Backstage Plugins entry describing what the integration does and linking to the `docs/backstage-plugins/` documentation.
+- **FR-029**: Visibility configuration (`apiGrade.visibility`) MUST be read at request-time (not at plugin startup) so that changes to group membership or `allowAll` take effect on the next page load without a restart or redeployment.
 
 ### Key Entities
 

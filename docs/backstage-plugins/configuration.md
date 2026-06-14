@@ -154,3 +154,10 @@ apiGrade:
 # Uses built-in OAS/AsyncAPI Spectral ruleset.
 # Shows detailed diagnostics to API owners only.
 ```
+
+## Further Reading
+
+- [→ Backstage Plugins Overview](./README.md) — plugin architecture and prerequisites
+- [→ Plugin Setup Guide](./plugin-setup.md) — installation and wiring steps for both plugins
+- [→ Troubleshooting Guide](./troubleshooting.md) — common configuration issues and solutions
+- [→ Quick-Start Guide](./quick-start.md) — minimal setup to get started quickly

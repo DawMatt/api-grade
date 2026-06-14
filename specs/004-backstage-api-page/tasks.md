@@ -173,7 +173,7 @@ This feature adds two new packages to the monorepo:
 ### Implementation Validation
 
 - [ ] T049 [P] Verify OpenAPI 2 (Swagger 2.x) spec grades end-to-end (FR-003): use a Swagger 2 fixture in `tests/fixtures/openapi/` and confirm `gradeContent` returns `format: 'openapi-2'`
-- [ ] T050 [P] Verify AsyncAPI 2 and AsyncAPI 3 specs grade end-to-end (FR-003): confirm both formats produce a `BackstageGradeResponse` with correct `format` field
+- [ ] T050 [P] Verify AsyncAPI 2 and AsyncAPI 3 specs grade end-to-end (FR-003, SC-006): confirm both formats produce a `BackstageGradeResponse` with correct `format` field **and** that `summary.commentary`, `summary.recommendations`, and `diagnostics` are populated (equivalent detailed-assessment coverage to OpenAPI)
 - [ ] T051 Verify SC-004: confirm all five algorithm principles present in detailed output for a low-quality OpenAPI test fixture (error-first ordering, volume-aware commentary, category focus, actionable recommendations, tone-calibrated label)
 - [ ] T052 [P] Verify FR-015 unsupported-format message in `ApiGradeCard`: a GraphQL entity (mock `spec.type: 'graphql'`) shows the "format not supported" message, not a blank card or unhandled error in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
 - [ ] T053 Run quickstart.md validation: follow all five steps against a local Backstage dev instance; confirm card appears in Info column for both an OpenAPI and an AsyncAPI entity
@@ -187,6 +187,16 @@ This feature adds two new packages to the monorepo:
 - [X] T058 [P] Create `docs/backstage-plugins/configuration.md` documenting the full `apiGrade` config schema from `contracts/plugin-config.md` and research R-006: `ruleset.url`, `ruleset.token`, `visibility.allowAll`, `visibility.groups`, with examples and environment-variable conventions (FR-026)
 - [X] T059 [P] Create `docs/backstage-plugins/troubleshooting.md` covering: card shows "grading unavailable", custom ruleset not applied, detailed section not visible, unsupported spec formats, guest/unauthenticated user behaviour, and spec.definition not inlined (FR-027)
 - [X] T060 [P] Update root `README.md` with a "Backstage Plugins" section: one-sentence description of the integration, link to `docs/backstage-plugins/README.md`, and quick-start link (FR-028)
+
+### Documentation — Further Reading Sections
+
+Per `specs/001-base-cli/documentation_architecture.md` Implementation Notes: each doc must include a "## Further Reading" section at the end linking to related pages using relative paths. All five `docs/backstage-plugins/` pages are missing this section (the other docs under `docs/` already have it).
+
+- [X] T061 [P] Add `## Further Reading` section to end of `docs/backstage-plugins/README.md` linking to: `quick-start.md` ("→ Quick-Start Guide"), `plugin-setup.md` ("→ Plugin Setup Guide"), `configuration.md` ("→ Configuration Reference"), `troubleshooting.md` ("→ Troubleshooting Guide"), `../index.md` ("→ Documentation Index")
+- [X] T062 [P] Add `## Further Reading` section to end of `docs/backstage-plugins/quick-start.md` linking to: `README.md` ("→ Backstage Plugins Overview"), `plugin-setup.md` ("→ Full Plugin Setup Guide"), `configuration.md` ("→ Configuration Reference"), `troubleshooting.md` ("→ Troubleshooting Guide")
+- [X] T063 [P] Add `## Further Reading` section to end of `docs/backstage-plugins/plugin-setup.md` linking to: `README.md` ("→ Backstage Plugins Overview"), `quick-start.md` ("→ Quick-Start Guide"), `configuration.md` ("→ Configuration Reference"), `troubleshooting.md` ("→ Troubleshooting Guide")
+- [X] T064 [P] Add `## Further Reading` section to end of `docs/backstage-plugins/configuration.md` linking to: `README.md` ("→ Backstage Plugins Overview"), `plugin-setup.md` ("→ Plugin Setup Guide"), `troubleshooting.md` ("→ Troubleshooting Guide"), `quick-start.md` ("→ Quick-Start Guide")
+- [X] T065 [P] Add `## Further Reading` section to end of `docs/backstage-plugins/troubleshooting.md` linking to: `README.md` ("→ Backstage Plugins Overview"), `plugin-setup.md` ("→ Plugin Setup Guide"), `configuration.md` ("→ Configuration Reference"), `quick-start.md` ("→ Quick-Start Guide")
 
 ---
 
@@ -228,6 +238,7 @@ This feature adds two new packages to the monorepo:
 - T046, T047 (US4 tests) — parallel
 - T049, T050, T052, T054 (Polish — implementation validation) — all parallel
 - T055, T056, T057, T058, T059, T060 (Documentation, FR-023–FR-028) — all parallel (separate files)
+- T061, T062, T063, T064, T065 (Further Reading sections) — all parallel (separate files)
 
 ---
 

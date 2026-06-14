@@ -104,3 +104,10 @@ spec:
       version: 1.0.0
     paths: {}
 ```
+
+## Further Reading
+
+- [→ Backstage Plugins Overview](./README.md) — plugin architecture and prerequisites
+- [→ Plugin Setup Guide](./plugin-setup.md) — installation and wiring steps for both plugins
+- [→ Configuration Reference](./configuration.md) — ruleset, visibility, and all config options
+- [→ Quick-Start Guide](./quick-start.md) — minimal setup steps to get the card working

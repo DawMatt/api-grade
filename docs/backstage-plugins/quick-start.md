@@ -136,3 +136,10 @@ export API_GRADE_RULESET_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 - **Use your organisation's Spectral ruleset** — see [Configuration](./configuration.md#ruleset)
 - **Full installation details** — see [Plugin Setup](./plugin-setup.md)
 - **Something not working?** — see [Troubleshooting](./troubleshooting.md)
+
+## Further Reading
+
+- [→ Backstage Plugins Overview](./README.md) — plugin architecture and prerequisites
+- [→ Full Plugin Setup Guide](./plugin-setup.md) — complete installation and wiring details
+- [→ Configuration Reference](./configuration.md) — custom rulesets, visibility groups, and all options
+- [→ Troubleshooting Guide](./troubleshooting.md) — common issues and solutions
