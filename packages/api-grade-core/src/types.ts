@@ -75,15 +75,6 @@ export interface GradeRequest {
   rulesetPath?: string;
 }
 
-export interface CliOptions {
-  specPath: string;
-  minGrade?: LetterGrade;
-  rulesetPath?: string;
-  format: 'human' | 'json';
-  top?: number;
-  verbose?: boolean;
-}
-
 export function extractCategory(ruleId: string): string {
   const match = ruleId.match(/^([^_-]+)/);
   return match ? match[1] : ruleId;

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GradeEngine } from '../../src/core/grader.js';
+import { GradeEngine } from 'api-grade-core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

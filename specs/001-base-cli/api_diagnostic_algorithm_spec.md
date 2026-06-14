@@ -123,7 +123,7 @@ categoryScore[cat] = MAX(0, 100 - (violationCount[cat] × 3))
 Build multi-sentence commentary by conditionally appending:
 
 1. **Opening** — Derived from tone/score bracket
-2. **Error assessment** — "I detected {N} error(s), it(they) should be your first concern" (if errorCount > 0)
+2. **Error assessment** — "{N} error(s) detected, it(they) should be your first concern" (if errorCount > 0)
 3. **Warning volume** — Severity-scaled language:
    - \>20 warnings: "causing significant damage to the quality"
    - 11-20: "impacting the quality"
@@ -163,7 +163,7 @@ FOR EACH rule:
     impact = "LOW"
   
   // Calculate risk score (errors 10× more important than warnings)
-  riskScore = (errorViolations.length × 10) + totalCount
+  riskScore = (errorViolations.length × 10) + warningViolations.length
 ```
 
 **Step 3: Sort by riskScore descending, take top 5**
@@ -187,9 +187,9 @@ riskScore = (errorCount × 10) + warningCount
 ```
 
 Examples:
-- 1 error + 14 warnings = 10 + 15 = 25 → Rank #1
+- 1 error + 14 warnings = 10 + 14 = 24 → Rank #1
 - 0 errors + 20 warnings = 0 + 20 = 20 → Rank #2
-- 5 errors + 0 warnings = 50 + 5 = 55 → Rank #1
+- 5 errors + 0 warnings = 50 + 0 = 50 → Rank #1
 
 **Rationale:** Any single error jumps to top (10-point boost). Among warning-only rules, frequency wins. Ensures errors are prioritized even if low-volume.
 
@@ -200,9 +200,9 @@ Examples:
 Build numbered action items:
 
 1. **If errorCount > 0:** "Fix (all) {N} error(s) immediately — it(they) block(s) production readiness: " + error rule(s)
-2. **If focusRules exist:** "Focus on these rules (highest impact first):" + top 3 rules with links
+2. **If focusRules exist:** "Focus on this(these) rule(s) (highest impact first):" + top 3 rules with links
 3. **If warningCount > 10:** "Create a plan to address the {N} warnings incrementally"
-4. **If focusRules exist:** Find categories (up to 3) with most errors, then most violations, append "Start with categories {category list} — they have the most impactful issues"
+4. **If focusRules exist:** Find categories (up to 3) with most errors, then most violations, append "Start with (this) categories(category) {category list} — they(it) have(has) the most impactful issues"
 
 ---
 
@@ -230,7 +230,7 @@ errorCount > 0 AND score < 60 → severity = "CRITICAL"
 
 **Stage 5 — Risk Scores:**
 ```
-oas-schema-check: (1 × 10) + 15 = 25 → Rank #1, impact = HIGH
+oas-schema-check: (1 × 10) + 14 = 24 → Rank #1, impact = HIGH
 operation_tags: (0 × 10) + 12 = 12 → Rank #2, impact = HIGH
 schema_validation: (0 × 10) + 11 = 11 → Rank #3, impact = HIGH
 info_contact: (0 × 10) + 1 = 1 → Rank #4, impact = LOW

@@ -6,7 +6,7 @@ Grade the quality of your OpenAPI and AsyncAPI specifications using Spectral-com
 Grade: C (74%) — OK
 
 Quality Assessment:
-OK effort. I detected 1 error, it should be your first concern. 21 warnings are causing
+OK effort. 1 error detected, it should be your first concern. 21 warnings are causing
 significant damage to the quality. The oas3, operation and info categories have the most issues.
 
 Recommendations:
@@ -195,7 +195,7 @@ api-grade openapi.yaml --ruleset my-rules.yaml
   "rulesetSource": "default",
   "tone": "OK effort",
   "severityLevel": "CRITICAL",
-  "qualityAssessment": "OK effort. I detected 1 error, it should be your first concern. ...",
+  "qualityAssessment": "OK effort. 1 error detected, it should be your first concern. ...",
   "diagnosticCounts": { "errors": 1, "warnings": 21, "infos": 0, "hints": 0, "total": 22 },
   "focusRules": [
     { "id": "oas3-schema", "title": "Oas3 Schema", "category": "oas3", "count": 1, "impact": "HIGH", "url": null }
@@ -234,6 +234,32 @@ Pass any flag as you would with the local CLI:
 
 ```bash
 docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml --min-grade B --format json
+```
+
+## Monorepo structure
+
+This repository is an npm workspaces monorepo with two packages:
+
+| Package | Path | Purpose |
+|---------|------|---------|
+| `api-grade` (root) | `/` | CLI tool (`api-grade` binary) |
+| `api-grade-core` | `packages/api-grade-core/` | Standalone grading library |
+
+### Using `api-grade-core` directly
+
+The grading engine is published as an independent library for use in tooling (Backstage plugins, CI scripts, custom integrations) without installing the CLI:
+
+```bash
+npm install api-grade-core
+```
+
+```typescript
+import { GradeEngine, formatJson } from 'api-grade-core';
+
+const engine = new GradeEngine();
+const result = await engine.grade({ specPath: './openapi.yaml' });
+console.log(formatJson(result));
+// or use result.letterGrade, result.numericScore, result.summary directly
 ```
 
 ## Running from source

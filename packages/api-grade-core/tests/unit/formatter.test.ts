@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { formatHuman, formatJson } from '../../src/core/formatter.js';
-import type { GradeResult } from '../../src/core/types.js';
+import { formatHuman, formatJson } from '../../src/formatter.js';
+import type { GradeResult } from '../../src/types.js';
 
 const baseResult: GradeResult = {
   specPath: 'test.yaml',

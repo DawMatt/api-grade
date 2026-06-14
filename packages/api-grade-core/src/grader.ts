@@ -4,7 +4,7 @@ import parsers from '@stoplight/spectral-parsers';
 const { Spectral, Document } = spectralCore;
 const { Yaml, Json } = parsers;
 import { loadSpec } from './spec-loader.js';
-import { loadRuleset } from '../rulesets/loader.js';
+import { loadRuleset } from './rulesets/loader.js';
 import { computeScore } from './scorer.js';
 import { generateSummary } from './summariser.js';
 import type { GradeRequest, GradeResult, Diagnostic, DiagnosticSeverity } from './types.js';

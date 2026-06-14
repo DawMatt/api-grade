@@ -2,7 +2,7 @@ import { oas } from '@stoplight/spectral-rulesets';
 import { asyncapi } from '@stoplight/spectral-rulesets';
 import { existsSync, promises as fsPromises } from 'node:fs';
 import { resolve } from 'node:path';
-import type { ApiFormat } from '../core/types.js';
+import type { ApiFormat } from '../types.js';
 import { parseWithPointers, getLocationForJsonPath } from '@stoplight/yaml';
 
 export interface LoadedRuleset {
