@@ -108,7 +108,7 @@ function buildCommentary(
     const n = errorCount;
     const plural = n === 1 ? 'error' : 'errors';
     const pronoun = n === 1 ? 'it' : 'they';
-    parts.push(`I detected ${n} ${plural}, ${pronoun} should be your first concern.`);
+    parts.push(`${n} ${plural} detected, ${pronoun} should be your first concern.`);
   }
 
   if (warnCount > 0) {

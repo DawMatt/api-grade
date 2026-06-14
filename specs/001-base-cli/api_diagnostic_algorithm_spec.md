@@ -123,7 +123,7 @@ categoryScore[cat] = MAX(0, 100 - (violationCount[cat] × 3))
 Build multi-sentence commentary by conditionally appending:
 
 1. **Opening** — Derived from tone/score bracket
-2. **Error assessment** — "I detected {N} error(s), it(they) should be your first concern" (if errorCount > 0)
+2. **Error assessment** — "{N} error(s) detected, it(they) should be your first concern" (if errorCount > 0)
 3. **Warning volume** — Severity-scaled language:
    - \>20 warnings: "causing significant damage to the quality"
    - 11-20: "impacting the quality"

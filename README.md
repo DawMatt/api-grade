@@ -6,7 +6,7 @@ Grade the quality of your OpenAPI and AsyncAPI specifications using Spectral-com
 Grade: C (74%) — OK
 
 Quality Assessment:
-OK effort. I detected 1 error, it should be your first concern. 21 warnings are causing
+OK effort. 1 error detected, it should be your first concern. 21 warnings are causing
 significant damage to the quality. The oas3, operation and info categories have the most issues.
 
 Recommendations:
@@ -195,7 +195,7 @@ api-grade openapi.yaml --ruleset my-rules.yaml
   "rulesetSource": "default",
   "tone": "OK effort",
   "severityLevel": "CRITICAL",
-  "qualityAssessment": "OK effort. I detected 1 error, it should be your first concern. ...",
+  "qualityAssessment": "OK effort. 1 error detected, it should be your first concern. ...",
   "diagnosticCounts": { "errors": 1, "warnings": 21, "infos": 0, "hints": 0, "total": 22 },
   "focusRules": [
     { "id": "oas3-schema", "title": "Oas3 Schema", "category": "oas3", "count": 1, "impact": "HIGH", "url": null }

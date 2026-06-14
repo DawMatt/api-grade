@@ -41,7 +41,7 @@ The output is structured in four parts, always in this order:
 Grade: F (57%) — Poor
 
 Quality Assessment:
-Critical condition. I detected 1 error, it should be your first concern. 38 warnings
+Critical condition. 1 error detected, it should be your first concern. 38 warnings
 are impacting the quality. The oas category has the most issues.
 
 Recommendations:
@@ -106,7 +106,7 @@ Diagnostics (39 total — 1 error, 38 warnings):
   "rulesetSource": "default",
   "tone": "Critical condition",
   "severityLevel": "CRITICAL",
-  "qualityAssessment": "Critical condition. I detected 1 error, it should be your first concern. 38 warnings are impacting the quality. The oas category has the most issues.",
+  "qualityAssessment": "Critical condition. 1 error detected, it should be your first concern. 38 warnings are impacting the quality. The oas category has the most issues.",
   "diagnosticCounts": {
     "errors": 1,
     "warnings": 38,
