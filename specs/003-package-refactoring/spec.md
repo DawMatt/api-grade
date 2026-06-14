@@ -58,7 +58,7 @@ A developer evaluating whether to adopt the grading library inspects its depende
 
 **Acceptance Scenarios**:
 
-1. **Given** the grading library is installed in isolation, **When** the dependency tree is inspected, **Then** it contains no CLI-specific or display-layer dependencies.
+1. **Given** the grading library is installed in isolation, **When** the dependency tree is inspected, **Then** it contains no CLI-specific dependencies (e.g., `commander`); `chalk` is permitted as the sole display-layer dependency required by the exported `formatHuman` utility.
 2. **Given** the grading library and the CLI tool are installed separately, **When** their dependency trees are compared, **Then** the library's tree is a strict subset of the CLI's tree.
 
 ---
@@ -102,7 +102,7 @@ A developer grades an API and reads the recommendations. Whether the graded API 
 - **FR-004**: The library MUST accept an optional custom Spectral ruleset as input and apply it as the basis for grading, consistent with existing CLI behaviour.
 - **FR-005**: The CLI tool MUST consume the grading library exclusively for all grading and diagnostics logic; no grading logic MAY remain duplicated in the CLI codebase.
 - **FR-006**: The CLI tool's external interface (commands, flags, output format, exit codes) MUST remain identical after this refactoring.
-- **FR-007**: The library MUST NOT depend on CLI-specific packages or display-layer tooling; its dependency footprint MUST be limited to what is required for grading logic alone.
+- **FR-007**: The library MUST NOT depend on CLI-specific packages (e.g., `commander`); its dependency footprint MUST be limited to what is required for grading and output formatting. `chalk` is the sole permitted display-layer dependency, required by the exported `formatHuman` convenience formatter; no other display-layer packages may be added to the library.
 - **FR-008**: The library MUST be usable by an external project without requiring the CLI tool to be installed.
 - **FR-009**: The full test suite MUST pass after the refactoring with no reduction in coverage.
 - **FR-010**: The library MUST be independently versioned and distributable.
