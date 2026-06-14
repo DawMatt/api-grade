@@ -12,7 +12,7 @@ The root folder will retain the following standard repository documentation item
 
 Migrate the existing root README.md content: extract CLI docs → docs/cli, extract package docs → docs/package, keep any Backstage content separate for docs/backstage-plugins. 
 
-Shrink (aim: 300-500 words) the root README to a landing page with links to these three sections. See "Main README" sub-section for further detail. 
+Shrink (aim: 300-500 words) the root README to a landing page with links to these three sections. See "Main README" sub-section for further detail.
 
 ## Main Documentation Structure
 
