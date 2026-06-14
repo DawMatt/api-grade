@@ -109,6 +109,17 @@ A Backstage administrator grants the platform engineering team visibility of det
 - **FR-021**: Each area within the "Grading Detail" sub-section MUST display its heading ("Quality Assessment:", "Recommendations:", or "Diagnostics:") followed by the relevant content for that area.
 - **FR-022**: Recommendations in the "Recommendations:" area MUST be presented as a numbered list in the order provided by the grading output.
 
+### Documentation Requirements
+
+This feature MUST produce documentation for the Backstage Plugins integration as defined in `specs/001-base-cli/documentation_architecture.md` (the `docs/backstage-plugins/` section and the main README entry). The following deliverables are required:
+
+- **FR-023**: A Backstage Plugins overview document MUST be produced covering: what the plugins do and how they interact, prerequisites and requirements, and navigation links to the quick-start and plugin-setup guides.
+- **FR-024**: A Backstage Plugins quick-start guide MUST be produced enabling a developer with an existing Backstage installation to get both plugins running with minimal configuration, including common next steps.
+- **FR-025**: A detailed plugin-setup guide MUST be produced covering all installation, registration, and configuration wiring steps for both plugins.
+- **FR-026**: A configuration reference MUST be produced covering all shared configuration options — including custom ruleset URL, credential configuration, and visibility group settings — with examples.
+- **FR-027**: A troubleshooting guide MUST be produced covering the most common installation, configuration, and runtime issues encountered by adopters of the integration.
+- **FR-028**: The main project README MUST include a Backstage Plugins entry describing what the integration does and linking to the `docs/backstage-plugins/` documentation.
+
 ### Key Entities
 
 - **API Grade Card**: The visual component displayed on the Backstage API page. In summary mode it contains only the "Overall API Grade" sub-section. In detailed mode it also contains the "Grading Detail" sub-section to the right.
@@ -130,6 +141,7 @@ A Backstage administrator grants the platform engineering team visibility of det
 - **SC-004**: All five grading algorithm design principles (error-first, volume-aware, category-specific, actionable, tone-calibrated) are demonstrably present in the detailed output for a representative low-quality API.
 - **SC-005**: Visibility overrides (additional groups, allow-all) take effect without requiring a restart or redeployment — only a configuration change.
 - **SC-006**: Both OpenAPI and AsyncAPI specifications produce grade summaries and detailed assessments with equivalent feature coverage.
+- **SC-007**: All six documentation deliverables defined in FR-023 to FR-028 are present, navigable via relative links, and complete as described in `specs/001-base-cli/documentation_architecture.md`.
 
 ## Assumptions
 
@@ -141,3 +153,4 @@ A Backstage administrator grants the platform engineering team visibility of det
 - The Info column placement is the default; Backstage's plugin architecture supports repositioning, but alternative layouts are out of scope for this feature.
 - Containerised and local deployment of Backstage are both supported by this integration; no deployment-mode-specific exclusions apply.
 - All prerequisites for running this integration have zero monetary cost, consistent with the project constitution.
+- Documentation deliverables (FR-023 to FR-028) are part of the implementation scope of this feature and must be produced alongside the plugin code; the structure and content expectations are governed by `specs/001-base-cli/documentation_architecture.md`.

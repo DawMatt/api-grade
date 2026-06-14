@@ -168,7 +168,9 @@ This feature adds two new packages to the monorepo:
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-**Purpose**: Multi-format validation, error state completeness, and quickstart verification
+**Purpose**: Multi-format validation, error state completeness, quickstart verification, and documentation deliverables
+
+### Implementation Validation
 
 - [ ] T049 [P] Verify OpenAPI 2 (Swagger 2.x) spec grades end-to-end (FR-003): use a Swagger 2 fixture in `tests/fixtures/openapi/` and confirm `gradeContent` returns `format: 'openapi-2'`
 - [ ] T050 [P] Verify AsyncAPI 2 and AsyncAPI 3 specs grade end-to-end (FR-003): confirm both formats produce a `BackstageGradeResponse` with correct `format` field
@@ -176,6 +178,15 @@ This feature adds two new packages to the monorepo:
 - [ ] T052 [P] Verify FR-015 unsupported-format message in `ApiGradeCard`: a GraphQL entity (mock `spec.type: 'graphql'`) shows the "format not supported" message, not a blank card or unhandled error in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
 - [ ] T053 Run quickstart.md validation: follow all five steps against a local Backstage dev instance; confirm card appears in Info column for both an OpenAPI and an AsyncAPI entity
 - [ ] T054 [P] Review both plugin packages for YAGNI violations: remove any unused props, hypothetical config fields, or abstractions beyond current spec requirements
+
+### Documentation — FR-023 to FR-028
+
+- [ ] T055 [P] Create `docs/backstage-plugins/README.md` covering: plugin architecture overview (frontend card + backend router), prerequisites (Node ≥ 20, Backstage New Backend System), and navigation links to quick-start and plugin-setup guides (FR-023)
+- [ ] T056 [P] Create `docs/backstage-plugins/quick-start.md` by adapting `specs/004-backstage-api-page/quickstart.md` — verify steps against final implementation, ensure relative links to sibling docs work, and add "Common next steps" pointers (FR-024)
+- [ ] T057 [P] Create `docs/backstage-plugins/plugin-setup.md` with detailed installation and wiring steps for `backstage-plugin-api-grade` (frontend, `EntityPage.tsx` integration) and `backstage-plugin-api-grade-backend` (backend `index.ts` registration), covering all config options (FR-025)
+- [ ] T058 [P] Create `docs/backstage-plugins/configuration.md` documenting the full `apiGrade` config schema from `contracts/plugin-config.md` and research R-006: `ruleset.url`, `ruleset.token`, `visibility.allowAll`, `visibility.groups`, with examples and environment-variable conventions (FR-026)
+- [ ] T059 [P] Create `docs/backstage-plugins/troubleshooting.md` covering: card shows "grading unavailable", custom ruleset not applied, detailed section not visible, unsupported spec formats, guest/unauthenticated user behaviour, and spec.definition not inlined (FR-027)
+- [ ] T060 [P] Update root `README.md` with a "Backstage Plugins" section: one-sentence description of the integration, link to `docs/backstage-plugins/README.md`, and quick-start link (FR-028)
 
 ---
 
@@ -215,7 +226,8 @@ This feature adds two new packages to the monorepo:
 - T032, T033, T034, T035 (US2 tests) — all parallel
 - T040, T041 (US3 tests) — parallel
 - T046, T047 (US4 tests) — parallel
-- T049, T050, T052, T054 (Polish) — all parallel
+- T049, T050, T052, T054 (Polish — implementation validation) — all parallel
+- T055, T056, T057, T058, T059, T060 (Documentation, FR-023–FR-028) — all parallel (separate files)
 
 ---
 
@@ -263,7 +275,8 @@ Task: "T025 [P] Backend router integration tests"
 3. US2 → Full diagnostics for owners
 4. US3 → Custom rulesets configurable
 5. US4 → Group-based visibility
-6. Each story adds value without breaking previous stories
+6. Phase 7 → Validation + documentation deliverables (T055–T060)
+7. Each story adds value without breaking previous stories
 
 ### Parallel Team Strategy
 
@@ -283,3 +296,5 @@ With two developers after Foundational (Phase 2) is complete:
 - `canViewDetailed()` must be called at request-time (not cached) so config changes to `visibility` take effect without restart (SC-005)
 - Backstage peerDependencies are not pinned — the host app provides them; the plugin consumes whatever version the host supplies
 - Frontend component tests require jsdom environment (configured in T005); run with `yarn workspace backstage-plugin-api-grade test`
+- Documentation tasks (T055–T060) must be written after implementation is final so steps and config examples reflect actual behaviour; T056 adapts existing planning artifact `specs/004-backstage-api-page/quickstart.md` rather than starting from scratch
+- Documentation deliverables are required by spec FR-023–FR-028 and must conform to `specs/001-base-cli/documentation_architecture.md`; use relative links throughout for portability

@@ -67,6 +67,22 @@ specs/004-backstage-api-page/
 └── tasks.md             # Phase 2 output (/speckit-tasks command - NOT created by /speckit-plan)
 ```
 
+### Documentation Deliverables (repository root)
+
+Per FR-023–FR-028 and `specs/001-base-cli/documentation_architecture.md`:
+
+```text
+docs/
+└── backstage-plugins/
+    ├── README.md           # Plugins overview & architecture (FR-023)
+    ├── quick-start.md      # Fast-track setup guide — content drafted in specs/004-backstage-api-page/quickstart.md (FR-024)
+    ├── plugin-setup.md     # Detailed installation & wiring for both plugins (FR-025)
+    ├── configuration.md    # All config options with examples (FR-026)
+    └── troubleshooting.md  # Common issues & solutions (FR-027)
+```
+
+`README.md` (root) — add Backstage Plugins section linking to `docs/backstage-plugins/` (FR-028).
+
 ### Source Code (repository root)
 
 ```text

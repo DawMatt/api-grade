@@ -177,6 +177,23 @@ Backstage core packages are declared as `peerDependencies` in both plugin packag
 
 ---
 
+## R-011: Documentation Deliverables
+
+**Decision**: Five Markdown files under `docs/backstage-plugins/` plus a root README update, per `specs/001-base-cli/documentation_architecture.md` (FR-023–FR-028). Content for `quick-start.md` is already drafted in `specs/004-backstage-api-page/quickstart.md` and should be copied to `docs/backstage-plugins/quick-start.md` with any necessary adjustments for the final docs structure.
+
+**Rationale**: The documentation architecture defines where each document lives and what it must cover. The quick-start content was produced as a planning artifact and is complete enough to serve as the final `quick-start.md`; the remaining four documents (`README.md`, `plugin-setup.md`, `configuration.md`, `troubleshooting.md`) need to be authored.
+
+**Content sources**:
+- `README.md` — architecture overview from `research.md` R-001; prerequisites from R-008
+- `plugin-setup.md` — detailed wiring steps from `quickstart.md` Steps 1–4, expanded
+- `configuration.md` — full config schema from `contracts/plugin-config.md` and R-006
+- `troubleshooting.md` — troubleshooting cases from `quickstart.md` and edge cases from `spec.md`
+
+**Alternatives considered**:
+- Inline all docs in `quickstart.md` — rejected; single file too long, violates navigation strategy in architecture doc.
+
+---
+
 ## R-010: Card Layout Implementation
 
 **Decision**: A `mode: 'summary' | 'detailed'` prop on `ApiGradeCard` controls layout. `OverallGradeSection` accepts `mode` and renders `percentage + label` beside the letter in summary mode, and below the letter in detailed mode. `GradingDetailSection` is only rendered when `mode === 'detailed'`. The card uses a horizontal flex container when in detailed mode (Overall Grade left, Grading Detail right).

@@ -32,4 +32,5 @@
 ## Notes
 
 - Updated 2026-06-14: Added card layout requirements (FR-016 to FR-022) and corresponding key entities and acceptance scenario updates.
+- Updated 2026-06-14: Added documentation requirements (FR-023 to FR-028, SC-007) referencing `specs/001-base-cli/documentation_architecture.md`.
 - All items pass. Specification is ready for `/speckit-clarify` or `/speckit-plan`.
