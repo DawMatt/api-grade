@@ -151,7 +151,7 @@ function buildFocusRules(ruleAccum: Map<string, { errorCount: number; totalCount
   return [...ruleAccum.entries()]
     .map(([id, data]) => ({
       id,
-      riskScore: data.errorCount * 10 + data.totalCount,
+      riskScore: data.errorCount * 10 + (data.totalCount - data.errorCount),
       errorCount: data.errorCount,
       totalCount: data.totalCount,
     }))
@@ -205,7 +205,8 @@ function buildRecommendations(
   if (focusRules.length > 0) {
     const top3 = focusRules.slice(0, 3);
     const ruleStr = top3.map((r) => `${r.id} — ${r.count} violations (${r.impact})`).join(', ');
-    recs.push(`Focus on these rules (highest impact first): ${ruleStr}`);
+    const ruleWord = top3.length === 1 ? 'this rule' : 'these rules';
+    recs.push(`Focus on ${ruleWord} (highest impact first): ${ruleStr}`);
   }
 
   // Item 3: Address warnings
@@ -216,7 +217,9 @@ function buildRecommendations(
   // Item 4: Categories
   if (focusRules.length > 0) {
     const cats = rankCategories(categoryErrorCount, categoryTotalCount).slice(0, 3);
-    if (cats.length > 0) {
+    if (cats.length === 1) {
+      recs.push(`Start with this category ${cats[0]} — it has the most impactful issues`);
+    } else if (cats.length > 1) {
       recs.push(`Start with categories ${cats.join(', ')} — they have the most impactful issues`);
     }
   }

@@ -163,7 +163,7 @@ FOR EACH rule:
     impact = "LOW"
   
   // Calculate risk score (errors 10× more important than warnings)
-  riskScore = (errorViolations.length × 10) + totalCount
+  riskScore = (errorViolations.length × 10) + warningViolations.length
 ```
 
 **Step 3: Sort by riskScore descending, take top 5**

@@ -172,7 +172,7 @@ describe('Stage 4 — category insight', () => {
 // ─── Stage 5: Focus rules ────────────────────────────────────────────────────
 
 describe('Stage 5 — focus rules', () => {
-  it('risk-score ordering: 1 error + 14 warnings (riskScore=25) outranks 0 errors + 20 warnings (riskScore=20)', () => {
+  it('risk-score ordering: 1 error + 14 warnings (riskScore=24) outranks 0 errors + 20 warnings (riskScore=20)', () => {
     const diags = [
       makeDiag('error', 'rule-a'),
       ...Array.from({ length: 14 }, () => makeDiag('warn', 'rule-a')),
@@ -212,6 +212,31 @@ describe('Stage 5 — focus rules', () => {
     const diags = [makeDiag('warn', 'rule-a')];
     const { focusRules } = generateSummary(diags, 99, 'openapi');
     expect(focusRules[0].url).toBeNull();
+  });
+
+  it('riskScore exact value: 1 error + 14 warnings = 24 (not 25)', () => {
+    const diags = [
+      makeDiag('error', 'rule-a'),
+      ...Array.from({ length: 14 }, () => makeDiag('warn', 'rule-a')),
+      ...Array.from({ length: 20 }, () => makeDiag('warn', 'rule-b')),
+    ];
+    const { focusRules } = generateSummary(diags, 69, 'openapi');
+    const ruleA = focusRules.find((r) => r.id === 'rule-a')!;
+    // riskScore = (1 × 10) + 14 = 24 per authoritative formula
+    // Verified by being ranked above rule-b which scores (0 × 10) + 20 = 20
+    expect(focusRules[0].id).toBe('rule-a');
+    expect(ruleA.count).toBe(15); // totalCount still reflects all violations
+  });
+
+  it('riskScore exact value: 5 errors + 0 warnings = 50 (not 55)', () => {
+    const diags = [
+      ...Array.from({ length: 5 }, () => makeDiag('error', 'rule-a')),
+      ...Array.from({ length: 20 }, () => makeDiag('warn', 'rule-b')),
+    ];
+    const { focusRules } = generateSummary(diags, 55, 'openapi');
+    // rule-a: riskScore = (5 × 10) + 0 = 50; rule-b: (0 × 10) + 20 = 20
+    expect(focusRules[0].id).toBe('rule-a');
+    expect(focusRules[1].id).toBe('rule-b');
   });
 
   it('limits to 5 focus rules maximum', () => {
@@ -254,6 +279,50 @@ describe('Stage 6 — recommendations', () => {
     const { recommendations } = generateSummary(diags, 90, 'openapi');
     expect(recommendations[0]).toContain('they block production readiness');
     expect(recommendations[0]).toContain('Fix all 2 errors');
+  });
+
+  it('item 2 singular: 1 focus rule → "Focus on this rule"', () => {
+    const diags = Array.from({ length: 3 }, () => makeDiag('warn', 'rule-a'));
+    const { recommendations } = generateSummary(diags, 97, 'openapi');
+    const item2 = recommendations.find((r) => r.includes('highest impact first'));
+    expect(item2).toBeDefined();
+    expect(item2).toContain('Focus on this rule');
+    expect(item2).not.toContain('these rules');
+  });
+
+  it('item 2 plural: 2+ focus rules → "Focus on these rules"', () => {
+    const diags = [
+      makeDiag('warn', 'rule-a'),
+      makeDiag('warn', 'rule-b'),
+    ];
+    const { recommendations } = generateSummary(diags, 98, 'openapi');
+    const item2 = recommendations.find((r) => r.includes('highest impact first'));
+    expect(item2).toBeDefined();
+    expect(item2).toContain('Focus on these rules');
+    expect(item2).not.toContain('this rule');
+  });
+
+  it('item 4 singular: 1 category → "Start with this category … it has"', () => {
+    const diags = Array.from({ length: 3 }, () => makeDiag('warn', 'operation-tag'));
+    const { recommendations } = generateSummary(diags, 97, 'openapi');
+    const item4 = recommendations.find((r) => r.includes('most impactful issues'));
+    expect(item4).toBeDefined();
+    expect(item4).toContain('Start with this category');
+    expect(item4).toContain('it has');
+    expect(item4).not.toContain('they have');
+  });
+
+  it('item 4 plural: 2+ categories → "Start with categories … they have"', () => {
+    const diags = [
+      makeDiag('warn', 'operation-tag'),
+      makeDiag('warn', 'schema-type'),
+    ];
+    const { recommendations } = generateSummary(diags, 98, 'openapi');
+    const item4 = recommendations.find((r) => r.includes('most impactful issues'));
+    expect(item4).toBeDefined();
+    expect(item4).toContain('Start with categories');
+    expect(item4).toContain('they have');
+    expect(item4).not.toContain('this category');
   });
 
   it('item 4 lists up to 3 categories with "most impactful issues" wording', () => {

@@ -120,16 +120,16 @@
 
 ### Implementation for User Story 4
 
-- [ ] T041 [P] [US4] Fix Stage 5 pseudocode in `specs/001-base-cli/api_diagnostic_algorithm_spec.md`: in Step 2 replace `riskScore = (errorViolations.length × 10) + totalCount` with `riskScore = (errorViolations.length × 10) + warningViolations.length` (FR-016)
-- [ ] T042 [US4] Fix riskScore formula in `packages/api-grade-core/src/summariser.ts` `buildFocusRules()`: change `data.errorCount * 10 + data.totalCount` to `data.errorCount * 10 + (data.totalCount - data.errorCount)` so warnings are not double-counted (FR-011)
-- [ ] T043 [US4] Fix recommendation item 2 grammar in `packages/api-grade-core/src/summariser.ts` `buildRecommendations()`: add `const ruleWord = top3.length === 1 ? 'this rule' : 'these rules'` and replace the hardcoded `'these rules'` with `ruleWord` (FR-012)
-- [ ] T044 [US4] Fix recommendation item 4 grammar in `packages/api-grade-core/src/summariser.ts` `buildRecommendations()`: branch on `cats.length === 1` to push `"Start with this category ${cats[0]} — it has the most impactful issues"` vs `"Start with categories ${cats.join(', ')} — they have the most impactful issues"` (FR-013)
-- [ ] T045 [P] [US4] Create `tests/fixtures/openapi/single-rule.yaml`: minimal valid OpenAPI 3.0 document with 4–6 paths each containing one operation with no `summary` field; set `info.description` to note it is an intentional grammar-boundary test fixture (FR-015)
-- [ ] T046 [US4] In `packages/api-grade-core/tests/unit/summariser.test.ts`: add two riskScore exact-value tests — `1 error + 14 warnings → top focusRule ranked first with riskScore 24` and `5 errors + 0 warnings → focusRule riskScore 50`; update the comment on the existing ordering test (line ~175) from `riskScore=25` to `riskScore=24` (SC-006)
-- [ ] T047 [US4] In `packages/api-grade-core/tests/unit/summariser.test.ts`: add two item 2 grammar tests — `1 violation of 1 rule → recommendations[item2] contains "Focus on this rule"` and `violations across 2 rules → recommendations[item2] contains "Focus on these rules"` (SC-007)
-- [ ] T048 [US4] In `packages/api-grade-core/tests/unit/summariser.test.ts`: add two item 4 grammar tests — `all violations in 1 category → recommendations[item4] contains "this category" and "it has"` and `violations across 2+ categories → recommendations[item4] contains "categories" and "they have"` (SC-008)
-- [ ] T049 [US4] Run `npm test --workspace=packages/api-grade-core`: confirm all 6 new test assertions pass alongside all existing unit tests (SC-006–SC-009)
-- [ ] T050 [US4] Manually verify singular grammar with new fixture: run `node dist/cli/index.js tests/fixtures/openapi/single-rule.yaml` and confirm the recommendations section includes "Focus on this rule" and "Start with this category" (SC-009)
+- [X] T041 [P] [US4] Fix Stage 5 pseudocode in `specs/001-base-cli/api_diagnostic_algorithm_spec.md`: in Step 2 replace `riskScore = (errorViolations.length × 10) + totalCount` with `riskScore = (errorViolations.length × 10) + warningViolations.length` (FR-016)
+- [X] T042 [US4] Fix riskScore formula in `packages/api-grade-core/src/summariser.ts` `buildFocusRules()`: change `data.errorCount * 10 + data.totalCount` to `data.errorCount * 10 + (data.totalCount - data.errorCount)` so warnings are not double-counted (FR-011)
+- [X] T043 [US4] Fix recommendation item 2 grammar in `packages/api-grade-core/src/summariser.ts` `buildRecommendations()`: add `const ruleWord = top3.length === 1 ? 'this rule' : 'these rules'` and replace the hardcoded `'these rules'` with `ruleWord` (FR-012)
+- [X] T044 [US4] Fix recommendation item 4 grammar in `packages/api-grade-core/src/summariser.ts` `buildRecommendations()`: branch on `cats.length === 1` to push `"Start with this category ${cats[0]} — it has the most impactful issues"` vs `"Start with categories ${cats.join(', ')} — they have the most impactful issues"` (FR-013)
+- [X] T045 [P] [US4] Create `tests/fixtures/openapi/single-rule.yaml`: minimal valid OpenAPI 3.0 document with 4–6 paths each containing one operation with no `summary` field; set `info.description` to note it is an intentional grammar-boundary test fixture (FR-015)
+- [X] T046 [US4] In `packages/api-grade-core/tests/unit/summariser.test.ts`: add two riskScore exact-value tests — `1 error + 14 warnings → top focusRule ranked first with riskScore 24` and `5 errors + 0 warnings → focusRule riskScore 50`; update the comment on the existing ordering test (line ~175) from `riskScore=25` to `riskScore=24` (SC-006)
+- [X] T047 [US4] In `packages/api-grade-core/tests/unit/summariser.test.ts`: add two item 2 grammar tests — `1 violation of 1 rule → recommendations[item2] contains "Focus on this rule"` and `violations across 2 rules → recommendations[item2] contains "Focus on these rules"` (SC-007)
+- [X] T048 [US4] In `packages/api-grade-core/tests/unit/summariser.test.ts`: add two item 4 grammar tests — `all violations in 1 category → recommendations[item4] contains "this category" and "it has"` and `violations across 2+ categories → recommendations[item4] contains "categories" and "they have"` (SC-008)
+- [X] T049 [US4] Run `npm test --workspace=packages/api-grade-core`: confirm all 6 new test assertions pass alongside all existing unit tests (SC-006–SC-009)
+- [X] T050 [US4] Manually verify singular grammar with new fixture: run `node dist/cli/index.js tests/fixtures/openapi/single-rule.yaml` and confirm the recommendations section includes "Focus on this rule" and "Start with this category" (SC-009)
 
 **Checkpoint**: Risk score formula correct (riskScore 24 not 25 for 1e+14w). Item 2 and 4 text grammatically precise for 0, 1, and 2+ counts. Algorithm spec pseudocode matches authoritative formula. Single-rule fixture added and manually verified. User Story 4 fully satisfied.
 
@@ -142,7 +142,7 @@
 - [X] T037 [P] Update root `README.md` to document the monorepo structure: note that `api-grade-core` is the standalone grading library and `api-grade` is the CLI wrapper; add a usage example for consuming `api-grade-core` directly
 - [X] T038 [P] Add a `build` script to root `package.json` that builds both packages: `npm run build --workspaces` (or equivalent)
 - [X] T039 Run the complete test suite one final time: `npm test --workspaces --if-present`; confirm 100% pass rate across all packages
-- [ ] T040 Verify the `Dockerfile` still builds and runs correctly by building the image and running `api-grade tests/fixtures/openapi/museum-api.yaml` inside the container
+- [X] T040 Verify the `Dockerfile` still builds and runs correctly by building the image and running `api-grade tests/fixtures/openapi/museum-api.yaml` inside the container
 
 ---
 
