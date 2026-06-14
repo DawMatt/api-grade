@@ -46,6 +46,10 @@ Feature 4 - Backstage API page
 - Most users of backstage will only see the highest level of grade information - grade letter, percentage and label.
 - By default, detailed API quality features (e.g. quality assessment, recommendations, and detailed diagnostic information) will be visible only to the API owner. Configuration will allow additional groups to be granted visibility as well, or visibility can be made allow all. 
 
+Feature 5 - API grade documentation refactoring
+
+- Refactor documentation for the repo, aligning with documentation_architecture.md
+
 ## Constitution
 
 - API grading will use a similar algorithm and approach to the API grading and diagnostics capabilities found in OpenAPI Doctor: https://github.com/pb33f/doctor . This includes providing an overall grade (e.g. D) and numeric rating (e.g. 73%), a diagnostic summary identifying priority areas to focus on, followed by the diagnostic detail. The algorithm is summarised in api_diagnostic_algorithm_spec.md .
