@@ -7,3 +7,5 @@ export type {
   RulesetConfig,
   VisibilityConfig,
 } from './router.js';
+
+export { default } from './plugin.js';

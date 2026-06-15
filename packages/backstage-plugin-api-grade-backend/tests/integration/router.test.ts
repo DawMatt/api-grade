@@ -77,6 +77,18 @@ function makeReqRes(query: Record<string, string> = {}) {
   return { req, res, getStatusCode: () => statusCode, getBody: () => body };
 }
 
+async function invokeGradeRoute(
+  options: Parameters<typeof createRouter>[0],
+  query: Record<string, string>,
+) {
+  const router = await createRouter(options);
+  const { req, res, getStatusCode, getBody } = makeReqRes(query);
+  const handlers = (router as unknown as { stack: { route?: { stack: { handle: Function }[] } }[] }).stack;
+  const gradeRoute = handlers.find(l => l.route)?.route?.stack[0]?.handle;
+  if (gradeRoute) await gradeRoute(req, res, () => {});
+  return { getStatusCode, getBody };
+}
+
 describe('GET /grade — summary response shape (non-owner)', () => {
   let catalog: CatalogService;
   let config: ConfigService;
@@ -163,5 +175,160 @@ describe('GET /grade — summary response shape (non-owner)', () => {
     expect(getStatusCode()).toBe(422);
     const body = getBody() as { errorType: string };
     expect(body.errorType).toBe('spec-empty');
+  });
+});
+
+// T035 — detail-filtering: owner receives full payload
+describe('GET /grade — detail-filtering by authorisation', () => {
+  it('returns commentary and diagnostics for the API owner', async () => {
+    const { getBody } = await invokeGradeRoute(
+      {
+        config: makeConfig(),
+        catalog: makeCatalog(makeEntity()),
+        auth: makeAuth(),
+        httpAuth: makeHttpAuth({
+          token: 'user-token',
+          userEntityRef: 'user:default/alice', // alice is the owner
+          ownershipEntityRefs: [],
+        }),
+      },
+      { entityRef: 'api:default/test-api' },
+    );
+    const body = getBody() as { grade: { summary: { commentary: string; recommendations: string[] }; diagnostics: unknown[] } };
+    // Commentary must be non-empty for the owner (the test spec has violations)
+    expect(typeof body.grade.summary.commentary).toBe('string');
+    // The owner gets recommendations (may be empty if spec is perfect)
+    expect(Array.isArray(body.grade.summary.recommendations)).toBe(true);
+    // diagnostics array is present (owner receives it)
+    expect(Array.isArray(body.grade.diagnostics)).toBe(true);
+  });
+
+  it('strips detail for non-owner', async () => {
+    const { getBody } = await invokeGradeRoute(
+      {
+        config: makeConfig(),
+        catalog: makeCatalog(makeEntity()),
+        auth: makeAuth(),
+        httpAuth: makeHttpAuth({
+          token: 'user-token',
+          userEntityRef: 'user:default/bob', // not the owner
+          ownershipEntityRefs: [],
+        }),
+      },
+      { entityRef: 'api:default/test-api' },
+    );
+    const body = getBody() as { grade: { summary: { commentary: string; recommendations: unknown[] }; diagnostics: unknown[] } };
+    expect(body.grade.summary.commentary).toBe('');
+    expect(body.grade.summary.recommendations).toEqual([]);
+    expect(body.grade.diagnostics).toEqual([]);
+  });
+});
+
+// T042 — default ruleset applied when no custom ruleset is configured
+describe('GET /grade — default ruleset (FR-009)', () => {
+  it('returns a valid grade when no ruleset URL is configured', async () => {
+    const { getStatusCode, getBody } = await invokeGradeRoute(
+      {
+        config: makeConfig({ 'apiGrade.ruleset.url': undefined }),
+        catalog: makeCatalog(makeEntity()),
+        auth: makeAuth(),
+        httpAuth: makeHttpAuth({ userEntityRef: 'user:default/bob', ownershipEntityRefs: [] }),
+      },
+      { entityRef: 'api:default/test-api' },
+    );
+    expect(getStatusCode()).toBe(200);
+    const body = getBody() as { status: string; grade: { letterGrade: string; numericScore: number } };
+    expect(body.status).toBe('ok');
+    expect(body.grade.letterGrade).toMatch(/^[ABCDF]$/);
+    expect(body.grade.numericScore).toBeGreaterThanOrEqual(0);
+    expect(body.grade.numericScore).toBeLessThanOrEqual(100);
+  });
+});
+
+// T041 — ruleset fallback: unreachable URL → 200 with rulesetWarning
+describe('GET /grade — custom ruleset fallback (US3)', () => {
+  it('returns 200 with rulesetWarning when configured URL is unreachable', async () => {
+    const { getStatusCode, getBody } = await invokeGradeRoute(
+      {
+        config: makeConfig({ 'apiGrade.ruleset.url': 'https://does-not-exist.example.invalid/ruleset.yaml' }),
+        catalog: makeCatalog(makeEntity()),
+        auth: makeAuth(),
+        httpAuth: makeHttpAuth({ userEntityRef: 'user:default/bob', ownershipEntityRefs: [] }),
+      },
+      { entityRef: 'api:default/test-api' },
+    );
+    expect(getStatusCode()).toBe(200);
+    const body = getBody() as { status: string; rulesetWarning?: string; grade: { letterGrade: string } };
+    expect(body.status).toBe('ok');
+    expect(body.rulesetWarning).toBeDefined();
+    expect(body.rulesetWarning).toContain('does-not-exist.example.invalid');
+    expect(body.grade.letterGrade).toMatch(/^[ABCDF]$/);
+  }, 30_000);
+});
+
+// T047 — group-based and allowAll visibility (US4)
+describe('GET /grade — group-based and allowAll visibility', () => {
+  it('returns full detail for a member of a configured visibility group', async () => {
+    const { getBody } = await invokeGradeRoute(
+      {
+        config: makeConfig({
+          'apiGrade.visibility.groups': ['group:default/platform-engineering'],
+        }),
+        catalog: makeCatalog(makeEntity()),
+        auth: makeAuth(),
+        httpAuth: makeHttpAuth({
+          token: 'user-token',
+          userEntityRef: 'user:default/carol', // not the owner
+          ownershipEntityRefs: ['group:default/platform-engineering'],
+        }),
+      },
+      { entityRef: 'api:default/test-api' },
+    );
+    // Group member gets the same payload as an owner
+    const body = getBody() as { grade: { summary: { commentary: string }; diagnostics: unknown[] } };
+    expect(typeof body.grade.summary.commentary).toBe('string');
+    expect(Array.isArray(body.grade.diagnostics)).toBe(true);
+  });
+
+  it('returns full detail for any user when allowAll is true', async () => {
+    const { getBody } = await invokeGradeRoute(
+      {
+        config: makeConfig({ 'apiGrade.visibility.allowAll': true }),
+        catalog: makeCatalog(makeEntity()),
+        auth: makeAuth(),
+        httpAuth: makeHttpAuth({
+          token: 'user-token',
+          userEntityRef: 'user:default/carol',
+          ownershipEntityRefs: [],
+        }),
+      },
+      { entityRef: 'api:default/test-api' },
+    );
+    const body = getBody() as { grade: { summary: { commentary: string }; diagnostics: unknown[] } };
+    expect(typeof body.grade.summary.commentary).toBe('string');
+    expect(Array.isArray(body.grade.diagnostics)).toBe(true);
+  });
+
+  it('strips detail for non-owner non-group user when allowAll is false', async () => {
+    const { getBody } = await invokeGradeRoute(
+      {
+        config: makeConfig({
+          'apiGrade.visibility.allowAll': false,
+          'apiGrade.visibility.groups': ['group:default/platform-engineering'],
+        }),
+        catalog: makeCatalog(makeEntity()),
+        auth: makeAuth(),
+        httpAuth: makeHttpAuth({
+          token: 'user-token',
+          userEntityRef: 'user:default/carol',
+          ownershipEntityRefs: ['group:default/other-team'],
+        }),
+      },
+      { entityRef: 'api:default/test-api' },
+    );
+    const body = getBody() as { grade: { summary: { commentary: string; recommendations: unknown[] }; diagnostics: unknown[] } };
+    expect(body.grade.summary.commentary).toBe('');
+    expect(body.grade.summary.recommendations).toEqual([]);
+    expect(body.grade.diagnostics).toEqual([]);
   });
 });

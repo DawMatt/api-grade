@@ -112,8 +112,9 @@ packages/
 │
 └── backstage-plugin-api-grade-backend/      # NEW — backend
     ├── src/
-    │   ├── router.ts                        # Express router: POST /grade
-    │   └── index.ts                         # Exports createPlugin()
+    │   ├── plugin.ts                        # createBackendPlugin() — Backstage New Backend System registration
+    │   ├── router.ts                        # Express router: GET /grade; hand-rolled service interfaces for testability
+    │   └── index.ts                         # Re-exports router types + default-exports plugin.ts BackendFeature
     ├── package.json
     └── tsconfig.json
 

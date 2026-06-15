@@ -1,5 +1,6 @@
 import React from 'react';
 import { OverallGradeSection } from './OverallGradeSection.js';
+import { GradingDetailSection } from './GradingDetailSection.js';
 import { useApiGrade } from '../../hooks/useApiGrade.js';
 import type { ApiGradeClient } from '../../api/ApiGradeClient.js';
 
@@ -37,6 +38,10 @@ export function ApiGradeCard({ entityRef, client }: ApiGradeCardProps): React.JS
     );
   }
 
+  // Mode is determined server-side: detailed fields are only present when the
+  // backend confirms the caller is authorised (owner or visibility group).
+  const mode = grade.summary.commentary !== '' ? 'detailed' : 'summary';
+
   return (
     <div>
       {rulesetWarning && (
@@ -44,12 +49,20 @@ export function ApiGradeCard({ entityRef, client }: ApiGradeCardProps): React.JS
           <em>{rulesetWarning}</em>
         </div>
       )}
-      <OverallGradeSection
-        letterGrade={grade.letterGrade}
-        numericScore={grade.numericScore}
-        gradeLabel={grade.gradeLabel}
-        mode="summary"
-      />
+      <div style={mode === 'detailed' ? { display: 'flex', gap: '2rem', alignItems: 'flex-start' } : undefined}>
+        <OverallGradeSection
+          letterGrade={grade.letterGrade}
+          numericScore={grade.numericScore}
+          gradeLabel={grade.gradeLabel}
+          mode={mode}
+        />
+        {mode === 'detailed' && (
+          <GradingDetailSection
+            summary={grade.summary}
+            diagnostics={grade.diagnostics}
+          />
+        )}
+      </div>
     </div>
   );
 }
