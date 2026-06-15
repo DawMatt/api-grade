@@ -71,6 +71,9 @@ Rspack compiled successfully
 
 ## Run 3 - 2026/06/16
 
+**Root cause**: `await import('@backstage/catalog-client')` resolves to the ESM build (`dist/index.esm.js`). The Backstage dev backend (CJS+`pirates`) has already loaded the CJS build (`dist/index.cjs.js`) via the catalog plugin. Node.js v22 throws `ERR_REQUIRE_CYCLE_MODULE` when both loaders claim the same dual-build package.
+**Fix applied**: Replaced dynamic import with `createRequire(import.meta.url)('@backstage/catalog-client')`, forcing the CJS condition and reusing the already-loaded module instance. See `packages/backstage-plugin-api-grade-backend/src/plugin.ts`.
+
 - [ ] Backstage UI become non-functional after installing the backend plugin via adding the following line to backstage/packages/backend/src/index.ts:
 
 `backend.add(import('backstage-plugin-api-grade-backend'));`

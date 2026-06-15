@@ -129,6 +129,18 @@ Node.js's ESM static binding check fails at plugin load time because the version
 
 ---
 
+**Symptom C** — `Error [ERR_REQUIRE_CYCLE_MODULE]: Cannot require() ES Module .../catalog-client/dist/index.esm.js in a cycle`
+
+The backend plugin initialises but then fails immediately with a cycle error. The plugin appears in the "Plugin initialization started" log line but its startup fails before registering its HTTP router.
+
+**Cause**: The Backstage dev backend runs under a CJS+`pirates` transform pipeline. The Backstage catalog plugin loads `@backstage/catalog-client` via CJS (`dist/index.cjs.js`). A dynamic `import('@backstage/catalog-client')` inside the api-grade plugin resolves to the ESM build (`dist/index.esm.js`) instead. Node.js v22 detects a cross-loader cycle — the same package is being loaded by both the CJS and ESM module systems simultaneously — and throws this error.
+
+**Fix**: This is resolved in the current release by using `createRequire(import.meta.url)` to load `@backstage/catalog-client` via the CJS condition, reusing the instance already in the module registry. If you see this error with the current version, confirm you are running the latest build (`yarn workspace backstage-plugin-api-grade-backend build` then reinstall).
+
+**Verify**: After reinstalling, `yarn start` should show `Plugin initialization complete` with `'api-grade'` listed and no `ERR_REQUIRE_CYCLE_MODULE` error.
+
+---
+
 ## Further Reading
 
 - [→ Backstage Plugins Overview](./README.md) — plugin architecture and prerequisites
