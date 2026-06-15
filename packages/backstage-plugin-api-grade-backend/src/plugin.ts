@@ -1,5 +1,4 @@
 import { createBackendPlugin, coreServices } from '@backstage/backend-plugin-api';
-import { CatalogClient } from '@backstage/catalog-client';
 import { createRouter } from './router.js';
 import type { AuthService, HttpAuthService } from './router.js';
 
@@ -15,6 +14,10 @@ export default createBackendPlugin({
         httpAuth: coreServices.httpAuth,
       },
       async init({ httpRouter, rootConfig, discovery, auth, httpAuth }) {
+        // Dynamic import avoids the ESM static named-export binding check against
+        // @backstage/catalog-client, which ships as CJS and fails that check in some
+        // host-app versions even though CatalogClient is present at runtime.
+        const { CatalogClient } = await import('@backstage/catalog-client');
         const catalog = new CatalogClient({ discoveryApi: discovery });
         const router = await createRouter({
           config: rootConfig,

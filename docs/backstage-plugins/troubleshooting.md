@@ -105,6 +105,30 @@ spec:
     paths: {}
 ```
 
+## Backend fails to start after adding the plugin
+
+**Symptom A** — `TypeError: Cannot use 'in' operator to search for '$$type' in undefined`
+
+Backstage's `unwrapFeature` received `undefined` instead of a `BackendFeature` when the plugin was registered via `backend.add(import('backstage-plugin-api-grade-backend'))`.
+
+**Cause**: The package's entry point (`dist/index.js`) does not re-export the plugin as a default export, so `import(...)` resolves to a module with no default.
+
+**Fix**: Confirm `packages/backstage-plugin-api-grade-backend/src/index.ts` contains `export { default } from './plugin.js'`. If it does, rebuild the package (`yarn workspace backstage-plugin-api-grade-backend build`) before reinstalling it in the Backstage app.
+
+---
+
+**Symptom B** — `SyntaxError: The requested module '@backstage/catalog-client' does not provide an export named 'CatalogClient'`
+
+Node.js's ESM static binding check fails at plugin load time because the version of `@backstage/catalog-client` installed in the host Backstage app ships as CommonJS and Node.js cannot guarantee the named export `CatalogClient` at module instantiation.
+
+**Cause**: A top-level `import { CatalogClient } from '@backstage/catalog-client'` triggers ESM's static analysis. CJS packages do not always pass this check even when the export exists at runtime.
+
+**Fix**: This is resolved in the current release by using a dynamic `import('@backstage/catalog-client')` inside the plugin `init` function, which bypasses the static binding check. If you see this error with the current version of the package, confirm you are running the latest build (`yarn workspace backstage-plugin-api-grade-backend build` then reinstall).
+
+**Verify**: After reinstalling, `yarn start` in the Backstage app should show the backend starting without any `SyntaxError` from `backstage-plugin-api-grade-backend`.
+
+---
+
 ## Further Reading
 
 - [→ Backstage Plugins Overview](./README.md) — plugin architecture and prerequisites
