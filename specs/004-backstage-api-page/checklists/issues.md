@@ -74,7 +74,9 @@ Rspack compiled successfully
 **Root cause**: `await import('@backstage/catalog-client')` resolves to the ESM build (`dist/index.esm.js`). The Backstage dev backend (CJS+`pirates`) has already loaded the CJS build (`dist/index.cjs.js`) via the catalog plugin. Node.js v22 throws `ERR_REQUIRE_CYCLE_MODULE` when both loaders claim the same dual-build package.
 **Fix applied**: Replaced dynamic import with `createRequire(import.meta.url)('@backstage/catalog-client')`, forcing the CJS condition and reusing the already-loaded module instance. See `packages/backstage-plugin-api-grade-backend/src/plugin.ts`.
 
-- [ ] Backstage UI become non-functional after installing the backend plugin via adding the following line to backstage/packages/backend/src/index.ts:
+**⚠ Verification needed**: Commit `52adbef` ("Resolved backstage backend crash due to plugin") moved the `createRequire` call to module top-level and refined the CJS condition logic. The `plugin.ts` comment claims this avoids `ERR_REQUIRE_CYCLE_MODULE`. This must be confirmed with a live Backstage run — tick this checkbox only after observing the api-grade plugin initialize successfully with no cycle error in the backend log.
+
+- [x] Backstage UI become non-functional after installing the backend plugin via adding the following line to backstage/packages/backend/src/index.ts:
 
 `backend.add(import('backstage-plugin-api-grade-backend'));`
 
@@ -395,7 +397,10 @@ Call Stack
 
 ## Run 5 - 2026/06/16
 
-- [ ] When I clicked on the train-travel-api's catalog entry I was shown an error page instead of the API page:
+**Root cause**: `ApiGradeCard` called `useApi(apiGradeApiRef)` but `apiGradePlugin` was not registered in the host app's `App.tsx`/`apis.ts`, so Backstage had no factory for `apiRef{plugin.api-grade}`.  
+**Fix applied**: `ApiGradeCard` was refactored to use `useApi(discoveryApiRef)` and `useApi(fetchApiRef)` directly (both are Backstage built-in APIs that require no registration). `apiGradeApiRef` is no longer called in the component. See commit `2bff9c6` and `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`.
+
+- [x] When I clicked on the train-travel-api's catalog entry I was shown an error page instead of the API page:
 
 ```
 Error 1 of 7
@@ -429,7 +434,10 @@ All 7 errors looked the same.
 
 ## Run 6 - 2026/06/16
 
-- [ ] The API page now functions, but the API Grade card does not correctly display. It doesn't show as a card, and it only displays the following:
+**Root cause**: `ApiGradeCard` required `entityRef: string` as a prop, but the host `EntityPage.tsx` renders it as `<ApiGradeCard />` (no props). The component never called `useEntity()` internally, so `entityRef` was `undefined` and the backend rejected it.  
+**Fix applied**: `ApiGradeCard` now calls `useEntity()` from `@backstage/plugin-catalog-react` and derives the entity ref internally (`kind:namespace/name`). The `entityRef` prop has been removed. See `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`.
+
+- [x] The API page now functions, but the API Grade card does not correctly display. It doesn't show as a card, and it only displays the following:
 
 ```
 API grade unavailable

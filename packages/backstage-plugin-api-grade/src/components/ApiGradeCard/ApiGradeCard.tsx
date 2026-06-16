@@ -1,15 +1,16 @@
 import React, { useMemo } from 'react';
 import { useApi, discoveryApiRef, fetchApiRef } from '@backstage/core-plugin-api';
+import { useEntity } from '@backstage/plugin-catalog-react';
 import { OverallGradeSection } from './OverallGradeSection.js';
 import { GradingDetailSection } from './GradingDetailSection.js';
 import { useApiGrade } from '../../hooks/useApiGrade.js';
 import { ApiGradeClient } from '../../api/ApiGradeClient.js';
 
-export interface ApiGradeCardProps {
-  entityRef: string;
-}
+export interface ApiGradeCardProps {}
 
-export function ApiGradeCard({ entityRef }: ApiGradeCardProps): React.JSX.Element {
+export function ApiGradeCard(): React.JSX.Element {
+  const { entity } = useEntity();
+  const entityRef = `${entity.kind.toLowerCase()}:${(entity.metadata.namespace ?? 'default').toLowerCase()}/${entity.metadata.name}`;
   const discoveryApi = useApi(discoveryApiRef);
   const fetchApi = useApi(fetchApiRef);
   const client = useMemo(() => new ApiGradeClient(discoveryApi, fetchApi), [discoveryApi, fetchApi]);
