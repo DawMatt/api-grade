@@ -141,6 +141,29 @@ The backend plugin initialises but then fails immediately with a cycle error. Th
 
 ---
 
+## Card shows "Failed to contact the Backstage catalog"
+
+**Symptom**: The API Grade card displays:
+
+```
+API grade unavailable
+Failed to contact the Backstage catalog.
+```
+
+**Cause**: The backend plugin is running in Backstage's **New Backend System** (NBS), where `httpAuth.credentials()` returns a `BackstageCredentials` object — it does **not** carry a `.token` field at the top level. Earlier versions of this plugin incorrectly read `credentials.token` to gate a call to `auth.getPluginRequestToken`. Because the field was always `undefined`, the catalog request was made without authentication and the `CatalogClient` threw a 401/403.
+
+**Fix**: This is resolved in the current release. The plugin now passes the full `BackstageCredentials` object directly to `auth.getPluginRequestToken({ onBehalfOf: credentials, ... })`, which the NBS auth layer handles correctly for all principal types (user, service, and guest). If you still see this error, confirm you are running the latest build:
+
+```bash
+yarn workspace backstage-plugin-api-grade-backend build
+```
+
+Then reinstall the package in your Backstage app and restart.
+
+**Verify**: After reinstalling, open an API entity page. The grade should appear (or show a format-not-supported message for non-OpenAPI/AsyncAPI entities). The backend log should show no catalog-related errors during the request.
+
+---
+
 ## Further Reading
 
 - [→ Backstage Plugins Overview](./README.md) — plugin architecture and prerequisites

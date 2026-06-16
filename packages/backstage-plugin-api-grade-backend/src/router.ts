@@ -22,25 +22,29 @@ export interface ConfigService {
   getOptionalStringArray(key: string): string[] | undefined;
 }
 
+// Minimal subset of BackstageCredentials from @backstage/backend-plugin-api.
+// In production the principal field is populated by the New Backend System auth layer;
+// in tests plain objects with this shape are used as mocks.
+export interface BackstageCredentials {
+  principal?: {
+    userEntityRef?: string;
+    ownershipEntityRefs?: string[];
+  };
+}
+
 export interface AuthService {
   getPluginRequestToken(options: {
-    onBehalfOf: { token: string };
+    onBehalfOf: BackstageCredentials;
     targetPluginId: string;
   }): Promise<{ token: string }>;
 }
 
 export interface HttpAuthService {
-  credentials<T extends { token?: string }>(
+  credentials(
     req: Request,
     options?: { allow?: string[] }
-  ): Promise<T>;
+  ): Promise<BackstageCredentials>;
   issueUserCookie(res: Response, options?: { token: string }): Promise<void>;
-}
-
-export interface BackstageIdentity {
-  token?: string;
-  userEntityRef?: string;
-  ownershipEntityRefs?: string[];
 }
 
 // Plugin-internal types
@@ -143,27 +147,29 @@ export async function createRouter(options: RouterOptions): Promise<Router> {
       return;
     }
 
-    // Resolve caller identity
-    let identity: BackstageIdentity;
+    // Resolve caller credentials (opaque BackstageCredentials in production)
+    let credentials: BackstageCredentials = {};
     try {
-      identity = await httpAuth.credentials<BackstageIdentity>(req);
+      credentials = await httpAuth.credentials(req);
     } catch {
-      identity = {};
+      // fall through with empty credentials — catalog may allow unauthenticated reads
     }
 
-    // Get a plugin-to-plugin token for catalog calls
+    // Always obtain a plugin-to-plugin token so the catalog request is authenticated.
+    // In the New Backend System, getPluginRequestToken accepts the full credentials
+    // object (not a raw token string) and works for users, services, and guest sessions.
     let catalogToken: string | undefined;
     try {
-      if (identity.token) {
-        const result = await auth.getPluginRequestToken({
-          onBehalfOf: { token: identity.token },
-          targetPluginId: 'catalog',
-        });
-        catalogToken = result.token;
-      }
+      const result = await auth.getPluginRequestToken({
+        onBehalfOf: credentials,
+        targetPluginId: 'catalog',
+      });
+      catalogToken = result.token;
     } catch {
       // proceed without token — catalog may allow unauthenticated reads
     }
+
+    const principal = credentials.principal;
 
     // Fetch entity from catalog
     let entity: Entity | undefined;
@@ -246,10 +252,10 @@ export async function createRouter(options: RouterOptions): Promise<Router> {
     const visibilityConfig = parseVisibilityConfig(config);
     const entityOwner = entity.spec?.['owner'] as string | undefined;
     const includeDetail = canViewDetailed(
-      identity.userEntityRef,
+      principal?.userEntityRef,
       entityOwner,
       visibilityConfig,
-      identity.ownershipEntityRefs,
+      principal?.ownershipEntityRefs,
     );
 
     const responseGrade = includeDetail ? grade : stripDetailFields(grade);

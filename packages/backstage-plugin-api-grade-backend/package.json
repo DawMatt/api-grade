@@ -1,6 +1,6 @@
 {
   "name": "backstage-plugin-api-grade-backend",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Backstage backend plugin — grades API entity specs and returns results via HTTP",
   "license": "MIT",
   "type": "module",

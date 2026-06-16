@@ -5,6 +5,7 @@ import type {
   ConfigService,
   AuthService,
   HttpAuthService,
+  BackstageCredentials,
   Entity,
 } from '../../src/router.js';
 import type { Request, Response } from 'express';
@@ -57,9 +58,9 @@ function makeAuth(): AuthService {
   };
 }
 
-function makeHttpAuth(identity: Record<string, unknown> = {}): HttpAuthService {
+function makeHttpAuth(principal: BackstageCredentials['principal'] = {}): HttpAuthService {
   return {
-    credentials: vi.fn().mockResolvedValue(identity),
+    credentials: vi.fn().mockResolvedValue({ principal } satisfies BackstageCredentials),
     issueUserCookie: vi.fn(),
   };
 }
@@ -100,7 +101,6 @@ describe('GET /grade — summary response shape (non-owner)', () => {
     config = makeConfig();
     auth = makeAuth();
     httpAuth = makeHttpAuth({
-      token: 'user-token',
       userEntityRef: 'user:default/bob', // not the owner
       ownershipEntityRefs: [],
     });
@@ -187,7 +187,6 @@ describe('GET /grade — detail-filtering by authorisation', () => {
         catalog: makeCatalog(makeEntity()),
         auth: makeAuth(),
         httpAuth: makeHttpAuth({
-          token: 'user-token',
           userEntityRef: 'user:default/alice', // alice is the owner
           ownershipEntityRefs: [],
         }),
@@ -210,7 +209,6 @@ describe('GET /grade — detail-filtering by authorisation', () => {
         catalog: makeCatalog(makeEntity()),
         auth: makeAuth(),
         httpAuth: makeHttpAuth({
-          token: 'user-token',
           userEntityRef: 'user:default/bob', // not the owner
           ownershipEntityRefs: [],
         }),
@@ -277,7 +275,6 @@ describe('GET /grade — group-based and allowAll visibility', () => {
         catalog: makeCatalog(makeEntity()),
         auth: makeAuth(),
         httpAuth: makeHttpAuth({
-          token: 'user-token',
           userEntityRef: 'user:default/carol', // not the owner
           ownershipEntityRefs: ['group:default/platform-engineering'],
         }),
@@ -297,7 +294,6 @@ describe('GET /grade — group-based and allowAll visibility', () => {
         catalog: makeCatalog(makeEntity()),
         auth: makeAuth(),
         httpAuth: makeHttpAuth({
-          token: 'user-token',
           userEntityRef: 'user:default/carol',
           ownershipEntityRefs: [],
         }),
@@ -319,7 +315,6 @@ describe('GET /grade — group-based and allowAll visibility', () => {
         catalog: makeCatalog(makeEntity()),
         auth: makeAuth(),
         httpAuth: makeHttpAuth({
-          token: 'user-token',
           userEntityRef: 'user:default/carol',
           ownershipEntityRefs: ['group:default/other-team'],
         }),

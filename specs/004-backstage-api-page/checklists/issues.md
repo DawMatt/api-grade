@@ -443,3 +443,15 @@ All 7 errors looked the same.
 API grade unavailable
 Missing or malformed entityRef query parameter. Expected format: kind:namespace/name.
 ```
+
+## Run 7 - 2026/06/16
+
+**Root cause**: In the Backstage New Backend System, `httpAuth.credentials()` returns a `BackstageCredentials` object — it does NOT have a `.token` field at the top level. The route handler's `if (identity.token)` guard was always `false` in production, so `auth.getPluginRequestToken` was never called, `catalogToken` stayed `undefined`, and `CatalogClient` threw a 401/403 when making the unauthenticated catalog request.  
+**Fix applied**: (1) Replaced the flat `BackstageIdentity` interface with a `BackstageCredentials` interface whose `principal` field carries `userEntityRef` and `ownershipEntityRefs`. (2) Route handler now always calls `auth.getPluginRequestToken({ onBehalfOf: credentials, ... })`, passing the full credentials object (as the New Backend System requires). (3) User identity is extracted from `credentials.principal`. Integration tests updated to use `{ principal: { userEntityRef, ownershipEntityRefs } }` shape. See `packages/backstage-plugin-api-grade-backend/src/router.ts`.
+
+- [x] The API page now functions, but the API Grade card does not correctly display. It doesn't show as a card, and it only displays the following:
+
+```
+API grade unavailable
+Failed to contact the Backstage catalog.
+```
