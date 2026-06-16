@@ -1,6 +1,7 @@
 {
   "name": "api-grade",
   "version": "0.1.1",
+  "private": true,
   "description": "Grade API quality and share diagnostics using Spectral-compatible linting",
   "license": "MIT",
   "type": "module",

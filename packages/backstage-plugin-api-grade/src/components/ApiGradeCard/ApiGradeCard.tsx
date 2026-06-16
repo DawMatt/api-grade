@@ -1,15 +1,16 @@
 import React from 'react';
+import { useApi } from '@backstage/core-plugin-api';
 import { OverallGradeSection } from './OverallGradeSection.js';
 import { GradingDetailSection } from './GradingDetailSection.js';
 import { useApiGrade } from '../../hooks/useApiGrade.js';
-import type { ApiGradeClient } from '../../api/ApiGradeClient.js';
+import { apiGradeApiRef } from '../../plugin.js';
 
 export interface ApiGradeCardProps {
   entityRef: string;
-  client: ApiGradeClient;
 }
 
-export function ApiGradeCard({ entityRef, client }: ApiGradeCardProps): React.JSX.Element {
+export function ApiGradeCard({ entityRef }: ApiGradeCardProps): React.JSX.Element {
+  const client = useApi(apiGradeApiRef);
   const { loading, grade, error, rulesetWarning } = useApiGrade(entityRef, client);
 
   if (loading) {
