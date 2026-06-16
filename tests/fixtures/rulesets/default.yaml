@@ -1,0 +1,7 @@
+extends:
+  - spectral:oas
+  - spectral:asyncapi
+# Fallback if spectral: aliases don't resolve in a browser context (uncomment if needed):
+# extends:
+#   - https://unpkg.com/@stoplight/spectral-openapi@1/ruleset.js
+#   - https://unpkg.com/@stoplight/spectral-asyncapi@1/ruleset.js
