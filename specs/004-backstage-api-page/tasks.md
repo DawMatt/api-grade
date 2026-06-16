@@ -94,7 +94,7 @@ This feature adds two new packages to the monorepo:
 
 **Goal**: An API owner logging into Backstage sees the full diagnostic detail on their API's page — quality assessment commentary, numbered recommendations, and diagnostic breakdown — while non-owners see only the summary.
 
-**Independent Test**: Log in as the API owner. The card shows "Overall API Grade" sub-section (letter bold/large, percentage and label below) alongside a "Grading Detail" sub-section to the right, with "Quality Assessment:", "Recommendations:", and "Diagnostics:" stacked vertically. Log in as a non-owner and confirm only the grade summary is visible.
+**Independent Test**: Log in as the API owner. The card shows "Overall Grade" sub-section (letter bold/large, percentage and label below) alongside a "Grading Detail" sub-section to the right, with "Quality Assessment:", "Recommendations:", and "Diagnostics:" stacked vertically. Log in as a non-owner and confirm only the grade summary is visible.
 
 ### Backend — User Story 2
 
@@ -178,6 +178,8 @@ This feature adds two new packages to the monorepo:
 - [ ] T052 [P] Verify FR-015 unsupported-format message in `ApiGradeCard`: a GraphQL entity (mock `spec.type: 'graphql'`) shows the "format not supported" message, not a blank card or unhandled error in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
 - [ ] T053 Run quickstart.md validation: follow all five steps against a local Backstage dev instance; confirm card appears in Info column for both an OpenAPI and an AsyncAPI entity
 - [ ] T054 [P] Review both plugin packages for YAGNI violations: remove any unused props, hypothetical config fields, or abstractions beyond current spec requirements
+- [X] T066 Fix `OverallGradeSection` detailed-mode layout: render `numericScore` and `gradeLabel` as separate stacked `<div>` elements (each on its own line) rather than joined with `·`; add test asserting no `·` separator in detailed mode — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx` (FR-018, Run 10)
+- [X] T067 Fix `GradingDetailSection` content truncation: add `flex: 1; min-width: 0; overflow-wrap: break-word` to the section root div so text wraps and fills available space in the detailed horizontal layout — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 10)
 
 ### Documentation — FR-023 to FR-028
 

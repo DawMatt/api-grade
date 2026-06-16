@@ -25,35 +25,33 @@ export function OverallGradeSection({
     </span>
   );
 
-  const scoreAndLabel = (
-    <span>
-      {numericScore}%&nbsp;·&nbsp;{gradeLabel}
-    </span>
-  );
-
   const heading = (
-    <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Overall API Grade</div>
+    <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Overall Grade</div>
   );
 
   if (mode === 'summary') {
+    // FR-017: percentage and label appear beside the grade letter
     return (
       <div>
         {heading}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {letter}
-          {scoreAndLabel}
+          <span>
+            {numericScore}%&nbsp;·&nbsp;{gradeLabel}
+          </span>
         </div>
       </div>
     );
   }
 
-  // detailed: letter on top, score+label below (column layout)
+  // FR-018: letter on top, then percentage, then label — each on its own line
   return (
     <div>
       {heading}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.25rem' }}>
         {letter}
-        {scoreAndLabel}
+        <div>{numericScore}%</div>
+        <div>{gradeLabel}</div>
       </div>
     </div>
   );

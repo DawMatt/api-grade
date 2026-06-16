@@ -11,7 +11,7 @@ export function GradingDetailSection({
   diagnostics,
 }: GradingDetailSectionProps): React.JSX.Element {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, minWidth: 0, overflowWrap: 'break-word' }}>
       <section aria-label="Quality Assessment">
         <strong>Quality Assessment:</strong>
         <p style={{ margin: '0.25rem 0 0' }}>{summary.commentary}</p>

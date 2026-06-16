@@ -41,9 +41,10 @@ describe('OverallGradeSection', () => {
           mode="summary"
         />,
       );
-      const wrapper = container.firstChild as HTMLElement;
-      expect(wrapper.style.flexDirection).not.toBe('column');
-      expect(wrapper.style.display).toBe('flex');
+      // children[0] = heading div, children[1] = inner flex row
+      const innerRow = ((container.firstChild as HTMLElement).children[1]) as HTMLElement;
+      expect(innerRow.style.flexDirection).not.toBe('column');
+      expect(innerRow.style.display).toBe('flex');
     });
   });
 
@@ -69,8 +70,9 @@ describe('OverallGradeSection', () => {
           mode="detailed"
         />,
       );
-      const wrapper = container.firstChild as HTMLElement;
-      expect(wrapper.style.flexDirection).toBe('column');
+      // children[0] = heading div, children[1] = inner flex column
+      const innerCol = ((container.firstChild as HTMLElement).children[1]) as HTMLElement;
+      expect(innerCol.style.flexDirection).toBe('column');
     });
 
     it('still shows percentage and label text', () => {
@@ -82,8 +84,20 @@ describe('OverallGradeSection', () => {
           mode="detailed"
         />,
       );
-      expect(screen.getByText(/62%/)).toBeTruthy();
-      expect(screen.getByText(/OK/)).toBeTruthy();
+      expect(screen.getByText('62%')).toBeTruthy();
+      expect(screen.getByText('OK')).toBeTruthy();
+    });
+
+    it('renders percentage and label as separate elements with no · separator', () => {
+      const { container } = render(
+        <OverallGradeSection
+          letterGrade="C"
+          numericScore={62}
+          gradeLabel="OK"
+          mode="detailed"
+        />,
+      );
+      expect(container.textContent).not.toContain('·');
     });
   });
 });
