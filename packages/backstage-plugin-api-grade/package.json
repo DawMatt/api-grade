@@ -20,6 +20,7 @@
     "api-grade-core": "*"
   },
   "peerDependencies": {
+    "@backstage/core-components": "^0.14.0",
     "@backstage/core-plugin-api": "^1.0.0",
     "@backstage/plugin-catalog-react": "^1.0.0",
     "react": "^18"

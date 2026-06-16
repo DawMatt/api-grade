@@ -43,6 +43,36 @@ describe('canViewDetailed()', () => {
     });
   });
 
+  describe('group ownership (US2 — entity owned by a group the user belongs to)', () => {
+    it('returns true when entity is owned by a group in ownershipEntityRefs', () => {
+      expect(
+        canViewDetailed(
+          'user:default/charlie',
+          'group:default/platform-team',
+          defaultVisibility,
+          ['group:default/platform-team', 'group:default/other-team'],
+        ),
+      ).toBe(true);
+    });
+
+    it('returns false when entity owner group is not in ownershipEntityRefs', () => {
+      expect(
+        canViewDetailed(
+          'user:default/charlie',
+          'group:default/platform-team',
+          defaultVisibility,
+          ['group:default/other-team'],
+        ),
+      ).toBe(false);
+    });
+
+    it('returns false when ownershipEntityRefs is empty', () => {
+      expect(
+        canViewDetailed('user:default/charlie', 'group:default/platform-team', defaultVisibility, []),
+      ).toBe(false);
+    });
+  });
+
   describe('group membership (US4)', () => {
     it('returns true when user ownershipEntityRefs intersects visibility groups', () => {
       const config: VisibilityConfig = {

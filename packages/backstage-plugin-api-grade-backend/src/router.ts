@@ -14,6 +14,7 @@ export interface Entity {
   kind: string;
   metadata: { name: string; namespace?: string };
   spec?: Record<string, unknown>;
+  relations?: Array<{ type: string; targetRef: string }>;
 }
 
 export interface ConfigService {
@@ -91,7 +92,11 @@ export function canViewDetailed(
   ownershipEntityRefs: string[] = [],
 ): boolean {
   if (visibilityConfig.allowAll) return true;
+  // Direct ownership: entity is owned by this specific user
   if (userEntityRef && entityOwner && userEntityRef === entityOwner) return true;
+  // Group ownership: user is a member of the group that owns this entity
+  if (entityOwner && ownershipEntityRefs.includes(entityOwner)) return true;
+  // Visibility group: user belongs to an admin-configured group granted access
   if (
     visibilityConfig.groups.length > 0 &&
     ownershipEntityRefs.some((ref) => visibilityConfig.groups.includes(ref))
@@ -170,6 +175,25 @@ export async function createRouter(options: RouterOptions): Promise<Router> {
     }
 
     const principal = credentials.principal;
+
+    // Augment ownershipEntityRefs with catalog-resolved group memberships.
+    // Guest auth (and some providers) do not include group refs in the token's
+    // ent claim even when the user has memberOf relations in the catalog.
+    let resolvedOwnershipRefs: string[] = principal?.ownershipEntityRefs ?? [];
+    const userEntityRef = principal?.userEntityRef;
+    if (userEntityRef) {
+      try {
+        const userEntity = await catalog.getEntityByRef(userEntityRef, { token: catalogToken });
+        if (userEntity?.relations) {
+          const groupRefs = userEntity.relations
+            .filter(r => r.type === 'memberOf')
+            .map(r => r.targetRef);
+          resolvedOwnershipRefs = [...new Set([...resolvedOwnershipRefs, ...groupRefs])];
+        }
+      } catch {
+        // proceed with token-only ownership refs if user entity lookup fails
+      }
+    }
 
     // Fetch entity from catalog
     let entity: Entity | undefined;
@@ -255,7 +279,7 @@ export async function createRouter(options: RouterOptions): Promise<Router> {
       principal?.userEntityRef,
       entityOwner,
       visibilityConfig,
-      principal?.ownershipEntityRefs,
+      resolvedOwnershipRefs,
     );
 
     const responseGrade = includeDetail ? grade : stripDetailFields(grade);

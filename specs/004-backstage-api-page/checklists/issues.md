@@ -455,3 +455,33 @@ Missing or malformed entityRef query parameter. Expected format: kind:namespace/
 API grade unavailable
 Failed to contact the Backstage catalog.
 ```
+
+## Run 8 - 2026/06/16
+
+**Root cause (card display)**: `ApiGradeCard` rendered a bare `<div>` — no Backstage `InfoCard` wrapper, so the output appeared as unstyled text below the other cards. There was also no "API Grade" card title and no "Overall API Grade" sub-section heading.
+**Fix applied**: Wrapped all render paths in `<InfoCard title="API Grade">` from `@backstage/core-components` (added as peerDependency). Added "Overall API Grade" heading inside `OverallGradeSection`. See `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx` and `OverallGradeSection.tsx`.
+
+**Root cause (ownership not varying)**: `canViewDetailed()` only checked direct user ownership (`userEntityRef === entityOwner`). APIs owned by a group the user belongs to were never granted detailed view because the entity owner ref (e.g. `group:default/platform-team`) was never compared against the user's `ownershipEntityRefs`. The stale-data symptom was a consequence — both APIs showed identical summary-only data because the ownership check always failed.
+**Fix applied**: Added a group-ownership check: `ownershipEntityRefs.includes(entityOwner)` as a third condition in `canViewDetailed()`. New unit tests added to `visibility.test.ts` covering this case. See `packages/backstage-plugin-api-grade-backend/src/router.ts`.
+
+- [x] API Grade now shows content, but not the expected content. All it shows is text as follows: `A
+95% · Excellent`. Specific gaps:
+    - This shows as raw content below the other cards in the Info column. The text is formatted but doesn't show in a card itself.
+    - There is no heading for the card. It was expected to have a title such as "API Grade".
+    - The information provided was expected to be under a sub-heading: "Overall API Grade".
+
+- [x] API Grade card content does not vary based upon ownership. I've viewed 2 APIs, 1 that is shared and another that my user owns (via the group I'm a member of). Both show the basic grade info only. In fact both show exactly the same information and rating so the data might not be being refreshed when I navigate from the first to the second API. The API that I own (via group membership) should be displaying detailed quality information as well.
+
+## Run 9 - 2026/06/16
+
+- [x] API Grade card content does not vary based upon ownership. I've viewed 2 APIs, 1 that is shared and another that my user owns (via the group I'm a member of). Both show the basic grade info only. The API that I own (via group membership) should be displaying detailed quality information as well.
+
+- [ ] API Grade card content does not appear to change when moving between APIs. I've checked the 2 loaded APIs this user has access to. Both show exactly the same information when I navigate from the first to the second API. Running api-grade via the CLI gives different results for these 2 APIs (95% vs 98%).
+
+```
+API Grade
+Overall API Grade
+A
+95% · Excellent
+```
+

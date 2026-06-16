@@ -31,20 +31,30 @@ export function OverallGradeSection({
     </span>
   );
 
+  const heading = (
+    <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Overall API Grade</div>
+  );
+
   if (mode === 'summary') {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        {letter}
-        {scoreAndLabel}
+      <div>
+        {heading}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {letter}
+          {scoreAndLabel}
+        </div>
       </div>
     );
   }
 
   // detailed: letter on top, score+label below (column layout)
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.25rem' }}>
-      {letter}
-      {scoreAndLabel}
+    <div>
+      {heading}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.25rem' }}>
+        {letter}
+        {scoreAndLabel}
+      </div>
     </div>
   );
 }
