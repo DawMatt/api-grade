@@ -50,6 +50,11 @@ Feature 5 - API grade documentation refactoring
 
 - Refactor documentation for the repo, aligning with documentation_architecture.md
 
+Feature 6 - npmjs
+
+- Publish packages to npmjs. Use namespace dawmatt. e.g. core package would be named @dawmatt/api-grade-core
+- Update documentation to cover npmjs. Includes both the user oriented documentation and the contribution guide
+
 ## Constitution
 
 - API grading will use a similar algorithm and approach to the API grading and diagnostics capabilities found in OpenAPI Doctor: https://github.com/pb33f/doctor . This includes providing an overall grade (e.g. D) and numeric rating (e.g. 73%), a diagnostic summary identifying priority areas to focus on, followed by the diagnostic detail. The algorithm is summarised in api_diagnostic_algorithm_spec.md .
