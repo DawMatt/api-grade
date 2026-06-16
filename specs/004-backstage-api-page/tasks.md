@@ -69,7 +69,7 @@ This feature adds two new packages to the monorepo:
 - [X] T014 [US1] Implement Express router scaffold with `GET /grade` route signature in `packages/backstage-plugin-api-grade-backend/src/router.ts`
 - [X] T015 [US1] Add catalog client call to fetch `ApiEntity` by `entityRef` query param; validate entity kind is `API` and `spec.type` is `openapi` or `asyncapi`; extract `spec.definition` in `packages/backstage-plugin-api-grade-backend/src/router.ts`
 - [X] T016 [US1] Call `GradeEngine.gradeContent()` and return a summary-only `BackstageGradeResponse` (strip `summary.commentary`, `summary.recommendations`, and `diagnostics`) in `packages/backstage-plugin-api-grade-backend/src/router.ts`
-- [X] T017 [US1] Export `createPlugin()` (Backstage backend plugin registration with `httpRouter`) from `packages/backstage-plugin-api-grade-backend/src/index.ts`
+- [X] T017 [US1] Create `packages/backstage-plugin-api-grade-backend/src/plugin.ts`: call `createBackendPlugin({ pluginId: 'api-grade', register(env) { ... } })` from `@backstage/backend-plugin-api`; wire `coreServices.httpRouter`, `coreServices.rootConfig`, `coreServices.discovery`, `coreServices.auth`, `coreServices.httpAuth`; construct `CatalogClient({ discoveryApi: discovery })` from `@backstage/catalog-client`; call `createRouter()` and mount with `httpRouter.use(router)`; export the plugin as default from `plugin.ts` and re-export via `index.ts` (`export { default } from './plugin.js'`)
 
 ### Frontend — User Story 1
 
@@ -94,25 +94,25 @@ This feature adds two new packages to the monorepo:
 
 **Goal**: An API owner logging into Backstage sees the full diagnostic detail on their API's page — quality assessment commentary, numbered recommendations, and diagnostic breakdown — while non-owners see only the summary.
 
-**Independent Test**: Log in as the API owner. The card shows "Overall API Grade" sub-section (letter bold/large, percentage and label below) alongside a "Grading Detail" sub-section to the right, with "Quality Assessment:", "Recommendations:", and "Diagnostics:" stacked vertically. Log in as a non-owner and confirm only the grade summary is visible.
+**Independent Test**: Log in as the API owner. The card shows "Overall Grade" sub-section (letter bold/large, percentage and label below) alongside a "Grading Detail" sub-section to the right, with "Quality Assessment:", "Recommendations:", and "Diagnostics:" stacked vertically. Log in as a non-owner and confirm only the grade summary is visible.
 
 ### Backend — User Story 2
 
-- [ ] T027 [US2] Implement `canViewDetailed(userEntityRef: string, entityOwner: string, visibilityConfig: VisibilityConfig): boolean` — at this stage: return `true` only when `userEntityRef === entityOwner` in `packages/backstage-plugin-api-grade-backend/src/router.ts`
-- [ ] T028 [US2] Extend `GET /grade`: call `canViewDetailed()` using Backstage identity `httpAuth`; pass full `GradeResult` when authorised, strip `summary.commentary`, `summary.recommendations`, `diagnostics` when not in `packages/backstage-plugin-api-grade-backend/src/router.ts`
+- [X] T027 [US2] Implement `canViewDetailed(userEntityRef: string, entityOwner: string, visibilityConfig: VisibilityConfig): boolean` — at this stage: return `true` only when `userEntityRef === entityOwner` in `packages/backstage-plugin-api-grade-backend/src/router.ts`
+- [X] T028 [US2] Extend `GET /grade`: call `canViewDetailed()` using Backstage identity `httpAuth`; pass full `GradeResult` when authorised, strip `summary.commentary`, `summary.recommendations`, `diagnostics` when not in `packages/backstage-plugin-api-grade-backend/src/router.ts`
 
 ### Frontend — User Story 2
 
-- [ ] T029 [P] [US2] Extend `OverallGradeSection` with `mode: GradeCardMode` prop — detailed mode: letter in column, percentage + label below it — in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx`
-- [ ] T030 [P] [US2] Implement `GradingDetailSection` with three labelled areas stacked vertically: "Quality Assessment:" (`summary.commentary`), "Recommendations:" (`summary.recommendations` as `<ol>`), "Diagnostics:" (diagnostic list) in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx`
-- [ ] T031 [US2] Extend `ApiGradeCard`: use `useEntityOwnership()` to determine `mode`; render horizontal layout (`OverallGradeSection` left + `GradingDetailSection` right) when `mode='detailed'` in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
+- [X] T029 [P] [US2] Extend `OverallGradeSection` with `mode: GradeCardMode` prop — detailed mode: letter in column, percentage + label below it — in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx`
+- [X] T030 [P] [US2] Implement `GradingDetailSection` with three labelled areas stacked vertically: "Quality Assessment:" (`summary.commentary`), "Recommendations:" (`summary.recommendations` as `<ol>`), "Diagnostics:" (diagnostic list) in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx`
+- [X] T031 [US2] Extend `ApiGradeCard`: mode derived from grade data (`commentary !== ''` → detailed); render horizontal layout (`OverallGradeSection` left + `GradingDetailSection` right) when `mode='detailed'` in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
 
 ### Tests — User Story 2
 
-- [ ] T032 [P] [US2] Write unit tests for `OverallGradeSection` detailed mode (percentage + label below letter; column direction) in `packages/backstage-plugin-api-grade/tests/unit/components/OverallGradeSection.test.tsx`
-- [ ] T033 [P] [US2] Write unit tests for `GradingDetailSection` (all three headings present; recommendations rendered as `<ol>`; order preserved) in `packages/backstage-plugin-api-grade/tests/unit/components/GradingDetailSection.test.tsx`
-- [ ] T034 [P] [US2] Write unit tests for `canViewDetailed()` (owner returns true; non-owner returns false) in `packages/backstage-plugin-api-grade-backend/tests/unit/visibility.test.ts`
-- [ ] T035 [P] [US2] Write integration tests for detail-filtering in backend (`GET /grade` as owner returns `commentary` + `diagnostics`; as non-owner returns `''` and `[]`) in `packages/backstage-plugin-api-grade-backend/tests/integration/router.test.ts`
+- [X] T032 [P] [US2] Write unit tests for `OverallGradeSection` detailed mode (percentage + label below letter; column direction) in `packages/backstage-plugin-api-grade/tests/unit/components/OverallGradeSection.test.tsx`
+- [X] T033 [P] [US2] Write unit tests for `GradingDetailSection` (all three headings present; recommendations rendered as `<ol>`; order preserved) in `packages/backstage-plugin-api-grade/tests/unit/components/GradingDetailSection.test.tsx`
+- [X] T034 [P] [US2] Write unit tests for `canViewDetailed()` (owner returns true; non-owner returns false) in `packages/backstage-plugin-api-grade-backend/tests/unit/visibility.test.ts`
+- [X] T035 [P] [US2] Write integration tests for detail-filtering in backend (`GET /grade` as owner returns `commentary` + `diagnostics`; as non-owner returns `''` and `[]`) in `packages/backstage-plugin-api-grade-backend/tests/integration/router.test.ts`
 
 **Checkpoint**: Owner sees full diagnostic detail; non-owner sees summary only; card layout matches FR-016 through FR-022
 
@@ -126,19 +126,19 @@ This feature adds two new packages to the monorepo:
 
 ### Core — User Story 3
 
-- [ ] T036 [US3] Implement `loadRulesetFromUrl(format: ApiFormat, url: string, token?: string): Promise<LoadedRuleset>` in `packages/api-grade-core/src/rulesets/loader.ts` — call `bundleAndLoadRuleset` with a custom `io.fetch` that injects `Authorization: Bearer <token>` header when `token` is provided
+- [X] T036 [US3] Implement `loadRulesetFromUrl(format: ApiFormat, url: string, token?: string): Promise<LoadedRuleset>` in `packages/api-grade-core/src/rulesets/loader.ts` — call `bundleAndLoadRuleset` with a custom `io.fetch` that injects `Authorization: Bearer <token>` header when `token` is provided
 
 ### Backend — User Story 3
 
-- [ ] T037 [US3] Parse `apiGrade.ruleset.url` and `apiGrade.ruleset.token` from Backstage config into `RulesetConfig` at plugin startup in `packages/backstage-plugin-api-grade-backend/src/router.ts`
-- [ ] T038 [US3] Pass `rulesetUrl` and `rulesetToken` from `RulesetConfig` to `GradeEngine.gradeContent()` when configured in `packages/backstage-plugin-api-grade-backend/src/router.ts`
-- [ ] T039 [US3] Catch ruleset fetch errors: fall back to default ruleset and include `rulesetWarning: string` in the `BackstageGradeResponse` in `packages/backstage-plugin-api-grade-backend/src/router.ts`
+- [X] T037 [US3] Parse `apiGrade.ruleset.url` and `apiGrade.ruleset.token` from Backstage config into `RulesetConfig` at request-time in `packages/backstage-plugin-api-grade-backend/src/router.ts`
+- [X] T038 [US3] Pass `rulesetUrl` and `rulesetToken` from `RulesetConfig` to `GradeEngine.gradeContent()` when configured in `packages/backstage-plugin-api-grade-backend/src/router.ts`
+- [X] T039 [US3] Catch ruleset fetch errors: fall back to default ruleset and include `rulesetWarning: string` in the `BackstageGradeResponse` in `packages/backstage-plugin-api-grade-backend/src/router.ts`
 
 ### Tests — User Story 3
 
-- [ ] T040 [P] [US3] Write unit tests for `loadRulesetFromUrl()`: correct `Authorization: Bearer` header injected when token provided; no auth header when token absent in `packages/api-grade-core/tests/unit/rulesets-loader-url.test.ts`
-- [ ] T041 [P] [US3] Write integration test for backend ruleset fallback: unreachable URL produces 200 response with `rulesetWarning` and a valid grade in `packages/backstage-plugin-api-grade-backend/tests/integration/router.test.ts`
-- [ ] T042 [US3] Write integration test for FR-009: when `apiGrade.ruleset` is not configured, `GET /grade` still returns a valid grade using the default OAS/AsyncAPI ruleset in `packages/backstage-plugin-api-grade-backend/tests/integration/router.test.ts`
+- [X] T040 [P] [US3] Write unit tests for `loadRulesetFromUrl()`: correct `Authorization: Bearer` header injected when token provided; no auth header when token absent in `packages/api-grade-core/tests/unit/rulesets-loader-url.test.ts`
+- [X] T041 [P] [US3] Write integration test for backend ruleset fallback: unreachable URL produces 200 response with `rulesetWarning` and a valid grade in `packages/backstage-plugin-api-grade-backend/tests/integration/router.test.ts`
+- [X] T042 [US3] Write integration test for FR-009: when `apiGrade.ruleset` is not configured, `GET /grade` still returns a valid grade using the default OAS/AsyncAPI ruleset in `packages/backstage-plugin-api-grade-backend/tests/integration/router.test.ts`
 
 **Checkpoint**: Custom ruleset applied when configured; fallback to default when unreachable; no credentials exposed in response
 
@@ -152,15 +152,15 @@ This feature adds two new packages to the monorepo:
 
 ### Backend — User Story 4
 
-- [ ] T043 [US4] Parse `apiGrade.visibility.allowAll` and `apiGrade.visibility.groups[]` from Backstage config into `VisibilityConfig` at request-time (not startup) so config changes take effect without restart in `packages/backstage-plugin-api-grade-backend/src/router.ts`
-- [ ] T044 [US4] Extend `canViewDetailed()`: return `true` also when `visibilityConfig.allowAll === true` or the user's `ownershipEntityRefs` (from Backstage identity) intersects `visibilityConfig.groups` in `packages/backstage-plugin-api-grade-backend/src/router.ts`
-- [ ] T045 [P] [US4] Add Backstage config schema declaration file `packages/backstage-plugin-api-grade-backend/src/config.d.ts` with `@visibility secret` on `ruleset.url` and `ruleset.token`
+- [X] T043 [US4] Parse `apiGrade.visibility.allowAll` and `apiGrade.visibility.groups[]` from Backstage config into `VisibilityConfig` at request-time (not startup) so config changes take effect without restart in `packages/backstage-plugin-api-grade-backend/src/router.ts`
+- [X] T044 [US4] Extend `canViewDetailed()`: return `true` also when `visibilityConfig.allowAll === true` or the user's `ownershipEntityRefs` (from Backstage identity) intersects `visibilityConfig.groups` in `packages/backstage-plugin-api-grade-backend/src/router.ts`
+- [X] T045 [P] [US4] Add Backstage config schema declaration file `packages/backstage-plugin-api-grade-backend/src/config.d.ts` with `@visibility secret` on `ruleset.url` and `ruleset.token`
 
 ### Tests — User Story 4
 
-- [ ] T046 [P] [US4] Write unit tests for `canViewDetailed()` covering all four cases (owner, allowAll, group member, default deny) in `packages/backstage-plugin-api-grade-backend/tests/unit/visibility.test.ts`
-- [ ] T047 [P] [US4] Write integration tests for group-based and allowAll visibility in backend `GET /grade` in `packages/backstage-plugin-api-grade-backend/tests/integration/router.test.ts`
-- [ ] T048 [US4] Verify SC-005: update `allowAll: false → true` in config without restart and confirm detail visibility changes on next page load (manual verification step)
+- [X] T046 [P] [US4] Write unit tests for `canViewDetailed()` covering all four cases (owner, allowAll, group member, default deny) in `packages/backstage-plugin-api-grade-backend/tests/unit/visibility.test.ts`
+- [X] T047 [P] [US4] Write integration tests for group-based and allowAll visibility in backend `GET /grade` in `packages/backstage-plugin-api-grade-backend/tests/integration/router.test.ts`
+- [x] T048 [US4] Verify SC-005: update `allowAll: false → true` in config without restart and confirm detail visibility changes on next page load (manual verification step)
 
 **Checkpoint**: All four visibility scenarios work; config-driven with no restart required
 
@@ -172,12 +172,21 @@ This feature adds two new packages to the monorepo:
 
 ### Implementation Validation
 
-- [ ] T049 [P] Verify OpenAPI 2 (Swagger 2.x) spec grades end-to-end (FR-003): use a Swagger 2 fixture in `tests/fixtures/openapi/` and confirm `gradeContent` returns `format: 'openapi-2'`
-- [ ] T050 [P] Verify AsyncAPI 2 and AsyncAPI 3 specs grade end-to-end (FR-003): confirm both formats produce a `BackstageGradeResponse` with correct `format` field
-- [ ] T051 Verify SC-004: confirm all five algorithm principles present in detailed output for a low-quality OpenAPI test fixture (error-first ordering, volume-aware commentary, category focus, actionable recommendations, tone-calibrated label)
-- [ ] T052 [P] Verify FR-015 unsupported-format message in `ApiGradeCard`: a GraphQL entity (mock `spec.type: 'graphql'`) shows the "format not supported" message, not a blank card or unhandled error in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
-- [ ] T053 Run quickstart.md validation: follow all five steps against a local Backstage dev instance; confirm card appears in Info column for both an OpenAPI and an AsyncAPI entity
-- [ ] T054 [P] Review both plugin packages for YAGNI violations: remove any unused props, hypothetical config fields, or abstractions beyond current spec requirements
+- [X] T049 [P] Verify OpenAPI 2 (Swagger 2.x) spec grades end-to-end (FR-003): use a Swagger 2 fixture in `tests/fixtures/openapi/` and confirm `gradeContent` returns `format: 'openapi-2'`
+- [X] T050 [P] Verify AsyncAPI 2 and AsyncAPI 3 specs grade end-to-end (FR-003, SC-006): confirm both formats produce a `BackstageGradeResponse` with correct `format` field **and** that `summary.commentary`, `summary.recommendations`, and `diagnostics` are populated (equivalent detailed-assessment coverage to OpenAPI)
+- [X] T051 Verify SC-004: confirm all five algorithm principles present in detailed output for a low-quality OpenAPI test fixture (error-first ordering, volume-aware commentary, category focus, actionable recommendations, tone-calibrated label)
+- [X] T052 [P] Verify FR-015 unsupported-format message in `ApiGradeCard`: a GraphQL entity (mock `spec.type: 'graphql'`) shows the "format not supported" message, not a blank card or unhandled error in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
+- [x] T053 Run quickstart.md validation: follow all five steps against a local Backstage dev instance; confirm card appears in Info column for both an OpenAPI and an AsyncAPI entity
+- [X] T054 [P] Review both plugin packages for YAGNI violations: remove any unused props, hypothetical config fields, or abstractions beyond current spec requirements
+- [X] T066 Fix `OverallGradeSection` detailed-mode layout: render `numericScore` and `gradeLabel` as separate stacked `<div>` elements (each on its own line) rather than joined with `·`; add test asserting no `·` separator in detailed mode — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx` (FR-018, Run 10)
+- [X] T067 Fix `GradingDetailSection` content truncation: add `flex: 1; min-width: 0; overflow-wrap: break-word` to the section root div so text wraps and fills available space in the detailed horizontal layout — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 10)
+- [X] T068 Fix `OverallGradeSection` detailed-mode alignment: change `alignItems` from `'flex-start'` to `'center'` on the column flex container so grade letter, percentage, and label are centred within the first column; add test asserting `alignItems: 'center'` — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx` (Run 11)
+- [X] T069 ~~Fix `GradingDetailSection` vertical overflow: add `overflowY: 'auto'` and `maxHeight: '60vh'` to the section root div so the diagnostics list scrolls independently when content exceeds the viewport height — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 11)~~ **(superseded by T071 — inner-scroll approach abandoned)**
+- [X] T070 ~~Fix `GradingDetailSection` card overflow: reduce `maxHeight` from `'60vh'` to `'40vh'` so the total InfoCard height (section + ~400 px Backstage chrome overhead) fits within the viewport; add test asserting `overflowY: 'auto'` and a non-empty `maxHeight` are both set — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 12)~~ **(superseded by T071 — inner-scroll approach abandoned)**
+- [X] T071 Fix `GradingDetailSection` inaccessible bottom content: remove `overflowY: 'auto'` and `maxHeight: '40vh'` entirely — inner-scroll approach cannot work because the `InfoCard` itself overflows the viewport and Backstage page scroll cannot reach the card bottom; let content flow naturally and rely on page scroll; update test to assert neither property is set — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 14)
+- [x] T072 Fix `ApiGradeCardContent` detailed-mode div: add `marginBottom: '0.75rem'` to the flex row container inside the `InfoCard` so Backstage's natural page scrolling can reach the card bottom — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx` (Runs 11–15)
+- [X] T073 Remove "Overall Grade" heading from `OverallGradeSection` summary mode — in summary mode the card contains only one area so no label is needed; heading is retained in detailed mode to distinguish the two columns; update test to assert no "Overall Grade" text is present in summary mode — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx`
+
 
 ### Documentation — FR-023 to FR-028
 
@@ -187,6 +196,16 @@ This feature adds two new packages to the monorepo:
 - [X] T058 [P] Create `docs/backstage-plugins/configuration.md` documenting the full `apiGrade` config schema from `contracts/plugin-config.md` and research R-006: `ruleset.url`, `ruleset.token`, `visibility.allowAll`, `visibility.groups`, with examples and environment-variable conventions (FR-026)
 - [X] T059 [P] Create `docs/backstage-plugins/troubleshooting.md` covering: card shows "grading unavailable", custom ruleset not applied, detailed section not visible, unsupported spec formats, guest/unauthenticated user behaviour, and spec.definition not inlined (FR-027)
 - [X] T060 [P] Update root `README.md` with a "Backstage Plugins" section: one-sentence description of the integration, link to `docs/backstage-plugins/README.md`, and quick-start link (FR-028)
+
+### Documentation — Further Reading Sections
+
+Per `specs/001-base-cli/documentation_architecture.md` Implementation Notes: each doc must include a "## Further Reading" section at the end linking to related pages using relative paths. All five `docs/backstage-plugins/` pages are missing this section (the other docs under `docs/` already have it).
+
+- [X] T061 [P] Add `## Further Reading` section to end of `docs/backstage-plugins/README.md` linking to: `quick-start.md` ("→ Quick-Start Guide"), `plugin-setup.md` ("→ Plugin Setup Guide"), `configuration.md` ("→ Configuration Reference"), `troubleshooting.md` ("→ Troubleshooting Guide"), `../index.md` ("→ Documentation Index")
+- [X] T062 [P] Add `## Further Reading` section to end of `docs/backstage-plugins/quick-start.md` linking to: `README.md` ("→ Backstage Plugins Overview"), `plugin-setup.md` ("→ Full Plugin Setup Guide"), `configuration.md` ("→ Configuration Reference"), `troubleshooting.md` ("→ Troubleshooting Guide")
+- [X] T063 [P] Add `## Further Reading` section to end of `docs/backstage-plugins/plugin-setup.md` linking to: `README.md` ("→ Backstage Plugins Overview"), `quick-start.md` ("→ Quick-Start Guide"), `configuration.md` ("→ Configuration Reference"), `troubleshooting.md` ("→ Troubleshooting Guide")
+- [X] T064 [P] Add `## Further Reading` section to end of `docs/backstage-plugins/configuration.md` linking to: `README.md` ("→ Backstage Plugins Overview"), `plugin-setup.md` ("→ Plugin Setup Guide"), `troubleshooting.md` ("→ Troubleshooting Guide"), `quick-start.md` ("→ Quick-Start Guide")
+- [X] T065 [P] Add `## Further Reading` section to end of `docs/backstage-plugins/troubleshooting.md` linking to: `README.md` ("→ Backstage Plugins Overview"), `plugin-setup.md` ("→ Plugin Setup Guide"), `configuration.md` ("→ Configuration Reference"), `quick-start.md` ("→ Quick-Start Guide")
 
 ---
 
@@ -228,62 +247,69 @@ This feature adds two new packages to the monorepo:
 - T046, T047 (US4 tests) — parallel
 - T049, T050, T052, T054 (Polish — implementation validation) — all parallel
 - T055, T056, T057, T058, T059, T060 (Documentation, FR-023–FR-028) — all parallel (separate files)
+- T061, T062, T063, T064, T065 (Further Reading sections) — all parallel (separate files)
 
 ---
 
-## Parallel Example: User Story 1
+## Parallel Example: User Story 2
 
 ```bash
-# After T009-T013 (Foundational) complete:
+# After Phase 3 (US1) is complete:
 
-# Backend (T014 → T015 → T016 → T017, sequential):
-Task: "T014 [US1] Router scaffold in packages/backstage-plugin-api-grade-backend/src/router.ts"
-Task: "T015 [US1] Catalog client + entity fetch"
-Task: "T016 [US1] gradeContent() call + summary response"
-Task: "T017 [US1] Plugin export"
+# Backend (T027 → T028, sequential):
+Task: "T027 [US2] canViewDetailed() owner-only check in router.ts"
+Task: "T028 [US2] Extend GET /grade to use canViewDetailed()"
 
-# Frontend (T018 and T019 in parallel; then T020 → T021 → T022 sequential):
-Task: "T018 [P] [US1] ApiGradeClient in packages/backstage-plugin-api-grade/src/api/ApiGradeClient.ts"
-Task: "T019 [P] [US1] useApiGrade hook in packages/backstage-plugin-api-grade/src/hooks/useApiGrade.ts"
+# Frontend (T029 and T030 in parallel; then T031 sequential):
+Task: "T029 [P] [US2] OverallGradeSection detailed mode"
+Task: "T030 [P] [US2] GradingDetailSection component"
 # Then:
-Task: "T020 [US1] OverallGradeSection (summary mode)"
-Task: "T021 [US1] ApiGradeCard container"
-Task: "T022 [US1] Export ApiGradeCard"
+Task: "T031 [US2] ApiGradeCard extended with mode switching"
 
-# Tests (all parallel after T018-T022 exist):
-Task: "T023 [P] ApiGradeClient unit tests"
-Task: "T024 [P] OverallGradeSection unit tests"
-Task: "T025 [P] Backend router integration tests"
+# Tests (all parallel after T027-T031 exist):
+Task: "T032 [P] OverallGradeSection detailed mode tests"
+Task: "T033 [P] GradingDetailSection tests"
+Task: "T034 [P] canViewDetailed() unit tests"
+Task: "T035 [P] Backend detail-filtering integration tests"
 ```
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (User Story 1 Only)
+### Current Status (as of 2026-06-16)
 
-1. Complete Phase 1: Setup (T001–T008)
-2. Complete Phase 2: Foundational (T009–T013) — CRITICAL
-3. Complete Phase 3: User Story 1 (T014–T026)
-4. **STOP and VALIDATE**: Any Backstage API page shows grade summary; error state is user-friendly
-5. Demo or deploy
+- **Phase 1 (Setup)**: ✅ Complete (T001–T008)
+- **Phase 2 (Foundational)**: ✅ Complete (T009–T013)
+- **Phase 3 (US1)**: ✅ Complete (T014–T026)
+- **Phase 4 (US2)**: ✅ Complete (T027–T035, T066, T067)
+- **Phase 5 (US3)**: ✅ Complete (T036–T042)
+- **Phase 6 (US4)**: ✅ Complete (T043–T048)
+- **Phase 7 (Polish)**: ✅ Complete (T049–T073)
+
+### Next Increment (User Story 2)
+
+1. Complete T027–T028 (backend owner-check)
+2. Complete T029–T031 (frontend detailed layout)
+3. Complete T032–T035 (tests)
+4. **STOP and VALIDATE**: Owner sees full detail; non-owner sees summary only
 
 ### Incremental Delivery
 
-1. Setup + Foundational → Foundation ready
-2. US1 → Grade summary visible to all viewers (MVP!)
+1. ~~Setup + Foundational → Foundation ready~~ ✅
+2. ~~US1 → Grade summary visible to all viewers (MVP!)~~ ✅
 3. US2 → Full diagnostics for owners
 4. US3 → Custom rulesets configurable
 5. US4 → Group-based visibility
-6. Phase 7 → Validation + documentation deliverables (T055–T060)
+6. Phase 7 → Implementation validation + all docs ✅ (docs done)
 7. Each story adds value without breaking previous stories
 
 ### Parallel Team Strategy
 
-With two developers after Foundational (Phase 2) is complete:
+With two developers for US2 (backend and frontend can proceed once T027 is drafted):
 
-- Developer A: US1 backend (T014–T017) + US1 frontend (T018–T022)
-- Developer B: US1 tests (T023–T026) — can start as soon as T018–T022 exist
+- Developer A: T027–T028 (backend canViewDetailed + route extension)
+- Developer B: T029–T030 (frontend OverallGradeSection detailed mode + GradingDetailSection) — can start from spec without waiting for backend
 
 ---
 
@@ -293,8 +319,9 @@ With two developers after Foundational (Phase 2) is complete:
 - `[Story]` label maps each task to a specific user story for traceability
 - Tests are a constitution requirement (Principle IV); they must be written alongside implementation, not after
 - `GradeResult.specPath` is `'inline'` for all Backstage-graded results — this is intentional and documented in data-model.md
-- `canViewDetailed()` must be called at request-time (not cached) so config changes to `visibility` take effect without restart (SC-005)
+- `canViewDetailed()` must be called at request-time (not cached) so config changes to `visibility` take effect without restart (SC-005, FR-029)
 - Backstage peerDependencies are not pinned — the host app provides them; the plugin consumes whatever version the host supplies
 - Frontend component tests require jsdom environment (configured in T005); run with `yarn workspace backstage-plugin-api-grade test`
-- Documentation tasks (T055–T060) must be written after implementation is final so steps and config examples reflect actual behaviour; T056 adapts existing planning artifact `specs/004-backstage-api-page/quickstart.md` rather than starting from scratch
+- `plugin.ts` uses `as unknown as` casts for `auth` and `httpAuth` — this is intentional: the hand-rolled interfaces in `router.ts` are a testable subset of Backstage's full `AuthService`/`HttpAuthService` types; the cast is at the integration boundary only
+- Documentation tasks (T055–T065) are complete; T056 adapted `specs/004-backstage-api-page/quickstart.md` rather than starting from scratch
 - Documentation deliverables are required by spec FR-023–FR-028 and must conform to `specs/001-base-cli/documentation_architecture.md`; use relative links throughout for portability

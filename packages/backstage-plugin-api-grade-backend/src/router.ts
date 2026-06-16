@@ -14,6 +14,7 @@ export interface Entity {
   kind: string;
   metadata: { name: string; namespace?: string };
   spec?: Record<string, unknown>;
+  relations?: Array<{ type: string; targetRef: string }>;
 }
 
 export interface ConfigService {
@@ -22,25 +23,29 @@ export interface ConfigService {
   getOptionalStringArray(key: string): string[] | undefined;
 }
 
+// Minimal subset of BackstageCredentials from @backstage/backend-plugin-api.
+// In production the principal field is populated by the New Backend System auth layer;
+// in tests plain objects with this shape are used as mocks.
+export interface BackstageCredentials {
+  principal?: {
+    userEntityRef?: string;
+    ownershipEntityRefs?: string[];
+  };
+}
+
 export interface AuthService {
   getPluginRequestToken(options: {
-    onBehalfOf: { token: string };
+    onBehalfOf: BackstageCredentials;
     targetPluginId: string;
   }): Promise<{ token: string }>;
 }
 
 export interface HttpAuthService {
-  credentials<T extends { token?: string }>(
+  credentials(
     req: Request,
     options?: { allow?: string[] }
-  ): Promise<T>;
+  ): Promise<BackstageCredentials>;
   issueUserCookie(res: Response, options?: { token: string }): Promise<void>;
-}
-
-export interface BackstageIdentity {
-  token?: string;
-  userEntityRef?: string;
-  ownershipEntityRefs?: string[];
 }
 
 // Plugin-internal types
@@ -53,11 +58,6 @@ export interface RulesetConfig {
 export interface VisibilityConfig {
   allowAll: boolean;
   groups: string[];
-}
-
-export interface BackstageGradeRequest {
-  entityRef: string;
-  includeDetail: boolean;
 }
 
 export type GradeErrorType =
@@ -87,7 +87,11 @@ export function canViewDetailed(
   ownershipEntityRefs: string[] = [],
 ): boolean {
   if (visibilityConfig.allowAll) return true;
+  // Direct ownership: entity is owned by this specific user
   if (userEntityRef && entityOwner && userEntityRef === entityOwner) return true;
+  // Group ownership: user is a member of the group that owns this entity
+  if (entityOwner && ownershipEntityRefs.includes(entityOwner)) return true;
+  // Visibility group: user belongs to an admin-configured group granted access
   if (
     visibilityConfig.groups.length > 0 &&
     ownershipEntityRefs.some((ref) => visibilityConfig.groups.includes(ref))
@@ -143,26 +147,47 @@ export async function createRouter(options: RouterOptions): Promise<Router> {
       return;
     }
 
-    // Resolve caller identity
-    let identity: BackstageIdentity;
+    // Resolve caller credentials (opaque BackstageCredentials in production)
+    let credentials: BackstageCredentials = {};
     try {
-      identity = await httpAuth.credentials<BackstageIdentity>(req);
+      credentials = await httpAuth.credentials(req);
     } catch {
-      identity = {};
+      // fall through with empty credentials — catalog may allow unauthenticated reads
     }
 
-    // Get a plugin-to-plugin token for catalog calls
+    // Always obtain a plugin-to-plugin token so the catalog request is authenticated.
+    // In the New Backend System, getPluginRequestToken accepts the full credentials
+    // object (not a raw token string) and works for users, services, and guest sessions.
     let catalogToken: string | undefined;
     try {
-      if (identity.token) {
-        const result = await auth.getPluginRequestToken({
-          onBehalfOf: { token: identity.token },
-          targetPluginId: 'catalog',
-        });
-        catalogToken = result.token;
-      }
+      const result = await auth.getPluginRequestToken({
+        onBehalfOf: credentials,
+        targetPluginId: 'catalog',
+      });
+      catalogToken = result.token;
     } catch {
       // proceed without token — catalog may allow unauthenticated reads
+    }
+
+    const principal = credentials.principal;
+
+    // Augment ownershipEntityRefs with catalog-resolved group memberships.
+    // Guest auth (and some providers) do not include group refs in the token's
+    // ent claim even when the user has memberOf relations in the catalog.
+    let resolvedOwnershipRefs: string[] = principal?.ownershipEntityRefs ?? [];
+    const userEntityRef = principal?.userEntityRef;
+    if (userEntityRef) {
+      try {
+        const userEntity = await catalog.getEntityByRef(userEntityRef, { token: catalogToken });
+        if (userEntity?.relations) {
+          const groupRefs = userEntity.relations
+            .filter(r => r.type === 'memberOf')
+            .map(r => r.targetRef);
+          resolvedOwnershipRefs = [...new Set([...resolvedOwnershipRefs, ...groupRefs])];
+        }
+      } catch {
+        // proceed with token-only ownership refs if user entity lookup fails
+      }
     }
 
     // Fetch entity from catalog
@@ -246,10 +271,10 @@ export async function createRouter(options: RouterOptions): Promise<Router> {
     const visibilityConfig = parseVisibilityConfig(config);
     const entityOwner = entity.spec?.['owner'] as string | undefined;
     const includeDetail = canViewDetailed(
-      identity.userEntityRef,
+      principal?.userEntityRef,
       entityOwner,
       visibilityConfig,
-      identity.ownershipEntityRefs,
+      resolvedOwnershipRefs,
     );
 
     const responseGrade = includeDetail ? grade : stripDetailFields(grade);

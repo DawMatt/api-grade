@@ -121,3 +121,10 @@ See [Configuration](./configuration.md) for the full option reference.
 The backend plugin reads `spec.definition` from `ApiEntity` catalog entries. This field must contain the inlined spec content (not a URL reference).
 
 If `spec.definition` is empty or missing, the card displays a "grading unavailable" message. Contact your catalog administrator to ensure specs are ingested with inlined content.
+
+## Further Reading
+
+- [→ Backstage Plugins Overview](./README.md) — plugin architecture and prerequisites
+- [→ Quick-Start Guide](./quick-start.md) — minimal setup to verify the card is working
+- [→ Configuration Reference](./configuration.md) — custom rulesets, visibility groups, and all options
+- [→ Troubleshooting Guide](./troubleshooting.md) — common issues and solutions

@@ -74,3 +74,11 @@ No state is persisted — grades are computed on demand on every page load.
 | [Plugin Setup](./plugin-setup.md) | Full installation and wiring details for both plugins |
 | [Configuration](./configuration.md) | All `apiGrade` config options with examples |
 | [Troubleshooting](./troubleshooting.md) | Common issues and solutions |
+
+## Further Reading
+
+- [→ Quick-Start Guide](./quick-start.md) — get the plugins running in under 10 minutes
+- [→ Plugin Setup Guide](./plugin-setup.md) — full installation and wiring for both plugins
+- [→ Configuration Reference](./configuration.md) — all `apiGrade` config options with examples
+- [→ Troubleshooting Guide](./troubleshooting.md) — common issues and solutions
+- [→ Documentation Index](../index.md) — full navigation across all project docs

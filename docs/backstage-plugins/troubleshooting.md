@@ -104,3 +104,69 @@ spec:
       version: 1.0.0
     paths: {}
 ```
+
+## Backend fails to start after adding the plugin
+
+**Symptom A** — `TypeError: Cannot use 'in' operator to search for '$$type' in undefined`
+
+Backstage's `unwrapFeature` received `undefined` instead of a `BackendFeature` when the plugin was registered via `backend.add(import('backstage-plugin-api-grade-backend'))`.
+
+**Cause**: The package's entry point (`dist/index.js`) does not re-export the plugin as a default export, so `import(...)` resolves to a module with no default.
+
+**Fix**: Confirm `packages/backstage-plugin-api-grade-backend/src/index.ts` contains `export { default } from './plugin.js'`. If it does, rebuild the package (`yarn workspace backstage-plugin-api-grade-backend build`) before reinstalling it in the Backstage app.
+
+---
+
+**Symptom B** — `SyntaxError: The requested module '@backstage/catalog-client' does not provide an export named 'CatalogClient'`
+
+Node.js's ESM static binding check fails at plugin load time because the version of `@backstage/catalog-client` installed in the host Backstage app ships as CommonJS and Node.js cannot guarantee the named export `CatalogClient` at module instantiation.
+
+**Cause**: A top-level `import { CatalogClient } from '@backstage/catalog-client'` triggers ESM's static analysis. CJS packages do not always pass this check even when the export exists at runtime.
+
+**Fix**: This is resolved in the current release by using a dynamic `import('@backstage/catalog-client')` inside the plugin `init` function, which bypasses the static binding check. If you see this error with the current version of the package, confirm you are running the latest build (`yarn workspace backstage-plugin-api-grade-backend build` then reinstall).
+
+**Verify**: After reinstalling, `yarn start` in the Backstage app should show the backend starting without any `SyntaxError` from `backstage-plugin-api-grade-backend`.
+
+---
+
+**Symptom C** — `Error [ERR_REQUIRE_CYCLE_MODULE]: Cannot require() ES Module .../catalog-client/dist/index.esm.js in a cycle`
+
+The backend plugin initialises but then fails immediately with a cycle error. The plugin appears in the "Plugin initialization started" log line but its startup fails before registering its HTTP router.
+
+**Cause**: The Backstage dev backend runs under a CJS+`pirates` transform pipeline. The Backstage catalog plugin loads `@backstage/catalog-client` via CJS (`dist/index.cjs.js`). A dynamic `import('@backstage/catalog-client')` inside the api-grade plugin resolves to the ESM build (`dist/index.esm.js`) instead. Node.js v22 detects a cross-loader cycle — the same package is being loaded by both the CJS and ESM module systems simultaneously — and throws this error.
+
+**Fix**: This is resolved in the current release by using `createRequire(import.meta.url)` to load `@backstage/catalog-client` via the CJS condition, reusing the instance already in the module registry. If you see this error with the current version, confirm you are running the latest build (`yarn workspace backstage-plugin-api-grade-backend build` then reinstall).
+
+**Verify**: After reinstalling, `yarn start` should show `Plugin initialization complete` with `'api-grade'` listed and no `ERR_REQUIRE_CYCLE_MODULE` error.
+
+---
+
+## Card shows "Failed to contact the Backstage catalog"
+
+**Symptom**: The API Grade card displays:
+
+```
+API grade unavailable
+Failed to contact the Backstage catalog.
+```
+
+**Cause**: The backend plugin is running in Backstage's **New Backend System** (NBS), where `httpAuth.credentials()` returns a `BackstageCredentials` object — it does **not** carry a `.token` field at the top level. Earlier versions of this plugin incorrectly read `credentials.token` to gate a call to `auth.getPluginRequestToken`. Because the field was always `undefined`, the catalog request was made without authentication and the `CatalogClient` threw a 401/403.
+
+**Fix**: This is resolved in the current release. The plugin now passes the full `BackstageCredentials` object directly to `auth.getPluginRequestToken({ onBehalfOf: credentials, ... })`, which the NBS auth layer handles correctly for all principal types (user, service, and guest). If you still see this error, confirm you are running the latest build:
+
+```bash
+yarn workspace backstage-plugin-api-grade-backend build
+```
+
+Then reinstall the package in your Backstage app and restart.
+
+**Verify**: After reinstalling, open an API entity page. The grade should appear (or show a format-not-supported message for non-OpenAPI/AsyncAPI entities). The backend log should show no catalog-related errors during the request.
+
+---
+
+## Further Reading
+
+- [→ Backstage Plugins Overview](./README.md) — plugin architecture and prerequisites
+- [→ Plugin Setup Guide](./plugin-setup.md) — installation and wiring steps for both plugins
+- [→ Configuration Reference](./configuration.md) — ruleset, visibility, and all config options
+- [→ Quick-Start Guide](./quick-start.md) — minimal setup steps to get the card working

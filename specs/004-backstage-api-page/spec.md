@@ -20,7 +20,7 @@ A developer browsing APIs in Backstage wants to quickly assess the quality of an
 
 **Acceptance Scenarios**:
 
-1. **Given** a Backstage API page for any OpenAPI or AsyncAPI specification, **When** a user views the page, **Then** the API grade card is displayed in the Info column below the About entry, showing the "Overall API Grade" sub-section with the grade letter (larger, bold), and the numeric percentage and quality label appearing beside the grade letter.
+1. **Given** a Backstage API page for any OpenAPI or AsyncAPI specification, **When** a user views the page, **Then** the API grade card is displayed in the Info column below the About entry, showing the "Overall Grade" sub-section with the grade letter (larger, bold), and the numeric percentage and quality label appearing beside the grade letter.
 2. **Given** a Backstage API page, **When** the API specification cannot be retrieved or graded, **Then** the grade summary section displays a clear message indicating grading is unavailable, without breaking the rest of the page.
 3. **Given** a Backstage API page for both an OpenAPI and an AsyncAPI specification, **When** a user views each page, **Then** the grade summary appears correctly for both formats.
 
@@ -36,8 +36,8 @@ An API owner reviews their API's page in Backstage to understand quality issues 
 
 **Acceptance Scenarios**:
 
-1. **Given** a logged-in API owner viewing their own API's Backstage page, **When** the page loads, **Then** the API grade card displays the "Overall API Grade" sub-section (grade letter larger and bold, with percentage and label below the letter) alongside a "Grading Detail" sub-section to its right, containing "Quality Assessment:", "Recommendations:", and "Diagnostics:" areas stacked vertically, each with its heading and relevant content; recommendations are numbered in the order provided.
-2. **Given** a logged-in user who is not the API owner and is not in any additionally granted group, **When** they view the same API page, **Then** only the "Overall API Grade" sub-section is shown (grade letter larger and bold, with percentage and label beside the letter) — the "Grading Detail" sub-section is not displayed.
+1. **Given** a logged-in API owner viewing their own API's Backstage page, **When** the page loads, **Then** the API grade card displays the "Overall Grade" sub-section (grade letter larger and bold, with percentage and label below the letter) alongside a "Grading Detail" sub-section to its right, containing "Quality Assessment:", "Recommendations:", and "Diagnostics:" areas stacked vertically, each with its heading and relevant content; recommendations are numbered in the order provided.
+2. **Given** a logged-in user who is not the API owner and is not in any additionally granted group, **When** they view the same API page, **Then** only the "Overall Grade" sub-section is shown (grade letter larger and bold, with percentage and label beside the letter) — the "Grading Detail" sub-section is not displayed.
 3. **Given** the grading output for an API with both errors and warnings, **When** an API owner views the detailed section, **Then** errors are presented before warnings, the most problematic API domain is called out, and recommendations specify where to start and why.
 
 ---
@@ -94,17 +94,17 @@ A Backstage administrator grants the platform engineering team visibility of det
 - **FR-006**: Administrators MUST be able to set visibility to "allow all", making detailed quality information visible to all authenticated users.
 - **FR-007**: The integration MUST allow administrators to configure a custom spectral ruleset as the basis for grading.
 - **FR-008**: The custom ruleset source MUST support rulesets stored in secured locations, including private GitHub Enterprise repositories, with appropriate credential configuration.
-- **FR-009**: When no custom ruleset is configured, the integration MUST produce meaningful grades using a default ruleset.
+- **FR-009**: When no custom ruleset is configured, the integration MUST produce meaningful grades using a default ruleset — "meaningful" means a valid letter grade, a score in the range 0–100, and non-empty commentary for any compliant OpenAPI or AsyncAPI input.
 - **FR-010**: Diagnostic output in the detailed view MUST implement error-first prioritisation — errors are presented before warnings in both scoring impact and recommendation ordering.
 - **FR-011**: Diagnostic output MUST be volume-aware — the commentary language MUST reflect the severity implied by violation volume.
 - **FR-012**: Diagnostic output MUST identify the API domain (e.g., operations, schemas) requiring the most attention.
 - **FR-013**: Recommendations MUST be actionable — they MUST specify where to start and why, not merely list findings.
 - **FR-014**: The overall tone of the diagnostic output (e.g., "Excellent", "Critical") MUST be derived from the grade score before detail is presented.
 - **FR-015**: When a specification cannot be graded (unreachable, unsupported format, ruleset failure), the integration MUST display a clear, user-friendly message rather than an error or blank section.
-- **FR-016**: The API grade card MUST contain an "Overall API Grade" sub-section that displays the grade letter in a larger, bold format together with the numeric percentage and quality label.
-- **FR-017**: When only summary grade information is displayed, the numeric percentage and quality label MUST appear beside the grade letter in the "Overall API Grade" sub-section.
-- **FR-018**: When detailed grade information is displayed, the numeric percentage and quality label MUST appear below the grade letter in the "Overall API Grade" sub-section.
-- **FR-019**: When detailed grade information is displayed, the API grade card MUST include a "Grading Detail" sub-section positioned to the right of the "Overall API Grade" sub-section.
+- **FR-016**: The API grade card MUST display the grade letter in a larger, bold format together with the numeric percentage and quality label. In detailed mode, these elements are grouped in a labelled "Overall Grade" sub-section (heading visible) to distinguish them from the adjacent "Grading Detail" sub-section. In summary mode no section heading is displayed, as the card contains only one area.
+- **FR-017**: When only summary grade information is displayed, the numeric percentage and quality label MUST appear beside the grade letter.
+- **FR-018**: When detailed grade information is displayed, the numeric percentage and quality label MUST appear below the grade letter in the "Overall Grade" sub-section.
+- **FR-019**: When detailed grade information is displayed, the API grade card MUST include a "Grading Detail" sub-section positioned to the right of the "Overall Grade" sub-section.
 - **FR-020**: The "Grading Detail" sub-section MUST display a "Quality Assessment:" area, a "Recommendations:" area, and a "Diagnostics:" area, stacked vertically in that order.
 - **FR-021**: Each area within the "Grading Detail" sub-section MUST display its heading ("Quality Assessment:", "Recommendations:", or "Diagnostics:") followed by the relevant content for that area.
 - **FR-022**: Recommendations in the "Recommendations:" area MUST be presented as a numbered list in the order provided by the grading output.
@@ -119,11 +119,12 @@ This feature MUST produce documentation for the Backstage Plugins integration as
 - **FR-026**: A configuration reference MUST be produced covering all shared configuration options — including custom ruleset URL, credential configuration, and visibility group settings — with examples.
 - **FR-027**: A troubleshooting guide MUST be produced covering the most common installation, configuration, and runtime issues encountered by adopters of the integration.
 - **FR-028**: The main project README MUST include a Backstage Plugins entry describing what the integration does and linking to the `docs/backstage-plugins/` documentation.
+- **FR-029**: Visibility configuration (`apiGrade.visibility`) MUST be read at request-time (not at plugin startup) so that changes to group membership or `allowAll` take effect on the next page load without a restart or redeployment.
 
 ### Key Entities
 
-- **API Grade Card**: The visual component displayed on the Backstage API page. In summary mode it contains only the "Overall API Grade" sub-section. In detailed mode it also contains the "Grading Detail" sub-section to the right.
-- **Overall API Grade Sub-Section**: The part of the API grade card showing the grade letter (larger, bold) with the percentage and label. In summary mode these appear beside the letter; in detailed mode they appear below it.
+- **API Grade Card**: The visual component displayed on the Backstage API page. In summary mode it contains only the "Overall Grade" sub-section. In detailed mode it also contains the "Grading Detail" sub-section to the right.
+- **Overall Grade Sub-Section**: The part of the API grade card showing the grade letter (larger, bold) with the percentage and label. In summary mode these appear beside the letter; in detailed mode they appear below it.
 - **Grading Detail Sub-Section**: The part of the API grade card (visible in detailed mode only) containing the "Quality Assessment:", "Recommendations:", and "Diagnostics:" areas stacked vertically.
 - **API Grade Summary**: The top-level quality signal comprising a grade letter, numeric percentage, and human-readable quality label.
 - **Detailed Quality Assessment**: The full diagnostic output including tone-calibrated commentary, category-specific insights, prioritised recommendations, and violation detail.
