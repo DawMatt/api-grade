@@ -130,7 +130,7 @@ error Workspaces can only be enabled in private projects.
 info Visit https://yarnpkg.com/en/docs/cli/workspace for documentation about this command.
 ```
 
-- [ ] Backstage UI looked like it was working and displayed some catalog items, but not as many as usual. I'd normally see at least 2 APIs in the API page but only 1 displayed. Console log is below.
+- [x] Backstage UI looked like it was working and displayed some catalog items, but not as many as usual. I'd normally see at least 2 APIs in the API page but only 1 displayed. Console log is below.
 
 ```bash
 % yarn start                                                                                                                                       
@@ -427,3 +427,11 @@ Call Stack
 
 All 7 errors looked the same.
 
+## Run 6 - 2026/06/16
+
+- [ ] The API page now functions, but the API Grade card does not correctly display. It doesn't show as a card, and it only displays the following:
+
+```
+API grade unavailable
+Missing or malformed entityRef query parameter. Expected format: kind:namespace/name.
+```
