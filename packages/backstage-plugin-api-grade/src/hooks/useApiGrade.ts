@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { GradeResult } from 'api-grade-core';
+import type { GradeResult } from '@dawmatt/api-grade-core';
 import type { ApiGradeClient } from '../api/ApiGradeClient.js';
 
 export interface UseApiGradeResult {

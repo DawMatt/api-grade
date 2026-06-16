@@ -1,5 +1,5 @@
 {
-  "name": "backstage-plugin-api-grade",
+  "name": "@dawmatt/backstage-plugin-api-grade",
   "version": "0.1.1",
   "description": "Backstage frontend plugin — displays API quality grades on API entity pages",
   "license": "MIT",
@@ -14,10 +14,12 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "api-grade-core": "*"
+    "@dawmatt/api-grade-core": "*"
   },
   "peerDependencies": {
     "@backstage/core-components": "^0.14.0",

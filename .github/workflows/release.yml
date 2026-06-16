@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+
+jobs:
+  release:
+    name: Publish to npmjs
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    permissions:
+      contents: write   # to create GitHub Release
+      id-token: write   # for npm provenance attestation
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # ── Quality Gate (same stages as CI) ──────────────────────────────────
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high --omit=dev
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck --workspaces --if-present && npm run typecheck
+
+      - name: Test (root) with coverage
+        run: npm run test:coverage
+
+      - name: Test (api-grade-core) with coverage
+        run: npm run test:coverage
+        working-directory: packages/api-grade-core
+
+      - name: Test (backstage-plugin-api-grade) with coverage
+        run: npm run test:coverage
+        working-directory: packages/backstage-plugin-api-grade
+
+      - name: Test (backstage-plugin-api-grade-backend) with coverage
+        run: npm run test:coverage
+        working-directory: packages/backstage-plugin-api-grade-backend
+
+      - name: Build
+        run: npm run build
+
+      # ── Publish ───────────────────────────────────────────────────────────
+
+      - name: Rewrite workspace dependencies for publish
+        run: node scripts/pre-publish.mjs
+
+      - name: Publish @dawmatt/api-grade-core
+        run: npm publish --provenance --access public
+        working-directory: packages/api-grade-core
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @dawmatt/backstage-plugin-api-grade
+        run: npm publish --provenance --access public
+        working-directory: packages/backstage-plugin-api-grade
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @dawmatt/backstage-plugin-api-grade-backend
+        run: npm publish --provenance --access public
+        working-directory: packages/backstage-plugin-api-grade-backend
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @dawmatt/api-grade (CLI)
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Restore workspace dependencies
+        if: always()
+        run: node scripts/post-publish.mjs
+
+      # ── Release Record ────────────────────────────────────────────────────
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          gh release create "${VERSION}" \
+            --title "${VERSION}" \
+            --notes "**Released by**: @${{ github.actor }}
+          **Source commit**: ${{ github.sha }}
+          **Packages published**:
+          - \`@dawmatt/api-grade-core@${VERSION#v}\`
+          - \`@dawmatt/backstage-plugin-api-grade@${VERSION#v}\`
+          - \`@dawmatt/backstage-plugin-api-grade-backend@${VERSION#v}\`
+          - \`@dawmatt/api-grade@${VERSION#v}\`"

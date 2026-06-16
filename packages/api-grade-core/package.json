@@ -1,5 +1,5 @@
 {
-  "name": "api-grade-core",
+  "name": "@dawmatt/api-grade-core",
   "version": "0.1.1",
   "description": "Core grading library for api-grade — standalone, framework-agnostic",
   "license": "MIT",
@@ -15,7 +15,9 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@stoplight/spectral-core": "^1.23.0",

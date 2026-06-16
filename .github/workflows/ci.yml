@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # Stage 1: Dependency audit (production deps only; devDep vulns don't affect published packages)
+      - name: Audit dependencies
+        run: npm audit --audit-level=high --omit=dev
+
+      # Stage 2: Lint
+      - name: Lint
+        run: npm run lint
+
+      # Stage 3: Type check (root + all workspaces)
+      - name: Type check
+        run: npm run typecheck --workspaces --if-present && npm run typecheck
+
+      # Stage 4: Tests + coverage (root)
+      - name: Test (root) with coverage
+        run: npm run test:coverage
+
+      # Stage 4: Tests + coverage (workspaces)
+      - name: Test (api-grade-core) with coverage
+        run: npm run test:coverage
+        working-directory: packages/api-grade-core
+
+      - name: Test (backstage-plugin-api-grade) with coverage
+        run: npm run test:coverage
+        working-directory: packages/backstage-plugin-api-grade
+
+      - name: Test (backstage-plugin-api-grade-backend) with coverage
+        run: npm run test:coverage
+        working-directory: packages/backstage-plugin-api-grade-backend
+
+      # Stage 5: Build
+      - name: Build
+        run: npm run build
