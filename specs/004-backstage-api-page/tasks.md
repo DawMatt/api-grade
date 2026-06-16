@@ -181,10 +181,11 @@ This feature adds two new packages to the monorepo:
 - [X] T066 Fix `OverallGradeSection` detailed-mode layout: render `numericScore` and `gradeLabel` as separate stacked `<div>` elements (each on its own line) rather than joined with `·`; add test asserting no `·` separator in detailed mode — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx` (FR-018, Run 10)
 - [X] T067 Fix `GradingDetailSection` content truncation: add `flex: 1; min-width: 0; overflow-wrap: break-word` to the section root div so text wraps and fills available space in the detailed horizontal layout — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 10)
 - [X] T068 Fix `OverallGradeSection` detailed-mode alignment: change `alignItems` from `'flex-start'` to `'center'` on the column flex container so grade letter, percentage, and label are centred within the first column; add test asserting `alignItems: 'center'` — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx` (Run 11)
-- [X] T069 Fix `GradingDetailSection` vertical overflow: add `overflowY: 'auto'` and `maxHeight: '60vh'` to the section root div so the diagnostics list scrolls independently when content exceeds the viewport height — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 11)
-- [X] T070 Fix `GradingDetailSection` card overflow: reduce `maxHeight` from `'60vh'` to `'40vh'` so the total InfoCard height (section + ~400 px Backstage chrome overhead) fits within the viewport; add test asserting `overflowY: 'auto'` and a non-empty `maxHeight` are both set — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 12)
+- [X] T069 ~~Fix `GradingDetailSection` vertical overflow: add `overflowY: 'auto'` and `maxHeight: '60vh'` to the section root div so the diagnostics list scrolls independently when content exceeds the viewport height — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 11)~~ **(superseded by T071 — inner-scroll approach abandoned)**
+- [X] T070 ~~Fix `GradingDetailSection` card overflow: reduce `maxHeight` from `'60vh'` to `'40vh'` so the total InfoCard height (section + ~400 px Backstage chrome overhead) fits within the viewport; add test asserting `overflowY: 'auto'` and a non-empty `maxHeight` are both set — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 12)~~ **(superseded by T071 — inner-scroll approach abandoned)**
 - [X] T071 Fix `GradingDetailSection` inaccessible bottom content: remove `overflowY: 'auto'` and `maxHeight: '40vh'` entirely — inner-scroll approach cannot work because the `InfoCard` itself overflows the viewport and Backstage page scroll cannot reach the card bottom; let content flow naturally and rely on page scroll; update test to assert neither property is set — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 14)
-- [x] T072 (Supersedes T069 and T070.) Fix `ApiGradeCardContent`, specifically the div for `detailed` mode within its `API Grade` `InfoCard`. Add `marginBottom: '0.75rem'` to the div to provide some breathing room at the bottom of the card, address the scrolling issue described in runs 11 to 15 in issues.md , and finally fix the issues T069 and T0670 were supposed to address.
+- [x] T072 Fix `ApiGradeCardContent` detailed-mode div: add `marginBottom: '0.75rem'` to the flex row container inside the `InfoCard` so Backstage's natural page scrolling can reach the card bottom — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx` (Runs 11–15)
+- [X] T073 Remove "Overall Grade" heading from `OverallGradeSection` summary mode — in summary mode the card contains only one area so no label is needed; heading is retained in detailed mode to distinguish the two columns; update test to assert no "Overall Grade" text is present in summary mode — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx`
 
 
 ### Documentation — FR-023 to FR-028
@@ -283,8 +284,8 @@ Task: "T035 [P] Backend detail-filtering integration tests"
 - **Phase 3 (US1)**: ✅ Complete (T014–T026)
 - **Phase 4 (US2)**: ✅ Complete (T027–T035, T066, T067)
 - **Phase 5 (US3)**: ✅ Complete (T036–T042)
-- **Phase 6 (US4)**: ✅ Complete (T043–T047); T048 pending manual verification
-- **Phase 7 (Polish)**: ✅ T049–T052, T054–T070 complete; T053 pending manual Backstage instance verification
+- **Phase 6 (US4)**: ✅ Complete (T043–T048)
+- **Phase 7 (Polish)**: ✅ Complete (T049–T073)
 
 ### Next Increment (User Story 2)
 

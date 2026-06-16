@@ -101,8 +101,8 @@ A Backstage administrator grants the platform engineering team visibility of det
 - **FR-013**: Recommendations MUST be actionable — they MUST specify where to start and why, not merely list findings.
 - **FR-014**: The overall tone of the diagnostic output (e.g., "Excellent", "Critical") MUST be derived from the grade score before detail is presented.
 - **FR-015**: When a specification cannot be graded (unreachable, unsupported format, ruleset failure), the integration MUST display a clear, user-friendly message rather than an error or blank section.
-- **FR-016**: The API grade card MUST contain an "Overall Grade" sub-section that displays the grade letter in a larger, bold format together with the numeric percentage and quality label.
-- **FR-017**: When only summary grade information is displayed, the numeric percentage and quality label MUST appear beside the grade letter in the "Overall Grade" sub-section.
+- **FR-016**: The API grade card MUST display the grade letter in a larger, bold format together with the numeric percentage and quality label. In detailed mode, these elements are grouped in a labelled "Overall Grade" sub-section (heading visible) to distinguish them from the adjacent "Grading Detail" sub-section. In summary mode no section heading is displayed, as the card contains only one area.
+- **FR-017**: When only summary grade information is displayed, the numeric percentage and quality label MUST appear beside the grade letter.
 - **FR-018**: When detailed grade information is displayed, the numeric percentage and quality label MUST appear below the grade letter in the "Overall Grade" sub-section.
 - **FR-019**: When detailed grade information is displayed, the API grade card MUST include a "Grading Detail" sub-section positioned to the right of the "Overall Grade" sub-section.
 - **FR-020**: The "Grading Detail" sub-section MUST display a "Quality Assessment:" area, a "Recommendations:" area, and a "Diagnostics:" area, stacked vertically in that order.

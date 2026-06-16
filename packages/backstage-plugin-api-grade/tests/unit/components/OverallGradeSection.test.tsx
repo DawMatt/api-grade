@@ -45,6 +45,18 @@ describe('OverallGradeSection', () => {
       expect(row.style.flexDirection).not.toBe('column');
       expect(row.style.display).toBe('flex');
     });
+
+    it('does not show an "Overall Grade" heading — no label needed when only one area is shown', () => {
+      const { container } = render(
+        <OverallGradeSection
+          letterGrade="B"
+          numericScore={78}
+          gradeLabel="Good"
+          mode="summary"
+        />,
+      );
+      expect(container.textContent).not.toContain('Overall Grade');
+    });
   });
 
   describe('detailed mode', () => {
@@ -110,6 +122,18 @@ describe('OverallGradeSection', () => {
         />,
       );
       expect(container.textContent).not.toContain('·');
+    });
+
+    it('shows "Overall Grade" heading to label the column when a Grading Detail section is also present', () => {
+      const { container } = render(
+        <OverallGradeSection
+          letterGrade="C"
+          numericScore={62}
+          gradeLabel="OK"
+          mode="detailed"
+        />,
+      );
+      expect(container.textContent).toContain('Overall Grade');
     });
   });
 });
