@@ -1,6 +1,5 @@
 export { createRouter, canViewDetailed } from './router.js';
 export type {
-  BackstageGradeRequest,
   BackstageGradeResponse,
   GradeErrorType,
   RouterOptions,

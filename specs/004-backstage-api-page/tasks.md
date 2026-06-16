@@ -172,12 +172,12 @@ This feature adds two new packages to the monorepo:
 
 ### Implementation Validation
 
-- [ ] T049 [P] Verify OpenAPI 2 (Swagger 2.x) spec grades end-to-end (FR-003): use a Swagger 2 fixture in `tests/fixtures/openapi/` and confirm `gradeContent` returns `format: 'openapi-2'`
-- [ ] T050 [P] Verify AsyncAPI 2 and AsyncAPI 3 specs grade end-to-end (FR-003, SC-006): confirm both formats produce a `BackstageGradeResponse` with correct `format` field **and** that `summary.commentary`, `summary.recommendations`, and `diagnostics` are populated (equivalent detailed-assessment coverage to OpenAPI)
-- [ ] T051 Verify SC-004: confirm all five algorithm principles present in detailed output for a low-quality OpenAPI test fixture (error-first ordering, volume-aware commentary, category focus, actionable recommendations, tone-calibrated label)
-- [ ] T052 [P] Verify FR-015 unsupported-format message in `ApiGradeCard`: a GraphQL entity (mock `spec.type: 'graphql'`) shows the "format not supported" message, not a blank card or unhandled error in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
+- [X] T049 [P] Verify OpenAPI 2 (Swagger 2.x) spec grades end-to-end (FR-003): use a Swagger 2 fixture in `tests/fixtures/openapi/` and confirm `gradeContent` returns `format: 'openapi-2'`
+- [X] T050 [P] Verify AsyncAPI 2 and AsyncAPI 3 specs grade end-to-end (FR-003, SC-006): confirm both formats produce a `BackstageGradeResponse` with correct `format` field **and** that `summary.commentary`, `summary.recommendations`, and `diagnostics` are populated (equivalent detailed-assessment coverage to OpenAPI)
+- [X] T051 Verify SC-004: confirm all five algorithm principles present in detailed output for a low-quality OpenAPI test fixture (error-first ordering, volume-aware commentary, category focus, actionable recommendations, tone-calibrated label)
+- [X] T052 [P] Verify FR-015 unsupported-format message in `ApiGradeCard`: a GraphQL entity (mock `spec.type: 'graphql'`) shows the "format not supported" message, not a blank card or unhandled error in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
 - [ ] T053 Run quickstart.md validation: follow all five steps against a local Backstage dev instance; confirm card appears in Info column for both an OpenAPI and an AsyncAPI entity
-- [ ] T054 [P] Review both plugin packages for YAGNI violations: remove any unused props, hypothetical config fields, or abstractions beyond current spec requirements
+- [X] T054 [P] Review both plugin packages for YAGNI violations: remove any unused props, hypothetical config fields, or abstractions beyond current spec requirements
 - [X] T066 Fix `OverallGradeSection` detailed-mode layout: render `numericScore` and `gradeLabel` as separate stacked `<div>` elements (each on its own line) rather than joined with `·`; add test asserting no `·` separator in detailed mode — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx` (FR-018, Run 10)
 - [X] T067 Fix `GradingDetailSection` content truncation: add `flex: 1; min-width: 0; overflow-wrap: break-word` to the section root div so text wraps and fills available space in the detailed horizontal layout — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 10)
 
@@ -274,11 +274,11 @@ Task: "T035 [P] Backend detail-filtering integration tests"
 
 - **Phase 1 (Setup)**: ✅ Complete (T001–T008)
 - **Phase 2 (Foundational)**: ✅ Complete (T009–T013)
-- **Phase 3 (US1)**: ✅ Complete (T014–T026, including T017 plugin.ts fix)
-- **Phase 4 (US2)**: 🔲 Next up (T027–T035)
-- **Phase 5 (US3)**: 🔲 Pending (T036–T042)
-- **Phase 6 (US4)**: 🔲 Pending (T043–T048)
-- **Phase 7 (Polish)**: 🔲 Implementation validation pending (T049–T054); docs complete (T055–T065)
+- **Phase 3 (US1)**: ✅ Complete (T014–T026)
+- **Phase 4 (US2)**: ✅ Complete (T027–T035, T066, T067)
+- **Phase 5 (US3)**: ✅ Complete (T036–T042)
+- **Phase 6 (US4)**: ✅ Complete (T043–T047); T048 pending manual verification
+- **Phase 7 (Polish)**: ✅ T049–T052, T054–T067 complete; T053 pending manual Backstage instance verification
 
 ### Next Increment (User Story 2)
 

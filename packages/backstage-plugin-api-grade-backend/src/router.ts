@@ -60,11 +60,6 @@ export interface VisibilityConfig {
   groups: string[];
 }
 
-export interface BackstageGradeRequest {
-  entityRef: string;
-  includeDetail: boolean;
-}
-
 export type GradeErrorType =
   | 'unsupported-format'
   | 'entity-not-found'
