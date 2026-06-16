@@ -107,6 +107,15 @@ describe('GradingDetailSection', () => {
     expect(wrapper.style.flexDirection).toBe('column');
   });
 
+  it('does not apply inner scroll constraints — page scroll handles vertical overflow', () => {
+    const { container } = render(
+      <GradingDetailSection summary={makeSummary()} diagnostics={[]} />,
+    );
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.style.overflowY).toBe('');
+    expect(wrapper.style.maxHeight).toBe('');
+  });
+
   it('renders "No recommendations." when recommendations list is empty', () => {
     render(
       <GradingDetailSection

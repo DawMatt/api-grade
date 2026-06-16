@@ -41,10 +41,9 @@ describe('OverallGradeSection', () => {
           mode="summary"
         />,
       );
-      // children[0] = heading div, children[1] = inner flex row
-      const innerRow = ((container.firstChild as HTMLElement).children[1]) as HTMLElement;
-      expect(innerRow.style.flexDirection).not.toBe('column');
-      expect(innerRow.style.display).toBe('flex');
+      const row = container.firstChild as HTMLElement;
+      expect(row.style.flexDirection).not.toBe('column');
+      expect(row.style.display).toBe('flex');
     });
   });
 
@@ -86,6 +85,19 @@ describe('OverallGradeSection', () => {
       );
       expect(screen.getByText('62%')).toBeTruthy();
       expect(screen.getByText('OK')).toBeTruthy();
+    });
+
+    it('centers content within the column (alignItems: center)', () => {
+      const { container } = render(
+        <OverallGradeSection
+          letterGrade="C"
+          numericScore={62}
+          gradeLabel="OK"
+          mode="detailed"
+        />,
+      );
+      const innerCol = ((container.firstChild as HTMLElement).children[1]) as HTMLElement;
+      expect(innerCol.style.alignItems).toBe('center');
     });
 
     it('renders percentage and label as separate elements with no · separator', () => {

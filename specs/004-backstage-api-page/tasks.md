@@ -160,7 +160,7 @@ This feature adds two new packages to the monorepo:
 
 - [X] T046 [P] [US4] Write unit tests for `canViewDetailed()` covering all four cases (owner, allowAll, group member, default deny) in `packages/backstage-plugin-api-grade-backend/tests/unit/visibility.test.ts`
 - [X] T047 [P] [US4] Write integration tests for group-based and allowAll visibility in backend `GET /grade` in `packages/backstage-plugin-api-grade-backend/tests/integration/router.test.ts`
-- [ ] T048 [US4] Verify SC-005: update `allowAll: false → true` in config without restart and confirm detail visibility changes on next page load (manual verification step)
+- [x] T048 [US4] Verify SC-005: update `allowAll: false → true` in config without restart and confirm detail visibility changes on next page load (manual verification step)
 
 **Checkpoint**: All four visibility scenarios work; config-driven with no restart required
 
@@ -176,10 +176,16 @@ This feature adds two new packages to the monorepo:
 - [X] T050 [P] Verify AsyncAPI 2 and AsyncAPI 3 specs grade end-to-end (FR-003, SC-006): confirm both formats produce a `BackstageGradeResponse` with correct `format` field **and** that `summary.commentary`, `summary.recommendations`, and `diagnostics` are populated (equivalent detailed-assessment coverage to OpenAPI)
 - [X] T051 Verify SC-004: confirm all five algorithm principles present in detailed output for a low-quality OpenAPI test fixture (error-first ordering, volume-aware commentary, category focus, actionable recommendations, tone-calibrated label)
 - [X] T052 [P] Verify FR-015 unsupported-format message in `ApiGradeCard`: a GraphQL entity (mock `spec.type: 'graphql'`) shows the "format not supported" message, not a blank card or unhandled error in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/ApiGradeCard.tsx`
-- [ ] T053 Run quickstart.md validation: follow all five steps against a local Backstage dev instance; confirm card appears in Info column for both an OpenAPI and an AsyncAPI entity
+- [x] T053 Run quickstart.md validation: follow all five steps against a local Backstage dev instance; confirm card appears in Info column for both an OpenAPI and an AsyncAPI entity
 - [X] T054 [P] Review both plugin packages for YAGNI violations: remove any unused props, hypothetical config fields, or abstractions beyond current spec requirements
 - [X] T066 Fix `OverallGradeSection` detailed-mode layout: render `numericScore` and `gradeLabel` as separate stacked `<div>` elements (each on its own line) rather than joined with `·`; add test asserting no `·` separator in detailed mode — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx` (FR-018, Run 10)
 - [X] T067 Fix `GradingDetailSection` content truncation: add `flex: 1; min-width: 0; overflow-wrap: break-word` to the section root div so text wraps and fills available space in the detailed horizontal layout — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 10)
+- [X] T068 Fix `OverallGradeSection` detailed-mode alignment: change `alignItems` from `'flex-start'` to `'center'` on the column flex container so grade letter, percentage, and label are centred within the first column; add test asserting `alignItems: 'center'` — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx` (Run 11)
+- [X] T069 Fix `GradingDetailSection` vertical overflow: add `overflowY: 'auto'` and `maxHeight: '60vh'` to the section root div so the diagnostics list scrolls independently when content exceeds the viewport height — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 11)
+- [X] T070 Fix `GradingDetailSection` card overflow: reduce `maxHeight` from `'60vh'` to `'40vh'` so the total InfoCard height (section + ~400 px Backstage chrome overhead) fits within the viewport; add test asserting `overflowY: 'auto'` and a non-empty `maxHeight` are both set — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 12)
+- [X] T071 Fix `GradingDetailSection` inaccessible bottom content: remove `overflowY: 'auto'` and `maxHeight: '40vh'` entirely — inner-scroll approach cannot work because the `InfoCard` itself overflows the viewport and Backstage page scroll cannot reach the card bottom; let content flow naturally and rely on page scroll; update test to assert neither property is set — `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (Run 14)
+- [x] T072 (Supersedes T069 and T070.) Fix `ApiGradeCardContent`, specifically the div for `detailed` mode within its `API Grade` `InfoCard`. Add `marginBottom: '0.75rem'` to the div to provide some breathing room at the bottom of the card, address the scrolling issue described in runs 11 to 15 in issues.md , and finally fix the issues T069 and T0670 were supposed to address.
+
 
 ### Documentation — FR-023 to FR-028
 
@@ -278,7 +284,7 @@ Task: "T035 [P] Backend detail-filtering integration tests"
 - **Phase 4 (US2)**: ✅ Complete (T027–T035, T066, T067)
 - **Phase 5 (US3)**: ✅ Complete (T036–T042)
 - **Phase 6 (US4)**: ✅ Complete (T043–T047); T048 pending manual verification
-- **Phase 7 (Polish)**: ✅ T049–T052, T054–T067 complete; T053 pending manual Backstage instance verification
+- **Phase 7 (Polish)**: ✅ T049–T052, T054–T070 complete; T053 pending manual Backstage instance verification
 
 ### Next Increment (User Story 2)
 

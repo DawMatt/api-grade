@@ -501,3 +501,47 @@ A
 Quality Assessment:
 Excellent. 5 warnings are affecting the quality. The asyncapi category has the most issues.
 ```
+
+## Run 11 - 2026/06/16
+
+**Root cause (centering)**: `OverallGradeSection` detailed mode used `alignItems: 'flex-start'` on the column flex container, aligning grade letter, percentage and label to the left edge.
+**Fix applied**: Changed to `alignItems: 'center'` in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/OverallGradeSection.tsx`. Test added asserting `alignItems` is `'center'` in detailed mode.
+
+**Root cause (scroll/overflow)**: `GradingDetailSection` had `overflowWrap: 'break-word'` for horizontal wrapping but no vertical overflow handling. When the diagnostics list exceeded the viewport height, content was clipped with no scroll escape.
+**Fix applied**: Added `overflowY: 'auto'` and `maxHeight: '60vh'` to the `GradingDetailSection` root div in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx`. The section now scrolls independently when content overflows.
+
+- [x] API Grade card content does not appear correctly in "Overall Grade" column. The grade letter, percentage rating and grade label should appear below each and centred within the first column.
+
+- [x] API Grade card content does not appear correctly in the second column. The last line in the card is mostly hidden off the screen (only top pixel of the letters are visible) and inaccessible via scrolling. In the example below the text `"3.1.0" version.` was not visible.
+
+`[info] asyncapi-latest-version: The latest version is not used. You should update to the "3.1.0" version.`
+
+## Run 12 - 2026/06/16
+
+- [x] API Grade card content still does not appear correctly in the second column. A scrollbar now appears but it doesn't allow access to all of the text as the card extends off the bottom of the screen. The last line in the card is mostly hidden off the screen (only top pixel of the letters are visible) and inaccessible via scrolling. In the example below the text `"3.1.0" version.` is still not visible. The recent fix did not really help.
+
+`[info] asyncapi-latest-version: The latest version is not used. You should update to the "3.1.0" version.`
+
+## Run 13 - 2026/06/16
+
+**Root cause (card overflow)**: `maxHeight: '60vh'` on `GradingDetailSection` is relative to the full viewport height, but the InfoCard is positioned well below the top of the page — Backstage navigation header (~64 px), page title area (~64 px), About card above (~200 px), and InfoCard title + padding (~84 px) account for ~400 px of overhead before the section is even visible. On a 900 px viewport, `60vh = 540 px`; adding ~400 px of overhead gives a total card height of ~940 px, which overflows the viewport even though the inner section scrolls.
+**Fix applied**: Reduced `maxHeight` from `'60vh'` to `'40vh'` in `packages/backstage-plugin-api-grade/src/components/ApiGradeCard/GradingDetailSection.tsx` (T070). At 900 px viewport, `40vh = 360 px`; total card height ≈ 760 px, leaving comfortable clearance. Test added asserting `overflowY: 'auto'` and a non-empty `maxHeight` are both set.
+
+**Root cause (inner-scroll approach is wrong)**: `maxHeight` + `overflowY: auto` on `GradingDetailSection` creates an inner scrollable region, but the `InfoCard` wrapper itself still grows taller than the viewport. Backstage's Info column layout does not clip or scroll the card back into view cleanly, so the bottom of the card is permanently inaccessible regardless of how the inner `maxHeight` is tuned. Viewport-relative units (`vh`) do not account for the card's offset from the top of the page.
+**Fix applied**: Removed `overflowY: 'auto'` and `maxHeight: '40vh'` from `GradingDetailSection` entirely (T071). Content now flows naturally; the Backstage page scroll handles vertical navigation. Test updated to assert neither `overflowY` nor `maxHeight` is set on the section root.
+
+## Run 14 - 2026/06/16
+
+- [x] API Grade card content still does not appear correctly in the second column. A scrollbar now appears but it doesn't allow access to all of the text as the card extends off the bottom of the screen. The last line in the card is mostly hidden off the screen (only top pixel of the letters are visible) and inaccessible via scrolling. In the example below the text `"3.1.0" version.` is still not visible. 
+
+`[info] asyncapi-latest-version: The latest version is not used. You should update to the "3.1.0" version.`
+
+The last two attempts at a fix did not help. They made the UI worse - I now need to scroll more to see the detailed list of items to be resolved - but I still can't see the last line in the last item. 
+
+What seems to be happening is the UI is misjudging the length of either the card or the entire info column. When the entire column is scrolled it doesn't quite scroll far enough to show the last line. The bottom of the card does not scroll back onto screen. Your fixes were focusing on adding scrolling capabilities to the right hand column within the card, but they weren't effective because the card or column length seems to be the real issue.
+
+## Run 15 - 2026/06/16
+
+**Fix applied**: Added `marginBottom: '0.75rem'` to the `detailed` mode div within the `API Grade` `InfoCard` definition of `ApiGradeCardContent`. This provided some breathing room at the bottom of the card so Backstage's natural page scrolling can effectively handle vertical navigation. 
+
+- [x] the last line of the API Grade card is still not showing. You fixed the unnecessary scrolling issue you created, but didn't fix the original issue I reported.

@@ -57,6 +57,9 @@ function ApiGradeCardContent({ entityRef }: { entityRef: string }): React.JSX.El
   // backend confirms the caller is authorised (owner or visibility group).
   const mode = grade.summary.commentary !== '' ? 'detailed' : 'summary';
 
+  // T072: Added marginBottom: '0.75rem' to the div within the API Grade 
+  // InfoCard, to provide some breathing room at the bottom of the card,
+  // and combat the scrolling issue described in runs 11 to 15 in issues.md .
   return (
     <InfoCard title="API Grade">
       {rulesetWarning && (
@@ -64,7 +67,8 @@ function ApiGradeCardContent({ entityRef }: { entityRef: string }): React.JSX.El
           <em>{rulesetWarning}</em>
         </div>
       )}
-      <div style={mode === 'detailed' ? { display: 'flex', gap: '2rem', alignItems: 'flex-start' } : undefined}>
+
+      <div style={mode === 'detailed' ? { display: 'flex', gap: '2rem', alignItems: 'flex-start', marginBottom: '0.75rem' } : undefined}>
         <OverallGradeSection
           letterGrade={grade.letterGrade}
           numericScore={grade.numericScore}

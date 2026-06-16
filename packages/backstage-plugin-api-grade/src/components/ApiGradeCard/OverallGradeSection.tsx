@@ -32,14 +32,11 @@ export function OverallGradeSection({
   if (mode === 'summary') {
     // FR-017: percentage and label appear beside the grade letter
     return (
-      <div>
-        {heading}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {letter}
-          <span>
-            {numericScore}%&nbsp;·&nbsp;{gradeLabel}
-          </span>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {letter}
+        <span>
+          {numericScore}%&nbsp;·&nbsp;{gradeLabel}
+        </span>
       </div>
     );
   }
@@ -48,7 +45,7 @@ export function OverallGradeSection({
   return (
     <div>
       {heading}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.25rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
         {letter}
         <div>{numericScore}%</div>
         <div>{gradeLabel}</div>
