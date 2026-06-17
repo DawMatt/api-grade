@@ -1,25 +1,28 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.1.0 → 1.2.0
+Version change: 1.2.0 → 1.3.0
 
 Principles modified: none
 
 Sections added:
-  - Development Workflow: two new mandatory constraints added:
-      (1) /speckit-implement MUST pass CI quality gates before reporting complete.
-      (2) git push MUST meet CI quality gate standards; a failing gate signals
-          /speckit-implement has unfinished work.
+  - Development Workflow: one new mandatory constraint added:
+      The quality-gate constraint from v1.2.0 is now enforced by a mandatory
+      after_implement hook (speckit.quality-gate in .specify/extensions.yml).
+      A failing gate blocks the git-commit hook and the Completion Report.
+      /speckit-implement MUST fix all failures and re-run before completing.
 
 Sections removed: none
 
 Templates reviewed:
-  - .specify/templates/plan-template.md ✅ — Constitution Check section uses
-    "[Gates determined based on constitution file]" — auto-derives at plan time;
-    no update needed.
+  - .specify/templates/plan-template.md ✅ — No update needed; plan's Quality Gate
+    Requirement section already documents the gate commands.
   - .specify/templates/spec-template.md ✅ — No alignment changes required.
   - .specify/templates/tasks-template.md ✅ — Task categories unaffected.
   - .specify/templates/commands/ ⚠ — Directory not present; skipped.
+  - .specify/extensions.yml ✅ — Hook registered as mandatory after_implement entry.
+  - .claude/skills/speckit-quality-gate/SKILL.md ✅ — Skill created; defines gate
+    stages and blocking behaviour on failure.
 
 Deferred TODOs: none
 -->
@@ -144,6 +147,11 @@ CI/CD-oriented feature:
 - A `git push` that triggers a CI quality gate failure signals that `/speckit-implement`
   has unfinished work. The failure MUST be remediated — not deferred — before the
   feature is considered done.
+- This constraint is enforced automatically: a mandatory `after_implement` hook
+  (`speckit.quality-gate`, registered in `.specify/extensions.yml`) runs the full gate
+  after every `/speckit-implement` invocation. A failing gate blocks both the git-commit
+  hook and the Completion Report. `/speckit-implement` MUST fix all gate failures and
+  re-run the gate before it may report completion.
 
 ## Governance
 
@@ -160,4 +168,4 @@ All pull requests and code reviews MUST verify compliance with the principles ab
 Complexity violations MUST be recorded in the plan's Complexity Tracking table with
 explicit justification.
 
-**Version**: 1.2.0 | **Ratified**: 2026-06-12 | **Last Amended**: 2026-06-17
+**Version**: 1.3.0 | **Ratified**: 2026-06-12 | **Last Amended**: 2026-06-18

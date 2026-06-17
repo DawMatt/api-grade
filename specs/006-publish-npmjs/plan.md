@@ -95,7 +95,12 @@ docs/
 
 **Structure Decision**: Monorepo with Yarn workspaces retained as-is. New files are additions only (CI workflows, ESLint config, .npmrc). Package names are updated in package.json files. No directory restructuring required.
 
-## Quality Gate Requirement (Constitution Constraint)
+## Quality Gate Requirement (Constitution Constraint — Automatically Enforced)
+
+This constraint is enforced by a **mandatory `after_implement` hook** registered in
+`.specify/extensions.yml` (`speckit.quality-gate`). After every `/speckit-implement`
+invocation, the hook runs automatically and blocks the Completion Report if any stage
+fails. The hook also blocks the git-commit hook — only passing code is committed.
 
 Per the constitution's Development Workflow section, `/speckit-implement` MUST NOT
 report any task or phase complete until all six CI quality gate stages pass locally:
