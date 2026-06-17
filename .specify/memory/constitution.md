@@ -1,21 +1,25 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.0.0 → 1.1.0
+Version change: 1.1.0 → 1.2.0
 
-Principles modified:
-  - III. Spectral-Ruleset Based Grading — materially expanded to include algorithm
-    design principles (error-first prioritization, volume-aware severity,
-    category-specific insights, actionable next steps, tone calibration) and
-    explicit reference to api_diagnostic_algorithm_spec.md as canonical algorithm spec.
+Principles modified: none
 
-Sections added: none
+Sections added:
+  - Development Workflow: two new mandatory constraints added:
+      (1) /speckit-implement MUST pass CI quality gates before reporting complete.
+      (2) git push MUST meet CI quality gate standards; a failing gate signals
+          /speckit-implement has unfinished work.
+
 Sections removed: none
 
 Templates reviewed:
-  - .specify/templates/plan-template.md ✅ — Constitution Check section present; no updates needed
-  - .specify/templates/spec-template.md ✅ — Scope/requirements sections align; no updates needed
-  - .specify/templates/tasks-template.md ✅ — Task categories align with principles; no updates needed
+  - .specify/templates/plan-template.md ✅ — Constitution Check section uses
+    "[Gates determined based on constitution file]" — auto-derives at plan time;
+    no update needed.
+  - .specify/templates/spec-template.md ✅ — No alignment changes required.
+  - .specify/templates/tasks-template.md ✅ — Task categories unaffected.
+  - .specify/templates/commands/ ⚠ — Directory not present; skipped.
 
 Deferred TODOs: none
 -->
@@ -133,6 +137,12 @@ CI/CD-oriented feature:
   in a changelog entry and MUST increment the tool's MAJOR version.
 - Complexity MUST be justified: any abstraction that is not immediately required by
   the current feature MUST not be introduced (YAGNI).
+- `/speckit-implement` MUST verify that all CI quality gate standards pass before
+  reporting a feature as complete. Implementation is not done until the quality gate
+  is green.
+- Every `git push` MUST meet CI quality gate standards. A push that triggers a failing
+  quality gate indicates that `/speckit-implement` has not finished its work and MUST
+  NOT be treated as a completed implementation.
 
 ## Governance
 
@@ -149,4 +159,4 @@ All pull requests and code reviews MUST verify compliance with the principles ab
 Complexity violations MUST be recorded in the plan's Complexity Tracking table with
 explicit justification.
 
-**Version**: 1.1.0 | **Ratified**: 2026-06-12 | **Last Amended**: 2026-06-12
+**Version**: 1.2.0 | **Ratified**: 2026-06-12 | **Last Amended**: 2026-06-17

@@ -74,3 +74,5 @@ Feature 7 - AI support
 - Identify all pre-requisites necessary for the functionality to run correctly, and how to source them.
 - The cost for all pre-requisites must be $0. Do not require any pre-requisites that have a cost associated with them. 
 - Ultimately API grading is about teaching users good API development practices. To help reinforce this the project will use modern, well designed API examples such as Redocly's Museum API ( https://github.com/Redocly/museum-openapi-example ) or the Train Travel API ( https://github.com/bump-sh-examples/train-travel-api ).
+- Every /speckit-implement should ensure it meets our CI quality gate standards.
+- Every push to origin must ensure it meets our CI quality gate standards. If it doesn't meet the quality gate, it means /speckit-implement hasn't finished its work.
