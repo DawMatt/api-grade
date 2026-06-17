@@ -75,7 +75,7 @@
 - [x] T020 [US7] Create `.github/workflows/release.yml` triggered on `push` with tag pattern `v[0-9]*.[0-9]*.[0-9]*`; define a `release` job that runs in the `npm-publish` GitHub Actions environment and checks out the repo
 - [x] T021 [US7] Add the same six quality gate steps from `.github/workflows/ci.yml` to `.github/workflows/release.yml` (audit, lint, typecheck, test+coverage per package, build) — the release is halted if any gate fails
 - [x] T022 [US7] Add a step to `.github/workflows/release.yml` that calls `node scripts/pre-publish.mjs` to rewrite workspace dep references to `@dawmatt/api-grade-core: ^<version>` before publishing
-- [x] T023 [US7] Add sequential `npm publish --provenance --access public` steps to `.github/workflows/release.yml` in dependency order: `@dawmatt/api-grade-core` → `@dawmatt/backstage-plugin-api-grade` + `@dawmatt/backstage-plugin-api-grade-backend` (parallel) → `@dawmatt/api-grade`; all steps use `NPM_TOKEN` from secrets
+- [x] T023 [US7] Add sequential `npm publish --access public` steps to `.github/workflows/release.yml` in dependency order: `@dawmatt/api-grade-core` → `@dawmatt/backstage-plugin-api-grade` + `@dawmatt/backstage-plugin-api-grade-backend` (parallel) → `@dawmatt/api-grade`; authentication and provenance are handled automatically via npm Trusted Publishing (OIDC); no `NPM_TOKEN` secret required
 - [x] T024 [US7] Add a step to `.github/workflows/release.yml` that calls `node scripts/post-publish.mjs` to restore workspace dep references after publishing
 - [x] T025 [US7] Add a GitHub Release creation step to `.github/workflows/release.yml` using `gh release create` with the tag name as title, capturing `github.actor` and `github.sha` in the release body for traceability
 
@@ -135,7 +135,7 @@
 - [ ] T036 [P] [US4] Update all files in `docs/package/` to reference `@dawmatt/api-grade-core` as the install name
 - [ ] T037 [P] [US4] Update all files in `docs/cli/` to include `npm install -g @dawmatt/api-grade` as the install instruction
 - [ ] T038 [P] [US4] Update all files in `docs/backstage-plugins/` to include install instructions for both `@dawmatt/backstage-plugin-api-grade` and `@dawmatt/backstage-plugin-api-grade-backend`, noting both are required
-- [ ] T039 [US4] Create `docs/contributing/release-process.md` covering: (1) one-time GitHub setup — create `npm-publish` environment with maintainer approval, configure `v[0-9]*` tag protection for Maintain/Admin only, add `NPM_TOKEN` secret; (2) versioning rules (major/minor/patch decision criteria); (3) step-by-step release — run `node scripts/version.mjs <type>`, push commit + tag; (4) monitoring the release pipeline; (5) recovery from a failed release
+- [ ] T039 [US4] Create `docs/contributing/release-process.md` covering: (1) one-time GitHub setup — create `npm-publish` environment with maintainer approval, configure `v[0-9]*` tag protection for Maintain/Admin only, register each `@dawmatt` package as a Trusted Publisher on npmjs.com (org: `DawMatt`, repo: `api-grade`, workflow: `release.yml`) — no `NPM_TOKEN` secret required; (2) versioning rules (major/minor/patch decision criteria); (3) step-by-step release — run `node scripts/version.mjs <type>`, push commit + tag; (4) monitoring the release pipeline; (5) recovery from a failed release
 - [ ] T040 [US4] Create or update `CONTRIBUTING.md` in repo root with a "Releasing" section linking to `docs/contributing/release-process.md`
 
 **Checkpoint**: Follow `docs/getting-started.md` end-to-end from a clean environment using only npm — no `git clone` required. `docs/contributing/release-process.md` can be followed by a new maintainer to complete a release without assistance.
@@ -259,6 +259,6 @@ US5 (T041–T043)
 - [USN] label maps each task to the user story it delivers
 - Phases 5–9 can be parallelised across team members once Phase 4 is complete
 - The `npm-publish` GitHub Actions environment and tag protection rules (T039) are one-time manual steps in the GitHub UI — not automatable via workflow files
-- Never commit `NPM_TOKEN` — store only as a GitHub Actions secret
+- Authentication uses npm Trusted Publishing (OIDC) — no `NPM_TOKEN` secret is needed or stored; do not introduce one
 - Run `npm publish --dry-run` (T047) before the first real release to validate all packages
 - Commit after each logical group; the pipeline validates the full state on each push

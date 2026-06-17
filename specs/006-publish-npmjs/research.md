@@ -60,17 +60,27 @@
 
 **Question**: How does the release pipeline authenticate to npmjs?
 
-**Decision**: `NPM_TOKEN` stored as a GitHub Actions secret, combined with npm provenance attestation (`--provenance` flag).
+**Decision**: npm Trusted Publishing (OIDC) — no stored credentials. The release workflow registers the GitHub repository and workflow as a Trusted Publisher on npmjs.com. At publish time, GitHub Actions generates a short-lived OIDC token; npm exchanges it for an ephemeral publish token scoped to that specific workflow run. No `NPM_TOKEN` secret is stored or managed.
 
-**Rationale**: Token-based auth is the established, zero-cost standard for npmjs automation. npm provenance (introduced 2023) adds a signed SLSA attestation linking the published package to its GitHub Actions run and source commit — this satisfies the traceability requirement (SC-009) with no extra cost. The token needs `Automation` level access on npmjs (not `Read-only`).
+**Rationale**: Trusted Publishing is npm's recommended authentication mechanism for CI/CD (available 2025, documented at https://docs.npmjs.com/trusted-publishers). It eliminates long-lived credentials that can be exposed, leaked, or stolen. Provenance attestation linking the published package to its GitHub Actions run and source commit is generated automatically — no `--provenance` flag required. The token is revoked immediately after publish, and is scoped to the specific repository and workflow, reducing blast radius if the runner is compromised. No secret rotation burden.
+
+**Requirements**:
+- npm CLI 11.5.1 or later (bundled with Node.js 22.14.0+)
+- Node.js ≥ 22.14.0 in the release workflow (CI can still test against the project minimum of 20.0.0)
+- GitHub-hosted runners (self-hosted runners not currently supported)
 
 **Setup steps for contribution guide**:
-1. Generate token at npmjs.com with `Automation` type (bypasses OTP on publish)
-2. Store as `NPM_TOKEN` in GitHub repo → Settings → Secrets → Actions
-3. Reference as `${{ secrets.NPM_TOKEN }}` in workflow
+1. On npmjs.com, navigate to each package → Settings → Trusted Publishers → Add publisher:
+   - **Organization or user**: `DawMatt`
+   - **Repository**: `api-grade`
+   - **Workflow filename**: `release.yml`
+   - **Allowed action**: `npm publish`
+   - Repeat for all four `@dawmatt` packages (packages must exist on npmjs before Trusted Publishers can be configured; register after the first publish or during initial setup)
+2. In `.github/workflows/release.yml`, ensure `id-token: write` is in job permissions (already present)
+3. No secret or token configuration required — Trusted Publishing needs no stored credentials
 
 **Alternatives considered**:
-- **OIDC (OpenID Connect) with npmjs**: npmjs does not yet support OIDC token exchange (as of 2026). GitHub OIDC for npm is not available. Token approach required.
+- **NPM_TOKEN (legacy token)**: Stores a permanent Automation-level token as a GitHub Actions secret. Works but requires manual rotation, carries exposure risk, and is classified as legacy by npm in favour of Trusted Publishing. Previous version of this decision used this approach.
 - **`.npmrc` committed with token**: Never — secrets must not be committed.
 
 ---
