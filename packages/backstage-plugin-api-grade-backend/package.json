@@ -2,6 +2,24 @@
   "name": "@dawmatt/backstage-plugin-api-grade-backend",
   "version": "0.1.8",
   "description": "Backstage backend plugin — grades API entity specs and returns results via HTTP",
+  "keywords": [
+    "backstage",
+    "backstage-plugin",
+    "backstage-backend",
+    "api",
+    "openapi",
+    "asyncapi",
+    "quality",
+    "grading"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DawMatt/api-grade.git"
+  },
+  "homepage": "https://github.com/DawMatt/api-grade/tree/main/packages/backstage-plugin-api-grade-backend#readme",
+  "bugs": {
+    "url": "https://github.com/DawMatt/api-grade/issues"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

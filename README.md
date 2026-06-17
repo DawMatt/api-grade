@@ -33,18 +33,18 @@ Grades run from **A (≥ 90%, Excellent)** down to **F (< 60%, Poor)**. A single
 **[CLI Tool](docs/cli/README.md)** — Grade specs from your terminal or CI/CD pipeline. Supports OpenAPI 2/3 and AsyncAPI 2/3, custom Spectral rulesets, JSON output, and a `--min-grade` flag to fail builds automatically.
 
 ```bash
-npm install -g api-grade
+npm install -g @dawmatt/api-grade
 api-grade openapi.yaml
 api-grade openapi.yaml --min-grade B   # fail CI if grade drops below B
 ```
 
-**[Core Package](docs/package/README.md)** — Embed grading directly in your own tools, scripts, and integrations. The `api-grade-core` package is the grading engine used by both the CLI and the Backstage plugins.
+**[Core Package](docs/package/README.md)** — Embed grading directly in your own tools, scripts, and integrations. The `@dawmatt/api-grade-core` package is the grading engine used by both the CLI and the Backstage plugins.
 
 ```bash
-npm install api-grade-core
+npm install @dawmatt/api-grade-core
 ```
 
-**[Backstage Plugins](docs/backstage-plugins/README.md)** — Display API grades on Backstage API entity pages. A frontend card shows the grade summary; a backend plugin computes grades server-side using `api-grade-core`.
+**[Backstage Plugins](docs/backstage-plugins/README.md)** — Display API grades on Backstage API entity pages. A frontend card shows the grade summary; a backend plugin computes grades server-side using `@dawmatt/api-grade-core`.
 
 ---
 

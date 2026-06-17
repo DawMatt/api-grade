@@ -1,6 +1,6 @@
 [← Back to Package Overview](README.md)
 
-# API Reference: `api-grade-core`
+# API Reference: `@dawmatt/api-grade-core`
 
 > Detailed reference for all exported functions, classes, and types.
 
@@ -11,7 +11,7 @@
 The main class for grading API specifications.
 
 ```typescript
-import { GradeEngine } from 'api-grade-core';
+import { GradeEngine } from '@dawmatt/api-grade-core';
 const engine = new GradeEngine();
 ```
 
@@ -80,7 +80,7 @@ Serialises a `GradeResult` to a JSON string suitable for machine-readable output
 **Example:**
 
 ```typescript
-import { GradeEngine, formatJson } from 'api-grade-core';
+import { GradeEngine, formatJson } from '@dawmatt/api-grade-core';
 const engine = new GradeEngine();
 const result = await engine.grade({ specPath: './openapi.yaml' });
 console.log(formatJson(result));

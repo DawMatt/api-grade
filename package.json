@@ -2,6 +2,24 @@
   "name": "@dawmatt/api-grade",
   "version": "0.1.1",
   "description": "Grade API quality and share diagnostics using Spectral-compatible linting",
+  "keywords": [
+    "api",
+    "openapi",
+    "asyncapi",
+    "spectral",
+    "quality",
+    "grading",
+    "cli",
+    "linting"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DawMatt/api-grade.git"
+  },
+  "homepage": "https://github.com/DawMatt/api-grade#readme",
+  "bugs": {
+    "url": "https://github.com/DawMatt/api-grade/issues"
+  },
   "license": "MIT",
   "type": "module",
   "workspaces": [

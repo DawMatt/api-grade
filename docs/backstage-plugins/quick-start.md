@@ -19,7 +19,7 @@ Install `backstage-plugin-api-grade` (frontend) and `backstage-plugin-api-grade-
 In your Backstage `packages/app` directory:
 
 ```bash
-yarn add backstage-plugin-api-grade
+yarn add @dawmatt/backstage-plugin-api-grade
 ```
 
 ---
@@ -29,7 +29,7 @@ yarn add backstage-plugin-api-grade
 Open `packages/app/src/components/catalog/EntityPage.tsx` and add the API Grade card to the API entity page Info column:
 
 ```tsx
-import { ApiGradeCard } from 'backstage-plugin-api-grade';
+import { ApiGradeCard } from '@dawmatt/backstage-plugin-api-grade';
 
 const apiPage = (
   <EntityLayout>
@@ -55,7 +55,7 @@ const apiPage = (
 In your Backstage `packages/backend` directory:
 
 ```bash
-yarn add backstage-plugin-api-grade-backend
+yarn add @dawmatt/backstage-plugin-api-grade-backend
 ```
 
 Register the plugin in `packages/backend/src/index.ts`:
@@ -66,7 +66,7 @@ import { createBackend } from '@backstage/backend-defaults';
 const backend = createBackend();
 
 // ...other plugins
-backend.add(import('backstage-plugin-api-grade-backend'));
+backend.add(import('@dawmatt/backstage-plugin-api-grade-backend'));
 
 backend.start();
 ```

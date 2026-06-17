@@ -1,6 +1,6 @@
 [← Back to Documentation Index](../index.md)
 
-# Core Package (`api-grade-core`)
+# Core Package (`@dawmatt/api-grade-core`)
 
 > The standalone grading engine for embedding API quality grading in your own tools.
 
@@ -19,13 +19,13 @@
 ## Installation
 
 ```bash
-npm install api-grade-core
+npm install @dawmatt/api-grade-core
 ```
 
 Or with Yarn:
 
 ```bash
-yarn add api-grade-core
+yarn add @dawmatt/api-grade-core
 ```
 
 ---
@@ -33,7 +33,7 @@ yarn add api-grade-core
 ## Minimal Usage Example
 
 ```typescript
-import { GradeEngine, formatJson } from 'api-grade-core';
+import { GradeEngine, formatJson } from '@dawmatt/api-grade-core';
 
 const engine = new GradeEngine();
 
@@ -53,10 +53,10 @@ This repository is an npm workspaces monorepo:
 
 | Package | Path | Purpose |
 |---------|------|---------|
-| `api-grade` | `/` (root) | CLI tool (`api-grade` binary) |
-| `api-grade-core` | `packages/api-grade-core/` | Standalone grading library |
-| `backstage-plugin-api-grade` | `packages/backstage-plugin-api-grade/` | Backstage frontend card plugin |
-| `backstage-plugin-api-grade-backend` | `packages/backstage-plugin-api-grade-backend/` | Backstage backend grading plugin |
+| `@dawmatt/api-grade` | `/` (root) | CLI tool (`api-grade` binary) |
+| `@dawmatt/api-grade-core` | `packages/api-grade-core/` | Standalone grading library |
+| `@dawmatt/backstage-plugin-api-grade` | `packages/backstage-plugin-api-grade/` | Backstage frontend card plugin |
+| `@dawmatt/backstage-plugin-api-grade-backend` | `packages/backstage-plugin-api-grade-backend/` | Backstage backend grading plugin |
 
 ---
 

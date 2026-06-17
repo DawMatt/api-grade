@@ -52,7 +52,7 @@ No state is persisted — grades are computed on demand on every page load.
 
 - Backstage instance using the **New Backend System** (`@backstage/backend-defaults` ≥ 0.4)
 - Node ≥ 20
-- `backstage-plugin-api-grade` and `backstage-plugin-api-grade-backend` packages installed
+- `@dawmatt/backstage-plugin-api-grade` and `@dawmatt/backstage-plugin-api-grade-backend` packages installed
 
 ---
 

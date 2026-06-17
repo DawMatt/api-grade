@@ -141,8 +141,8 @@ npm run build
 
 **Independent Test**: In a clean directory, run `npm install @dawmatt/api-grade-core`, import the package, call the grading function with a sample OpenAPI spec, and confirm a grade is returned.
 
-- [ ] T032 [P] [US1] Add `keywords`, `repository`, `homepage`, and `bugs` fields to `packages/api-grade-core/package.json` for npmjs discoverability
-- [ ] T033 [US1] Create or update `packages/api-grade-core/README.md` with: package description, `npm install @dawmatt/api-grade-core` install instructions, import example, a minimal grading usage snippet, and a link to the full docs
+- [x] T032 [P] [US1] Add `keywords`, `repository`, `homepage`, and `bugs` fields to `packages/api-grade-core/package.json` for npmjs discoverability
+- [x] T033 [US1] Create or update `packages/api-grade-core/README.md` with: package description, `npm install @dawmatt/api-grade-core` install instructions, import example, a minimal grading usage snippet, and a link to the full docs
 
 **Checkpoint**: `packages/api-grade-core` passes `npm publish --dry-run` with correct name, version, and files. README renders correctly on a markdown preview.
 
@@ -154,9 +154,9 @@ npm run build
 
 **Independent Test**: In a clean environment, run `npm install -g @dawmatt/api-grade`, then run `api-grade <path-to-spec>` against a sample API spec and confirm graded output appears.
 
-- [ ] T034 [P] [US2] Add `keywords`, `repository`, `homepage`, and `bugs` fields to root `package.json`
-- [ ] T035 [US2] Create or update root `README.md` with: project description, `npm install -g @dawmatt/api-grade` install instructions, usage examples (basic grade, min-grade flag, JSON output, custom ruleset), and links to full documentation
-- [ ] T036 [US2] Verify the `bin` field in root `package.json` maps `api-grade` to `./dist/cli/index.js` and that the `files` array includes `dist/`
+- [x] T034 [P] [US2] Add `keywords`, `repository`, `homepage`, and `bugs` fields to root `package.json`
+- [x] T035 [US2] Create or update root `README.md` with: project description, `npm install -g @dawmatt/api-grade` install instructions, usage examples (basic grade, min-grade flag, JSON output, custom ruleset), and links to full documentation
+- [x] T036 [US2] Verify the `bin` field in root `package.json` maps `api-grade` to `./dist/cli/index.js` and that the `files` array includes `dist/`
 
 **Checkpoint**: Root package passes `npm publish --dry-run`. `api-grade --help` works after install.
 
@@ -168,10 +168,10 @@ npm run build
 
 **Independent Test**: Visit each package's npmjs page (after publishing); verify the README, description, keywords, and version are correct and the package can be evaluated without leaving npmjs.
 
-- [ ] T037 [P] [US3] Add `keywords`, `repository`, `homepage`, and `bugs` fields to `packages/backstage-plugin-api-grade/package.json`
-- [ ] T038 [P] [US3] Add `keywords`, `repository`, `homepage`, and `bugs` fields to `packages/backstage-plugin-api-grade-backend/package.json`
-- [ ] T039 [US3] Create or update `packages/backstage-plugin-api-grade/README.md` with: what the frontend plugin does, `npm install @dawmatt/backstage-plugin-api-grade` install instruction, note that `@dawmatt/backstage-plugin-api-grade-backend` is also required, peerDependency list, and configuration steps
-- [ ] T040 [US3] Create or update `packages/backstage-plugin-api-grade-backend/README.md` with: what the backend plugin does, `npm install @dawmatt/backstage-plugin-api-grade-backend` install instruction, note that `@dawmatt/backstage-plugin-api-grade` is also required, peerDependency list, and configuration steps
+- [x] T037 [P] [US3] Add `keywords`, `repository`, `homepage`, and `bugs` fields to `packages/backstage-plugin-api-grade/package.json`
+- [x] T038 [P] [US3] Add `keywords`, `repository`, `homepage`, and `bugs` fields to `packages/backstage-plugin-api-grade-backend/package.json`
+- [x] T039 [US3] Create or update `packages/backstage-plugin-api-grade/README.md` with: what the frontend plugin does, `npm install @dawmatt/backstage-plugin-api-grade` install instruction, note that `@dawmatt/backstage-plugin-api-grade-backend` is also required, peerDependency list, and configuration steps
+- [x] T040 [US3] Create or update `packages/backstage-plugin-api-grade-backend/README.md` with: what the backend plugin does, `npm install @dawmatt/backstage-plugin-api-grade-backend` install instruction, note that `@dawmatt/backstage-plugin-api-grade` is also required, peerDependency list, and configuration steps
 
 **Checkpoint**: Both backstage package `package.json` files have complete metadata. Both READMEs stand alone on npmjs without requiring GitHub context.
 
@@ -183,12 +183,12 @@ npm run build
 
 **Independent Test**: A person with no prior knowledge of the project follows `docs/getting-started.md` and successfully installs and runs the CLI using only npm. A new maintainer reads `docs/contributing/release-process.md` and completes a release without assistance.
 
-- [ ] T041 [P] [US4] Update `docs/getting-started.md` to add npm install instructions for `@dawmatt/api-grade` (CLI) and `@dawmatt/api-grade-core` (library), replacing any build-from-source instructions as the primary path
-- [ ] T042 [P] [US4] Update all files in `docs/package/` to reference `@dawmatt/api-grade-core` as the install name
-- [ ] T043 [P] [US4] Update all files in `docs/cli/` to include `npm install -g @dawmatt/api-grade` as the install instruction
-- [ ] T044 [P] [US4] Update all files in `docs/backstage-plugins/` to include install instructions for both `@dawmatt/backstage-plugin-api-grade` and `@dawmatt/backstage-plugin-api-grade-backend`, noting both are required
-- [ ] T045 [US4] Create `docs/contributing/release-process.md` covering: (1) one-time GitHub setup — create `npm-publish` environment with maintainer approval, configure `v[0-9]*` tag protection for Maintain/Admin only, register each `@dawmatt` package as a Trusted Publisher on npmjs.com (org: `DawMatt`, repo: `api-grade`, workflow: `release.yml`) — no `NPM_TOKEN` secret required; (2) versioning rules (major/minor/patch decision criteria); (3) step-by-step release — run `node scripts/version.mjs <type>`, push commit + tag; (4) monitoring the release pipeline; (5) recovery from a failed release
-- [ ] T046 [US4] Create or update `CONTRIBUTING.md` in repo root with a "Releasing" section linking to `docs/contributing/release-process.md`
+- [x] T041 [P] [US4] Update `docs/getting-started.md` to add npm install instructions for `@dawmatt/api-grade` (CLI) and `@dawmatt/api-grade-core` (library), replacing any build-from-source instructions as the primary path
+- [x] T042 [P] [US4] Update all files in `docs/package/` to reference `@dawmatt/api-grade-core` as the install name
+- [x] T043 [P] [US4] Update all files in `docs/cli/` to include `npm install -g @dawmatt/api-grade` as the install instruction
+- [x] T044 [P] [US4] Update all files in `docs/backstage-plugins/` to include install instructions for both `@dawmatt/backstage-plugin-api-grade` and `@dawmatt/backstage-plugin-api-grade-backend`, noting both are required
+- [x] T045 [US4] Create `docs/contributing/release-process.md` covering: (1) one-time GitHub setup — create `npm-publish` environment with maintainer approval, configure `v[0-9]*` tag protection for Maintain/Admin only, register each `@dawmatt` package as a Trusted Publisher on npmjs.com (org: `DawMatt`, repo: `api-grade`, workflow: `release.yml`) — no `NPM_TOKEN` secret required; (2) versioning rules (major/minor/patch decision criteria); (3) step-by-step release — run `node scripts/version.mjs <type>`, push commit + tag; (4) monitoring the release pipeline; (5) recovery from a failed release
+- [x] T046 [US4] Create or update `CONTRIBUTING.md` in repo root with a "Releasing" section linking to `docs/contributing/release-process.md`
 
 **Checkpoint**: Follow `docs/getting-started.md` end-to-end from a clean environment using only npm — no `git clone` required. `docs/contributing/release-process.md` can be followed by a new maintainer to complete a release without assistance.
 
@@ -200,9 +200,9 @@ npm run build
 
 **Independent Test**: In a Backstage app, install both plugins from npmjs, wire them in per the README, and confirm API grade data appears on an API entity page.
 
-- [ ] T047 [P] [US5] Audit and complete `peerDependencies` in `packages/backstage-plugin-api-grade/package.json` — ensure all required Backstage peer packages and React are listed with correct version ranges
-- [ ] T048 [P] [US5] Audit and complete `peerDependencies` in `packages/backstage-plugin-api-grade-backend/package.json` — ensure all required Backstage backend peer packages are listed with correct version ranges
-- [ ] T049 [US5] Add a prominent "Installation" section to both Backstage plugin READMEs (in `packages/backstage-plugin-api-grade/README.md` and `packages/backstage-plugin-api-grade-backend/README.md`) that shows both npm install commands together and explains the role of each package
+- [x] T047 [P] [US5] Audit and complete `peerDependencies` in `packages/backstage-plugin-api-grade/package.json` — ensure all required Backstage peer packages and React are listed with correct version ranges
+- [x] T048 [P] [US5] Audit and complete `peerDependencies` in `packages/backstage-plugin-api-grade-backend/package.json` — ensure all required Backstage backend peer packages are listed with correct version ranges
+- [x] T049 [US5] Add a prominent "Installation" section to both Backstage plugin READMEs (in `packages/backstage-plugin-api-grade/README.md` and `packages/backstage-plugin-api-grade-backend/README.md`) that shows both npm install commands together and explains the role of each package
 
 **Checkpoint**: Both plugin packages pass `npm publish --dry-run`. A Backstage administrator reading either README immediately understands both packages are needed.
 
@@ -212,11 +212,11 @@ npm run build
 
 **Purpose**: Final validation, housekeeping, and protection rules that span all stories.
 
-- [ ] T050 [P] Create `.github/CODEOWNERS` assigning `@DawMatt` as owner of `.github/workflows/`, `scripts/`, and `package.json` files to enforce PR review for release-path changes
-- [ ] T051 [P] Run `npm run build --workspaces && tsc` to confirm all four packages build successfully with updated `@dawmatt` package names
-- [ ] T052 [P] Run `npm audit --audit-level=high` to confirm zero high-severity vulnerabilities in the current dependency tree
-- [ ] T053 Run `npm publish --dry-run` for all four packages (in dependency order) to validate the published file set, metadata, and package contents before the first real release
-- [ ] T054 Create `CHANGELOG.md` in repo root with an `[Unreleased]` section and a `[1.0.0]` entry template documenting the initial public release scope
+- [x] T050 [P] Create `.github/CODEOWNERS` assigning `@DawMatt` as owner of `.github/workflows/`, `scripts/`, and `package.json` files to enforce PR review for release-path changes
+- [x] T051 [P] Run `npm run build --workspaces && tsc` to confirm all four packages build successfully with updated `@dawmatt` package names
+- [x] T052 [P] Run `npm audit --audit-level=high` to confirm zero high-severity vulnerabilities in the current dependency tree
+- [x] T053 Run `npm publish --dry-run` for all four packages (in dependency order) to validate the published file set, metadata, and package contents before the first real release
+- [x] T054 Create `CHANGELOG.md` in repo root with an `[Unreleased]` section and a `[1.0.0]` entry template documenting the initial public release scope
 
 ---
 
