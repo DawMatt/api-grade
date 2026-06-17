@@ -137,12 +137,13 @@ CI/CD-oriented feature:
   in a changelog entry and MUST increment the tool's MAJOR version.
 - Complexity MUST be justified: any abstraction that is not immediately required by
   the current feature MUST not be introduced (YAGNI).
-- `/speckit-implement` MUST verify that all CI quality gate standards pass before
-  reporting a feature as complete. Implementation is not done until the quality gate
-  is green.
-- Every `git push` MUST meet CI quality gate standards. A push that triggers a failing
-  quality gate indicates that `/speckit-implement` has not finished its work and MUST
-  NOT be treated as a completed implementation.
+- `/speckit-implement` MUST pass all CI quality gate stages (dependency audit, lint,
+  typecheck, test + coverage at threshold, build) locally before reporting any
+  implementation task or phase complete. Reporting complete before the gate passes is
+  not permitted.
+- A `git push` that triggers a CI quality gate failure signals that `/speckit-implement`
+  has unfinished work. The failure MUST be remediated — not deferred — before the
+  feature is considered done.
 
 ## Governance
 

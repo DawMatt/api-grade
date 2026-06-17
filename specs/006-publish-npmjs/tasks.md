@@ -253,6 +253,29 @@ US5 (T041–T043)
 
 ---
 
+## Quality Gate Requirement (Constitution Constraint)
+
+`/speckit-implement` MUST NOT mark any task complete until all six CI quality gate
+stages pass locally. Run after every task before committing:
+
+```sh
+npm audit --audit-level=high --omit=dev
+npm run lint
+npm run typecheck --workspaces --if-present
+npm run test:coverage                                       # root
+yarn workspace api-grade-core run test:coverage
+yarn workspace backstage-plugin-api-grade run test:coverage
+yarn workspace backstage-plugin-api-grade-backend run test:coverage
+npm run build
+```
+
+Any non-zero exit = task is not done. Fix, re-run the full gate, then mark complete.
+
+> **Phase 1 interim gate**: Phase 2 installs lint/coverage scripts. Until then, run
+> `npm run build` + `npm run typecheck` at minimum.
+
+---
+
 ## Notes
 
 - [P] tasks = different files, no dependencies on incomplete sibling tasks in the same phase

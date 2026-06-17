@@ -95,6 +95,29 @@ docs/
 
 **Structure Decision**: Monorepo with Yarn workspaces retained as-is. New files are additions only (CI workflows, ESLint config, .npmrc). Package names are updated in package.json files. No directory restructuring required.
 
+## Quality Gate Requirement (Constitution Constraint)
+
+Per the constitution's Development Workflow section, `/speckit-implement` MUST NOT
+report any task or phase complete until all six CI quality gate stages pass locally:
+
+```sh
+npm audit --audit-level=high --omit=dev
+npm run lint
+npm run typecheck --workspaces --if-present
+npm run test:coverage                                      # root
+yarn workspace api-grade-core run test:coverage
+yarn workspace backstage-plugin-api-grade run test:coverage
+yarn workspace backstage-plugin-api-grade-backend run test:coverage
+npm run build
+```
+
+If any stage exits non-zero, the task is **not done**. Fix the failure, re-run the
+gate, and only then mark the task complete and commit.
+
+> **Interim gate (Phase 1 only)**: Phase 2 installs lint and coverage scripts. For
+> Phase 1 tasks, run `npm run build` and `npm run typecheck` as a minimum gate until
+> Phase 2 tooling is in place.
+
 ## Complexity Tracking
 
 No constitution violations. No unjustified abstractions introduced.
