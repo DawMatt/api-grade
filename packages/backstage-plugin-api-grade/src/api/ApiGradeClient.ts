@@ -1,4 +1,4 @@
-import type { BackstageGradeResponse } from 'backstage-plugin-api-grade-backend';
+import type { BackstageGradeResponse } from '@dawmatt/backstage-plugin-api-grade-backend';
 
 // Minimal Backstage API interfaces (peer deps — provided by host app at runtime)
 export interface DiscoveryApi {

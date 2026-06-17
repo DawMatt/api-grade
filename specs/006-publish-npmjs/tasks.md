@@ -6,13 +6,36 @@
 
 **Tests**: No test tasks generated — spec does not request TDD approach. Existing tests are validated by the CI quality gate.
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story. US6 and US7 (pipeline) are sequenced before US1–US5 because they are the delivery mechanism for all published packages.
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story. US6 and US7 (pipeline) are sequenced before US1–US5 because they are the delivery mechanism for all published packages. CI Gate Compliance is sequenced immediately after the pipeline phases and before any publishing work.
 
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies on incomplete tasks)
 - **[Story]**: Which user story this task belongs to (US1–US7)
 - File paths are relative to repo root
+
+---
+
+## Quality Gate Requirement (Constitution Constraint)
+
+`/speckit-implement` MUST NOT mark any task complete until all six CI quality gate
+stages pass locally. Run after every task before committing:
+
+```sh
+npm audit --audit-level=high --omit=dev
+npm run lint
+npm run typecheck --workspaces --if-present
+npm run test:coverage                                       # root
+yarn workspace api-grade-core run test:coverage
+yarn workspace backstage-plugin-api-grade run test:coverage
+yarn workspace backstage-plugin-api-grade-backend run test:coverage
+npm run build
+```
+
+Any non-zero exit = task is not done. Fix, re-run the full gate, then mark complete.
+
+> **Phase 1 interim gate**: Phase 2 installs lint/coverage scripts. Until then, run
+> `npm run build` + `npm run typecheck` at minimum.
 
 ---
 
@@ -83,88 +106,117 @@
 
 ---
 
-## Phase 5: User Story 1 — Install Core Package from npmjs (Priority: P1)
+## Phase 5: CI Gate Compliance (Priority: P0 — blocks all remaining phases)
+
+**Goal**: Every CI quality gate stage passes on the current codebase. This phase validates that the tooling installed in Phase 2 and the workflows written in Phases 3–4 will pass when triggered by GitHub Actions. No publishing work proceeds until this phase is complete.
+
+**Why P0**: The constitution mandates that `/speckit-implement` may not report any task complete until all six gate stages pass. Phases 1–4 installed the tooling and wrote the workflows; this phase proves the codebase satisfies the gates those workflows enforce.
+
+**Independent Test**: Run the full gate command sequence below from the repo root and confirm every command exits 0:
+```sh
+npm audit --audit-level=high --omit=dev
+npm run lint
+npm run typecheck --workspaces --if-present
+npm run test:coverage
+yarn workspace api-grade-core run test:coverage
+yarn workspace backstage-plugin-api-grade run test:coverage
+yarn workspace backstage-plugin-api-grade-backend run test:coverage
+npm run build
+```
+
+- [x] T026 Run `npm audit --audit-level=high --omit=dev` at repo root; for every high-severity vulnerability reported, update or replace the affected production dependency in `package.json` or the relevant workspace `package.json` until the command exits 0 with zero high-severity findings (Stage 1 of gate)
+- [x] T027 [P] Run `npm run lint` at repo root; fix every ESLint violation reported across `src/**/*.ts` and `packages/*/src/**/*.{ts,tsx}` — edit the offending source files directly; do not disable rules unless the violation is a known false positive that cannot be resolved by code change — continue until `npm run lint` exits 0 (Stage 2 of gate)
+- [x] T028 [P] Run `npm run typecheck --workspaces --if-present` at repo root; fix every TypeScript type error reported across all four packages — edit source files in the package where each error is reported; do not use `@ts-ignore` or `any` to suppress errors unless there is no correct-typed alternative — continue until the command exits 0 (Stage 3 of gate)
+- [x] T029 Run `npm run test:coverage` at root, then `yarn workspace api-grade-core run test:coverage`, `yarn workspace backstage-plugin-api-grade run test:coverage`, and `yarn workspace backstage-plugin-api-grade-backend run test:coverage`; for any package that reports failing tests, fix the failing test or the implementation under test; for any package that falls below the 80% line coverage threshold, write additional tests in that package's test directory until coverage meets the threshold — all four coverage runs must exit 0 (Stages 4–5 of gate)
+- [x] T030 Run `npm run build` at repo root; fix any build error reported for any workspace package or the root CLI — edit source files in the failing package; continue until the command exits 0 with all packages built successfully (Stage 6 of gate)
+- [x] T031 Re-run the complete gate sequence in order (audit → lint → typecheck → all four test:coverage runs → build); confirm every stage exits 0; only mark this phase complete after a clean full-gate run
+
+**Checkpoint**: `npm run lint`, `npm run typecheck --workspaces --if-present`, all four `test:coverage` runs, `npm run build`, and `npm audit --audit-level=high --omit=dev` all exit 0 in a single end-to-end run. The codebase is in a state the CI workflow will accept.
+
+---
+
+## Phase 6: User Story 1 — Install Core Package from npmjs (Priority: P1)
 
 **Goal**: `@dawmatt/api-grade-core` is installable from npmjs and the grading API works as expected after install.
 
 **Independent Test**: In a clean directory, run `npm install @dawmatt/api-grade-core`, import the package, call the grading function with a sample OpenAPI spec, and confirm a grade is returned.
 
-- [ ] T026 [P] [US1] Add `keywords`, `repository`, `homepage`, and `bugs` fields to `packages/api-grade-core/package.json` for npmjs discoverability
-- [ ] T027 [US1] Create or update `packages/api-grade-core/README.md` with: package description, `npm install @dawmatt/api-grade-core` install instructions, import example, a minimal grading usage snippet, and a link to the full docs
+- [ ] T032 [P] [US1] Add `keywords`, `repository`, `homepage`, and `bugs` fields to `packages/api-grade-core/package.json` for npmjs discoverability
+- [ ] T033 [US1] Create or update `packages/api-grade-core/README.md` with: package description, `npm install @dawmatt/api-grade-core` install instructions, import example, a minimal grading usage snippet, and a link to the full docs
 
 **Checkpoint**: `packages/api-grade-core` passes `npm publish --dry-run` with correct name, version, and files. README renders correctly on a markdown preview.
 
 ---
 
-## Phase 6: User Story 2 — Install CLI Tool from npmjs (Priority: P2)
+## Phase 7: User Story 2 — Install CLI Tool from npmjs (Priority: P2)
 
 **Goal**: `@dawmatt/api-grade` is globally installable from npmjs and the `api-grade` command works from the terminal and in CI/CD pipelines.
 
 **Independent Test**: In a clean environment, run `npm install -g @dawmatt/api-grade`, then run `api-grade <path-to-spec>` against a sample API spec and confirm graded output appears.
 
-- [ ] T028 [P] [US2] Add `keywords`, `repository`, `homepage`, and `bugs` fields to root `package.json`
-- [ ] T029 [US2] Create or update root `README.md` with: project description, `npm install -g @dawmatt/api-grade` install instructions, usage examples (basic grade, min-grade flag, JSON output, custom ruleset), and links to full documentation
-- [ ] T030 [US2] Verify the `bin` field in root `package.json` maps `api-grade` to `./dist/cli/index.js` and that the `files` array includes `dist/`
+- [ ] T034 [P] [US2] Add `keywords`, `repository`, `homepage`, and `bugs` fields to root `package.json`
+- [ ] T035 [US2] Create or update root `README.md` with: project description, `npm install -g @dawmatt/api-grade` install instructions, usage examples (basic grade, min-grade flag, JSON output, custom ruleset), and links to full documentation
+- [ ] T036 [US2] Verify the `bin` field in root `package.json` maps `api-grade` to `./dist/cli/index.js` and that the `files` array includes `dist/`
 
 **Checkpoint**: Root package passes `npm publish --dry-run`. `api-grade --help` works after install.
 
 ---
 
-## Phase 7: User Story 3 — Discover and Evaluate Packages via npmjs Documentation (Priority: P2)
+## Phase 8: User Story 3 — Discover and Evaluate Packages via npmjs Documentation (Priority: P2)
 
 **Goal**: All four packages are findable on npmjs with complete, accurate metadata and READMEs that allow evaluation without visiting the GitHub repo.
 
 **Independent Test**: Visit each package's npmjs page (after publishing); verify the README, description, keywords, and version are correct and the package can be evaluated without leaving npmjs.
 
-- [ ] T031 [P] [US3] Add `keywords`, `repository`, `homepage`, and `bugs` fields to `packages/backstage-plugin-api-grade/package.json`
-- [ ] T032 [P] [US3] Add `keywords`, `repository`, `homepage`, and `bugs` fields to `packages/backstage-plugin-api-grade-backend/package.json`
-- [ ] T033 [US3] Create or update `packages/backstage-plugin-api-grade/README.md` with: what the frontend plugin does, `npm install @dawmatt/backstage-plugin-api-grade` install instruction, note that `@dawmatt/backstage-plugin-api-grade-backend` is also required, peerDependency list, and configuration steps
-- [ ] T034 [US3] Create or update `packages/backstage-plugin-api-grade-backend/README.md` with: what the backend plugin does, `npm install @dawmatt/backstage-plugin-api-grade-backend` install instruction, note that `@dawmatt/backstage-plugin-api-grade` is also required, peerDependency list, and configuration steps
+- [ ] T037 [P] [US3] Add `keywords`, `repository`, `homepage`, and `bugs` fields to `packages/backstage-plugin-api-grade/package.json`
+- [ ] T038 [P] [US3] Add `keywords`, `repository`, `homepage`, and `bugs` fields to `packages/backstage-plugin-api-grade-backend/package.json`
+- [ ] T039 [US3] Create or update `packages/backstage-plugin-api-grade/README.md` with: what the frontend plugin does, `npm install @dawmatt/backstage-plugin-api-grade` install instruction, note that `@dawmatt/backstage-plugin-api-grade-backend` is also required, peerDependency list, and configuration steps
+- [ ] T040 [US3] Create or update `packages/backstage-plugin-api-grade-backend/README.md` with: what the backend plugin does, `npm install @dawmatt/backstage-plugin-api-grade-backend` install instruction, note that `@dawmatt/backstage-plugin-api-grade` is also required, peerDependency list, and configuration steps
 
 **Checkpoint**: Both backstage package `package.json` files have complete metadata. Both READMEs stand alone on npmjs without requiring GitHub context.
 
 ---
 
-## Phase 8: User Story 4 — Follow Updated Documentation to Get Started (Priority: P3)
+## Phase 9: User Story 4 — Follow Updated Documentation to Get Started (Priority: P3)
 
 **Goal**: User-facing docs show npm-based install paths for all packages. The contribution guide contains the complete, self-contained release process including one-time GitHub setup, versioning decisions, step-by-step release procedure, and recovery.
 
 **Independent Test**: A person with no prior knowledge of the project follows `docs/getting-started.md` and successfully installs and runs the CLI using only npm. A new maintainer reads `docs/contributing/release-process.md` and completes a release without assistance.
 
-- [ ] T035 [P] [US4] Update `docs/getting-started.md` to add npm install instructions for `@dawmatt/api-grade` (CLI) and `@dawmatt/api-grade-core` (library), replacing any build-from-source instructions as the primary path
-- [ ] T036 [P] [US4] Update all files in `docs/package/` to reference `@dawmatt/api-grade-core` as the install name
-- [ ] T037 [P] [US4] Update all files in `docs/cli/` to include `npm install -g @dawmatt/api-grade` as the install instruction
-- [ ] T038 [P] [US4] Update all files in `docs/backstage-plugins/` to include install instructions for both `@dawmatt/backstage-plugin-api-grade` and `@dawmatt/backstage-plugin-api-grade-backend`, noting both are required
-- [ ] T039 [US4] Create `docs/contributing/release-process.md` covering: (1) one-time GitHub setup — create `npm-publish` environment with maintainer approval, configure `v[0-9]*` tag protection for Maintain/Admin only, register each `@dawmatt` package as a Trusted Publisher on npmjs.com (org: `DawMatt`, repo: `api-grade`, workflow: `release.yml`) — no `NPM_TOKEN` secret required; (2) versioning rules (major/minor/patch decision criteria); (3) step-by-step release — run `node scripts/version.mjs <type>`, push commit + tag; (4) monitoring the release pipeline; (5) recovery from a failed release
-- [ ] T040 [US4] Create or update `CONTRIBUTING.md` in repo root with a "Releasing" section linking to `docs/contributing/release-process.md`
+- [ ] T041 [P] [US4] Update `docs/getting-started.md` to add npm install instructions for `@dawmatt/api-grade` (CLI) and `@dawmatt/api-grade-core` (library), replacing any build-from-source instructions as the primary path
+- [ ] T042 [P] [US4] Update all files in `docs/package/` to reference `@dawmatt/api-grade-core` as the install name
+- [ ] T043 [P] [US4] Update all files in `docs/cli/` to include `npm install -g @dawmatt/api-grade` as the install instruction
+- [ ] T044 [P] [US4] Update all files in `docs/backstage-plugins/` to include install instructions for both `@dawmatt/backstage-plugin-api-grade` and `@dawmatt/backstage-plugin-api-grade-backend`, noting both are required
+- [ ] T045 [US4] Create `docs/contributing/release-process.md` covering: (1) one-time GitHub setup — create `npm-publish` environment with maintainer approval, configure `v[0-9]*` tag protection for Maintain/Admin only, register each `@dawmatt` package as a Trusted Publisher on npmjs.com (org: `DawMatt`, repo: `api-grade`, workflow: `release.yml`) — no `NPM_TOKEN` secret required; (2) versioning rules (major/minor/patch decision criteria); (3) step-by-step release — run `node scripts/version.mjs <type>`, push commit + tag; (4) monitoring the release pipeline; (5) recovery from a failed release
+- [ ] T046 [US4] Create or update `CONTRIBUTING.md` in repo root with a "Releasing" section linking to `docs/contributing/release-process.md`
 
 **Checkpoint**: Follow `docs/getting-started.md` end-to-end from a clean environment using only npm — no `git clone` required. `docs/contributing/release-process.md` can be followed by a new maintainer to complete a release without assistance.
 
 ---
 
-## Phase 9: User Story 5 — Install Backstage Plugins from npmjs (Priority: P3)
+## Phase 10: User Story 5 — Install Backstage Plugins from npmjs (Priority: P3)
 
 **Goal**: Both Backstage plugins are installable from npmjs as a pair, with peerDependencies that resolve correctly and documentation that clearly explains both packages are required.
 
 **Independent Test**: In a Backstage app, install both plugins from npmjs, wire them in per the README, and confirm API grade data appears on an API entity page.
 
-- [ ] T041 [P] [US5] Audit and complete `peerDependencies` in `packages/backstage-plugin-api-grade/package.json` — ensure all required Backstage peer packages and React are listed with correct version ranges
-- [ ] T042 [P] [US5] Audit and complete `peerDependencies` in `packages/backstage-plugin-api-grade-backend/package.json` — ensure all required Backstage backend peer packages are listed with correct version ranges
-- [ ] T043 [US5] Add a prominent "Installation" section to both Backstage plugin READMEs (in `packages/backstage-plugin-api-grade/README.md` and `packages/backstage-plugin-api-grade-backend/README.md`) that shows both npm install commands together and explains the role of each package
+- [ ] T047 [P] [US5] Audit and complete `peerDependencies` in `packages/backstage-plugin-api-grade/package.json` — ensure all required Backstage peer packages and React are listed with correct version ranges
+- [ ] T048 [P] [US5] Audit and complete `peerDependencies` in `packages/backstage-plugin-api-grade-backend/package.json` — ensure all required Backstage backend peer packages are listed with correct version ranges
+- [ ] T049 [US5] Add a prominent "Installation" section to both Backstage plugin READMEs (in `packages/backstage-plugin-api-grade/README.md` and `packages/backstage-plugin-api-grade-backend/README.md`) that shows both npm install commands together and explains the role of each package
 
 **Checkpoint**: Both plugin packages pass `npm publish --dry-run`. A Backstage administrator reading either README immediately understands both packages are needed.
 
 ---
 
-## Phase 10: Polish & Cross-Cutting Concerns
+## Phase 11: Polish & Cross-Cutting Concerns
 
 **Purpose**: Final validation, housekeeping, and protection rules that span all stories.
 
-- [ ] T044 [P] Create `.github/CODEOWNERS` assigning `@DawMatt` as owner of `.github/workflows/`, `scripts/`, and `package.json` files to enforce PR review for release-path changes
-- [ ] T045 [P] Run `npm run build --workspaces && tsc` to confirm all four packages build successfully with updated `@dawmatt` package names
-- [ ] T046 [P] Run `npm audit --audit-level=high` to confirm zero high-severity vulnerabilities in the current dependency tree
-- [ ] T047 Run `npm publish --dry-run` for all four packages (in dependency order) to validate the published file set, metadata, and package contents before the first real release
-- [ ] T048 Create `CHANGELOG.md` in repo root with an `[Unreleased]` section and a `[1.0.0]` entry template documenting the initial public release scope
+- [ ] T050 [P] Create `.github/CODEOWNERS` assigning `@DawMatt` as owner of `.github/workflows/`, `scripts/`, and `package.json` files to enforce PR review for release-path changes
+- [ ] T051 [P] Run `npm run build --workspaces && tsc` to confirm all four packages build successfully with updated `@dawmatt` package names
+- [ ] T052 [P] Run `npm audit --audit-level=high` to confirm zero high-severity vulnerabilities in the current dependency tree
+- [ ] T053 Run `npm publish --dry-run` for all four packages (in dependency order) to validate the published file set, metadata, and package contents before the first real release
+- [ ] T054 Create `CHANGELOG.md` in repo root with an `[Unreleased]` section and a `[1.0.0]` entry template documenting the initial public release scope
 
 ---
 
@@ -176,103 +228,75 @@
 - **Foundational (Phase 2)**: Depends on Phase 1 (package names must be final before writing pre-publish scripts)
 - **US6 CI Pipeline (Phase 3)**: Depends on Phase 2 (lint, typecheck, coverage scripts must exist before referencing in workflow)
 - **US7 Release Pipeline (Phase 4)**: Depends on Phase 2 (scripts/pre-publish.mjs, scripts/post-publish.mjs, scripts/version.mjs) and Phase 3 (CI gate steps are copied into release workflow)
-- **US1, US2, US3, US5 (Phases 5–7, 9)**: Depend on Phase 4 (release pipeline must be ready before verifying packages are publishable); can proceed in parallel once Phase 4 is complete
-- **US4 Documentation (Phase 8)**: Depends on Phase 5–7 being complete (docs reference final package names and install paths)
-- **Polish (Phase 10)**: Depends on all user story phases complete
+- **CI Gate Compliance (Phase 5)**: Depends on Phase 4 complete — runs all six gate stages locally to prove the codebase satisfies CI before any publish work proceeds
+- **US1, US2, US3, US5 (Phases 6–8, 10)**: Depend on Phase 5 (CI gate must be clean before verifying packages are publishable); can proceed in parallel once Phase 5 is complete
+- **US4 Documentation (Phase 9)**: Depends on Phases 6–8 being complete (docs reference final package names and install paths)
+- **Polish (Phase 11)**: Depends on all user story phases complete
 
 ### User Story Dependencies
 
 - **US6 (P1)**: After Phase 2 — independent
 - **US7 (P1)**: After Phase 2 and US6 — depends on CI gate implementation
-- **US1 (P1)**: After Phase 4 — independent of US2, US3, US5
-- **US2 (P2)**: After Phase 4 — independent of US1, US3, US5
-- **US3 (P2)**: After Phase 4 — independent of US1, US2, US5
+- **CI Gate Compliance (P0)**: After Phase 4 — must complete before any further work
+- **US1 (P1)**: After Phase 5 — independent of US2, US3, US5
+- **US2 (P2)**: After Phase 5 — independent of US1, US3, US5
+- **US3 (P2)**: After Phase 5 — independent of US1, US2, US5
 - **US4 (P3)**: After US1, US2, US3 — documentation references their final install paths
-- **US5 (P3)**: After Phase 4 — independent of US1, US2, US3
+- **US5 (P3)**: After Phase 5 — independent of US1, US2, US3
 
 ### Within Each Phase
 
 - All [P]-marked tasks in a phase can run in parallel
-- Scripts (T012, T013, T014) must complete before workflow tasks (T015–T025) reference them
-- Coverage thresholds (T008–T011) must be in place before CI runs coverage checks
+- T027 (lint) and T028 (typecheck) can run in parallel; T026 (audit), T029 (test+coverage), T030 (build) are sequential because each represents a distinct gate stage
+- T031 (full gate re-run) depends on T026–T030 all complete
 
 ---
 
 ## Parallel Opportunities
 
-### Phase 1 (Package Naming)
+### Phase 5 (CI Gate Compliance)
 
 ```
-T002 (root)       T003 (core)      T004 (bs-plugin)    T005 (bs-backend)
-     └──────────────┴────────────────┴────────────────────┘
-                       Run in parallel after T001
+T026 (audit)
+T027 (lint)   ← T027 and T028 can run in parallel
+T028 (typecheck)
+     └── T029 (test:coverage) → T030 (build) → T031 (full re-run)
 ```
 
-### Phase 2 (Foundational)
+### Phases 6–8, 10 (User Stories — once Phase 5 complete)
 
 ```
-T006 → T007           T008    T009    T010    T011
-                        └──────┴───────┴───────┘
-                            Run in parallel
-T012 → T013 → T014      (dep rewrite + version scripts: sequential)
-```
-
-### Phase 5–9 (User Stories — once Phase 4 complete)
-
-```
-US1 (T026–T027)
-US2 (T028–T030)   ← All can run in parallel if team capacity allows
-US3 (T031–T034)
-US5 (T041–T043)
+US1 (T032–T033)
+US2 (T034–T036)   ← All can run in parallel once Phase 5 is complete
+US3 (T037–T040)
+US5 (T047–T049)
 ```
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (Phases 1–4 only)
+### Immediate Priority (Phase 5 only)
 
-1. Complete Phase 1: Package naming
-2. Complete Phase 2: Quality gate tooling
-3. Complete Phase 3: CI workflow
-4. Complete Phase 4: Release workflow
-5. **STOP and VALIDATE**: Push a pre-release tag (`v0.1.0-beta.0`); confirm all four packages publish to npmjs with provenance
-6. Quality gates are now in place; release mechanism works
+1. Run audit → lint → typecheck → test:coverage × 4 → build in order
+2. Fix failures as they surface; re-run each stage after fixing
+3. **STOP at T031**: Only proceed to Phase 6+ after a clean full-gate run
+
+### MVP Path (Phases 5–6)
+
+1. Phase 5: CI gate compliance (unblocks everything)
+2. Phase 6 (US1): Core package fully documented and publishable
+3. **STOP and VALIDATE**: `npm publish --dry-run` passes for `@dawmatt/api-grade-core`
 
 ### Incremental Delivery
 
-1. Phase 1 + 2 → Quality tooling ready
-2. Phase 3 (US6) → Every PR now gate-checked
-3. Phase 4 (US7) → Automated releases enabled
-4. Phase 5 (US1) → Core package fully documented and installable
-5. Phase 6 (US2) → CLI installable
-6. Phase 7 (US3) → All packages discoverable on npmjs
-7. Phase 8 (US4) → Docs complete
-8. Phase 9 (US5) → Backstage plugin install validated
-9. Phase 10 → Polish and first official release
-
----
-
-## Quality Gate Requirement (Constitution Constraint)
-
-`/speckit-implement` MUST NOT mark any task complete until all six CI quality gate
-stages pass locally. Run after every task before committing:
-
-```sh
-npm audit --audit-level=high --omit=dev
-npm run lint
-npm run typecheck --workspaces --if-present
-npm run test:coverage                                       # root
-yarn workspace api-grade-core run test:coverage
-yarn workspace backstage-plugin-api-grade run test:coverage
-yarn workspace backstage-plugin-api-grade-backend run test:coverage
-npm run build
-```
-
-Any non-zero exit = task is not done. Fix, re-run the full gate, then mark complete.
-
-> **Phase 1 interim gate**: Phase 2 installs lint/coverage scripts. Until then, run
-> `npm run build` + `npm run typecheck` at minimum.
+1. Phase 5 → CI gate clean; codebase publish-ready
+2. Phase 6 (US1) → Core package documented
+3. Phase 7 (US2) → CLI installable
+4. Phase 8 (US3) → All packages discoverable on npmjs
+5. Phase 9 (US4) → Docs complete
+6. Phase 10 (US5) → Backstage plugin install validated
+7. Phase 11 → Polish and first official release
 
 ---
 
@@ -280,8 +304,8 @@ Any non-zero exit = task is not done. Fix, re-run the full gate, then mark compl
 
 - [P] tasks = different files, no dependencies on incomplete sibling tasks in the same phase
 - [USN] label maps each task to the user story it delivers
-- Phases 5–9 can be parallelised across team members once Phase 4 is complete
-- The `npm-publish` GitHub Actions environment and tag protection rules (T039) are one-time manual steps in the GitHub UI — not automatable via workflow files
+- Phases 6–10 can be parallelised across team members once Phase 5 is complete
+- The `npm-publish` GitHub Actions environment and tag protection rules (T045) are one-time manual steps in the GitHub UI — not automatable via workflow files
 - Authentication uses npm Trusted Publishing (OIDC) — no `NPM_TOKEN` secret is needed or stored; do not introduce one
-- Run `npm publish --dry-run` (T047) before the first real release to validate all packages
+- Run `npm publish --dry-run` (T053) before the first real release to validate all packages
 - Commit after each logical group; the pipeline validates the full state on each push
