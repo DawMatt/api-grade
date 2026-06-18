@@ -1,6 +1,6 @@
 {
   "name": "@dawmatt/api-grade-core",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Core grading library for api-grade — standalone, framework-agnostic",
   "keywords": [
     "api",
