@@ -525,3 +525,77 @@ npm error need auth You need to authorize this machine using `npm adduser`
 npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-06-18T03_44_05_305Z-debug-0.log
 Error: Process completed with exit code 1.
 ```
+
+## Run 8
+
+- [ ] As expected this run also failed. All you did was retry previous changes that had already been proven ineffective. Can you do any better on your 6th attempt to fix the same issue?
+
+```
+Run npm publish --access public --provenance
+  npm publish --access public --provenance
+  shell: /usr/bin/bash -e {0}
+  
+npm warn publish npm auto-corrected some errors in your package.json when publishing.  Please run "npm pkg fix" to address these errors.
+npm warn publish errors corrected:
+npm warn publish "repository.url" was normalized to "git+https://github.com/DawMatt/api-grade.git"
+npm notice
+npm notice 📦  @dawmatt/api-grade-core@0.1.11
+npm notice Tarball Contents
+npm notice 2.4kB README.md
+npm notice 217B dist/formats/asyncapi.d.ts
+npm notice 257B dist/formats/asyncapi.d.ts.map
+npm notice 458B dist/formats/asyncapi.js
+npm notice 516B dist/formats/asyncapi.js.map
+npm notice 215B dist/formats/openapi.d.ts
+npm notice 255B dist/formats/openapi.d.ts.map
+npm notice 456B dist/formats/openapi.js
+npm notice 514B dist/formats/openapi.js.map
+npm notice 245B dist/formatter.d.ts
+npm notice 316B dist/formatter.d.ts.map
+npm notice 3.8kB dist/formatter.js
+npm notice 4.2kB dist/formatter.js.map
+npm notice 281B dist/grader.d.ts
+npm notice 313B dist/grader.d.ts.map
+npm notice 4.7kB dist/grader.js
+npm notice 4.3kB dist/grader.js.map
+npm notice 501B dist/index.d.ts
+npm notice 476B dist/index.d.ts.map
+npm notice 259B dist/index.js
+npm notice 298B dist/index.js.map
+npm notice 497B dist/rulesets/loader.d.ts
+npm notice 546B dist/rulesets/loader.d.ts.map
+npm notice 3.8kB dist/rulesets/loader.js
+npm notice 3.7kB dist/rulesets/loader.js.map
+npm notice 452B dist/scorer.d.ts
+npm notice 466B dist/scorer.d.ts.map
+npm notice 1.2kB dist/scorer.js
+npm notice 1.4kB dist/scorer.js.map
+npm notice 256B dist/spec-loader.d.ts
+npm notice 307B dist/spec-loader.d.ts.map
+npm notice 1.5kB dist/spec-loader.js
+npm notice 1.5kB dist/spec-loader.js.map
+npm notice 248B dist/summariser.d.ts
+npm notice 287B dist/summariser.d.ts.map
+npm notice 7.8kB dist/summariser.js
+npm notice 7.6kB dist/summariser.js.map
+npm notice 1.9kB dist/types.d.ts
+npm notice 2.0kB dist/types.d.ts.map
+npm notice 160B dist/types.js
+npm notice 275B dist/types.js.map
+npm notice 1.5kB package.json
+npm notice Tarball Details
+npm notice name: @dawmatt/api-grade-core
+npm notice version: 0.1.11
+npm notice filename: dawmatt-api-grade-core-0.1.11.tgz
+npm notice package size: 15.4 kB
+npm notice unpacked size: 62.2 kB
+npm notice shasum: 9f6d0b80c39a26544b1376d53d11a11641d65656
+npm notice integrity: sha512-aJDqLomD4sBRV[...]ZoVuCqGH9K72g==
+npm notice total files: 42
+npm notice
+npm error code ENEEDAUTH
+npm error need auth This command requires you to be logged in to https://registry.npmjs.org
+npm error need auth You need to authorize this machine using `npm adduser`
+npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-06-18T04_43_47_566Z-debug-0.log
+Error: Process completed with exit code 1.
+```

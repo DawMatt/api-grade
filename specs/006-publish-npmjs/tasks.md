@@ -286,6 +286,24 @@ npm run build
 
 ---
 
+## Phase 18: Fix — Re-add `registry-url` to `setup-node` (Run 8)
+
+**Goal**: Resolve the persistent `ENEEDAUTH` error that survived the Phase 17 fix.
+
+**Root cause**: Phase 16 (T067) removed `registry-url: 'https://registry.npmjs.org'` from the `setup-node@v4` step based on an incorrect root-cause analysis. `registry-url` is required — it is what tells npm which registry endpoint to contact when initiating the OIDC token exchange for Trusted Publishing. Without it, npm has no global registry URL configured; the project's `.npmrc` only sets the registry for `@dawmatt` scoped packages, which is insufficient for the OIDC handshake path. npm cannot initiate the exchange and falls back to requiring a stored credential → `ENEEDAUTH`. Phase 16's analysis was partially correct (the `NPM_TOKEN` secret was interfering via `NODE_AUTH_TOKEN`) but the fix went too far. The correct resolution is: keep `registry-url` (so npm knows which OIDC endpoint to call) + delete `NPM_TOKEN` secret (so `NODE_AUTH_TOKEN` is unset and npm proceeds to OIDC instead of classic token auth) + use `--provenance` (to trigger the OIDC exchange).
+
+**Why Phase 16 appeared to make progress**: Deleting `NPM_TOKEN` (T068) was correct and necessary. However removing `registry-url` (T067) silently broke the OIDC path, which masked the progress made by T068.
+
+**Independent Test**: Trigger a new automated release; confirm all four `npm publish --access public --provenance` steps succeed without `ENEEDAUTH`, packages appear on npmjs.com at the new version, and a GitHub Release is created.
+
+- [x] T075 [US7] In `.github/workflows/release.yml`, re-add `registry-url: 'https://registry.npmjs.org'` to the `setup-node@v4` step (directly after `node-version: '22'`, before `cache: 'yarn'`) — this reverses T067 from Phase 16; npm requires the registry URL to be configured at the global level to know which OIDC endpoint to contact during the Trusted Publisher authentication exchange
+- [ ] T076 Trigger a new automated release to verify the fix: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four `npm publish --access public --provenance` steps succeed and packages appear on npmjs.com at the new version and a GitHub Release is created with correct version, actor, and commit SHA
+- [ ] T077 Mark all open issue entries (Run 3, Run 4, Run 5, Run 6, Run 7, Run 8) in `specs/006-publish-npmjs/checklists/issues.md` as `[x]`; mark T063, T065, T066, T069, T070, T073, T074 as `[x]` in `specs/006-publish-npmjs/tasks.md`
+
+**Checkpoint**: All four `npm publish --access public --provenance` steps exit 0. Packages appear on npmjs.com at the new version. No `ENEEDAUTH` or `E404` errors. `NODE_AUTH_TOKEN` is absent from the step environment (no NPM_TOKEN secret). GitHub Release created with correct traceability fields.
+
+---
+
 ## Phase 17: Fix — `--provenance` Required for OIDC Auth + Missing `contents: write` Permission (Runs 6 & 7)
 
 **Goal**: Resolve the persistent `ENEEDAUTH` error and restore the missing `contents: write` permission needed for GitHub Release creation.
@@ -343,6 +361,7 @@ npm run build
 - **Fix Phase 14 (npmjs bootstrap)**: Depends on Phase 13 complete — all quality gates pass and packages are publish-ready; execute after Polish is done
 - **Fix Phase 16 (setup-node registry-url)**: Depends on Phase 15 (T064 done, --provenance added); supersedes T065 as the correct release verification trigger; T070 closes T063 and T066 from Phases 14–15
 - **Fix Phase 17 (--provenance + contents:write)**: Depends on Phase 16 (registry-url removed, NPM_TOKEN deleted); restores the `--provenance` flag that was incorrectly removed and fixes the missing `contents: write` permission; T074 closes all open issue entries and pending tracking tasks (T063, T065, T066, T069, T070)
+- **Fix Phase 18 (re-add registry-url)**: Depends on Phase 17 (--provenance restored, contents:write fixed); reverses the incorrect T067 registry-url removal that was the root cause of ENEEDAUTH in Runs 6–8; T077 closes all open issue entries and pending tracking tasks
 
 ### User Story Dependencies
 
@@ -387,7 +406,13 @@ US5 (T047–T049)
 
 ## Implementation Strategy
 
-### Immediate Priority (Phase 17 — Runs 6 & 7 Fix)
+### Immediate Priority (Phase 18 — Run 8 Fix)
+
+1. Re-add `registry-url: 'https://registry.npmjs.org'` to the `setup-node@v4` step in `release.yml` — reverses the incorrect T067 removal (T075)
+2. Trigger a new automated release to verify the OIDC exchange now completes end-to-end (T076)
+3. Mark all open issues (Runs 3–8) and pending tasks resolved (T077)
+
+### Historical Immediate Priority (Phase 17 — Runs 6 & 7 Fix)
 
 1. Add `--provenance` back to all four `npm publish` commands in `release.yml` (T071)
 2. Change `contents: read` to `contents: write` in the workflow-level `permissions` block in `release.yml` (T072)
