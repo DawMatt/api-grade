@@ -28,6 +28,9 @@ jobs:
           cache: 'yarn'
           package-manager-cache: false  # never use caching in release builds
 
+      - name: Show npmrc file content
+        run: cat /home/runner/work/_temp/.npmrc
+
       # via https://github.com/npm/documentation/issues/1960
       #
       # `setup-node` with `registry-url` writes an `_authToken` line in
@@ -89,6 +92,12 @@ jobs:
         run: npm run build
 
       # ── Publish ───────────────────────────────────────────────────────────
+
+      - name: Check npm version
+        run: npm --version
+
+      - name: Check node version
+        run: node --version
 
       - name: Rewrite workspace dependencies for publish
         run: node scripts/pre-publish.mjs
