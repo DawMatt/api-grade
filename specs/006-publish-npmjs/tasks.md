@@ -259,12 +259,30 @@ npm run build
 
 **Independent Test**: After completing this phase, trigger a new automated release (a new version tag); confirm all four `npm publish --access public` steps in release.yml exit 0 and the packages appear on npmjs.com at the new version.
 
-- [ ] T060 [US7] On npmjs.com, update the Trusted Publisher configuration for each of the four `@dawmatt` packages to add the `Environment` field: navigate to each package page → Settings (gear icon) → Trusted Publishers → edit the existing GitHub Actions entry → set Environment to `npm-publish`; repeat for all four packages: `@dawmatt/api-grade-core`, `@dawmatt/backstage-plugin-api-grade`, `@dawmatt/backstage-plugin-api-grade-backend`, and `@dawmatt/api-grade`
+- [x] T060 [US7] On npmjs.com, update the Trusted Publisher configuration for each of the four `@dawmatt` packages to add the `Environment` field: navigate to each package page → Settings (gear icon) → Trusted Publishers → edit the existing GitHub Actions entry → set Environment to `npm-publish`; repeat for all four packages: `@dawmatt/api-grade-core`, `@dawmatt/backstage-plugin-api-grade`, `@dawmatt/backstage-plugin-api-grade-backend`, and `@dawmatt/api-grade`
 - [x] T061 [P] Update `docs/contributing/initial-setup.md` Step 4 to add `Environment` as a required field in the Trusted Publisher configuration table with value `npm-publish` — insert a new row between "Workflow filename" and "Allowed actions" so future setup correctly includes this field
-- [ ] T062 Trigger a new automated release to verify the corrected TP configuration resolves the 404: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four publish steps succeed and a GitHub Release is created
-- [ ] T063 Mark the Run 3 item in `specs/006-publish-npmjs/checklists/issues.md` as `[x]`
+- [x] T062 Trigger a new automated release to verify the corrected TP configuration resolves the 404: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four publish steps succeed and a GitHub Release is created
+- [ ] T063 Mark the Run 3 and Run 4 items in `specs/006-publish-npmjs/checklists/issues.md` as `[x]` once the Phase 15 fix is confirmed working
 
 **Checkpoint**: The release pipeline completes without errors using OIDC. A GitHub Release is created with the correct version, actor, and commit SHA. All four packages appear on npmjs.com at the new version.
+
+---
+
+## Phase 15: Fix — Missing `--provenance` Flag Prevents OIDC Authentication (Run 4)
+
+**Goal**: Resolve the persistent 404 error from `npm publish --access public` in the automated release pipeline. T060 (adding `Environment` to the Trusted Publisher config on npmjs) and T062 (triggering a new release) were both performed, but the 404 persists at v0.1.6 with an identical error to Run 3.
+
+**Root cause**: The four `npm publish --access public` commands in `.github/workflows/release.yml` are missing the `--provenance` flag. Without `--provenance`, npm does **not** initiate the OIDC token exchange with GitHub Actions; instead it falls back to reading `NODE_AUTH_TOKEN` from the environment (populated by `setup-node@v4` via the `registry-url` parameter as `${{ secrets.NPM_TOKEN }}`). No `NPM_TOKEN` secret is configured — the Trusted Publishing approach is credential-free by design — so `NODE_AUTH_TOKEN` resolves to an empty string. npm then sends an unauthenticated PUT request to the npmjs registry, which returns 404 for scoped packages under the `@dawmatt` namespace. The `--provenance` flag is the trigger that makes npm request a GitHub Actions OIDC token and exchange it with npmjs.com for a short-lived publish credential, completing the Trusted Publishing flow the TP configuration expects.
+
+**Why T060 did not fix it**: T060 corrected the TP configuration on npmjs.com (adding the `npm-publish` environment to each TP entry), but the workflow never reached the OIDC exchange in the first place because `--provenance` was absent. The TP configuration on npmjs was already correct after T060; the workflow was the missing piece.
+
+**Independent Test**: After completing this phase, trigger a new automated release; confirm all four `npm publish` steps in release.yml exit 0 and the packages appear on npmjs.com at the new version.
+
+- [x] T064 [US7] In `.github/workflows/release.yml`, update all four `npm publish --access public` commands to `npm publish --access public --provenance`: the four steps are "Publish @dawmatt/api-grade-core", "Publish @dawmatt/backstage-plugin-api-grade", "Publish @dawmatt/backstage-plugin-api-grade-backend", and "Publish @dawmatt/api-grade (CLI)"
+- [ ] T065 Trigger a new automated release to verify the OIDC fix: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four publish steps succeed and a GitHub Release is created at the new version
+- [ ] T066 Mark Run 3 and Run 4 items in `specs/006-publish-npmjs/checklists/issues.md` as `[x]` and update T063 to `[x]`
+
+**Checkpoint**: All four `npm publish --access public --provenance` steps in the release pipeline exit 0. Packages appear on npmjs.com at the new version. GitHub Release is created with correct version, actor, and commit SHA.
 
 ---
 
@@ -327,12 +345,18 @@ US5 (T047–T049)
 
 ## Implementation Strategy
 
-### Immediate Priority (Phase 14 — Run 3 Fix)
+### Immediate Priority (Phase 15 — Run 4 Fix)
+
+1. Add `--provenance` to all four `npm publish` commands in `release.yml` (T064)
+2. Trigger a new automated release to verify OIDC now works (T065)
+3. Mark issues.md Run 3 and Run 4 resolved (T066)
+
+### Historical Immediate Priority (Phase 14 — Run 3 Fix)
 
 1. Add Environment `npm-publish` to each TP on npmjs.com (T060) — manual step in npmjs.com UI
 2. Update `docs/contributing/initial-setup.md` to document the Environment field (T061)
-3. Trigger a new automated release to verify the 404 is resolved (T062)
-4. Mark issues.md Run 3 resolved (T063)
+3. Trigger a new automated release to verify the 404 is resolved (T062) ← did not resolve; root cause was missing `--provenance` (see Phase 15)
+4. Mark issues.md Run 3 resolved (T063) ← deferred to T066
 
 ### Historical Immediate Priority (Phase 12 — Run 2 Fix)
 
