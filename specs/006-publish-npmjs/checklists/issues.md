@@ -136,3 +136,78 @@ Node.js v22.22.3
    Duration  3.22s (transform 200ms, setup 1ms, collect 1.87s, tests 2.56s, environment 2ms, prepare 945ms)
 Error: Process completed with exit code 1.
 ```
+
+## Run 3 2026/06/18
+
+- [ ] The publish GitHub Action failed due to the following errors. Everything else in the action appeared to execute correctly.
+
+```
+npm warn publish npm auto-corrected some errors in your package.json when publishing.  Please run "npm pkg fix" to address these errors.
+npm warn publish errors corrected:
+npm warn publish "repository.url" was normalized to "git+https://github.com/DawMatt/api-grade.git"
+npm notice
+npm notice 📦  @dawmatt/api-grade-core@0.1.5
+npm notice Tarball Contents
+npm notice 2.4kB README.md
+npm notice 217B dist/formats/asyncapi.d.ts
+npm notice 257B dist/formats/asyncapi.d.ts.map
+npm notice 458B dist/formats/asyncapi.js
+npm notice 516B dist/formats/asyncapi.js.map
+npm notice 215B dist/formats/openapi.d.ts
+npm notice 255B dist/formats/openapi.d.ts.map
+npm notice 456B dist/formats/openapi.js
+npm notice 514B dist/formats/openapi.js.map
+npm notice 245B dist/formatter.d.ts
+npm notice 316B dist/formatter.d.ts.map
+npm notice 3.8kB dist/formatter.js
+npm notice 4.2kB dist/formatter.js.map
+npm notice 281B dist/grader.d.ts
+npm notice 313B dist/grader.d.ts.map
+npm notice 4.7kB dist/grader.js
+npm notice 4.3kB dist/grader.js.map
+npm notice 501B dist/index.d.ts
+npm notice 476B dist/index.d.ts.map
+npm notice 259B dist/index.js
+npm notice 298B dist/index.js.map
+npm notice 497B dist/rulesets/loader.d.ts
+npm notice 546B dist/rulesets/loader.d.ts.map
+npm notice 3.8kB dist/rulesets/loader.js
+npm notice 3.7kB dist/rulesets/loader.js.map
+npm notice 452B dist/scorer.d.ts
+npm notice 466B dist/scorer.d.ts.map
+npm notice 1.2kB dist/scorer.js
+npm notice 1.4kB dist/scorer.js.map
+npm notice 256B dist/spec-loader.d.ts
+npm notice 307B dist/spec-loader.d.ts.map
+npm notice 1.5kB dist/spec-loader.js
+npm notice 1.5kB dist/spec-loader.js.map
+npm notice 248B dist/summariser.d.ts
+npm notice 287B dist/summariser.d.ts.map
+npm notice 7.8kB dist/summariser.js
+npm notice 7.6kB dist/summariser.js.map
+npm notice 1.9kB dist/types.d.ts
+npm notice 2.0kB dist/types.d.ts.map
+npm notice 160B dist/types.js
+npm notice 275B dist/types.js.map
+npm notice 1.5kB package.json
+npm notice Tarball Details
+npm notice name: @dawmatt/api-grade-core
+npm notice version: 0.1.5
+npm notice filename: dawmatt-api-grade-core-0.1.5.tgz
+npm notice package size: 15.4 kB
+npm notice unpacked size: 62.2 kB
+npm notice shasum: 19f2c8d5650855e1a3e3eb593e69e2c544c6987b
+npm notice integrity: sha512-JGl9HDcnV16z4[...]GOnbPFbn+fKxw==
+npm notice total files: 42
+npm notice
+npm notice Publishing to https://registry.npmjs.org with tag latest and public access
+npm error code E404
+npm error 404 Not Found - PUT https://registry.npmjs.org/@dawmatt%2fapi-grade-core - Not found
+npm error 404
+npm error 404  '@dawmatt/api-grade-core@0.1.5' is not in this registry.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-06-18T01_26_08_707Z-debug-0.log
+Error: Process completed with exit code 1.
+```

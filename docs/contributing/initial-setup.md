@@ -122,6 +122,7 @@ Repeat the following for each of the four packages:
    | Organization or username | `DawMatt` |
    | Repository | `api-grade` |
    | Workflow filename | `release.yml` |
+   | Environment | `npm-publish` |
    | Allowed actions | `npm publish` |
 
 5. Save

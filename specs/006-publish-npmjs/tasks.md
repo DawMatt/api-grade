@@ -251,6 +251,23 @@ npm run build
 
 ---
 
+## Phase 14: Fix — Trusted Publisher Environment Mismatch (Run 3)
+
+**Goal**: Resolve the 404 error from `npm publish --access public` in the automated release pipeline. The quality gate passes successfully; only the publish steps fail.
+
+**Root cause**: The release.yml job declares `environment: npm-publish`. When a GitHub Actions job runs in a named environment, the GitHub OIDC token's `sub` claim is formatted as `repo:DawMatt/api-grade:environment:npm-publish`. However, the Trusted Publisher configuration registered on npmjs.com (per `docs/contributing/initial-setup.md` Step 4, which does not include an Environment field) is matched against a `sub` of the form `repo:DawMatt/api-grade:ref:refs/tags/v...`. The mismatch between the `environment:`-prefixed claim from the workflow and the `ref:`-prefixed claim the TP expects causes the OIDC exchange to fail. npmjs.com returns 404 when no matching Trusted Publisher is found — even though the packages exist and TPs are registered. The fix is to add the `npm-publish` environment to each TP configuration on npmjs.com and update the setup guide to document this field.
+
+**Independent Test**: After completing this phase, trigger a new automated release (a new version tag); confirm all four `npm publish --access public` steps in release.yml exit 0 and the packages appear on npmjs.com at the new version.
+
+- [ ] T060 [US7] On npmjs.com, update the Trusted Publisher configuration for each of the four `@dawmatt` packages to add the `Environment` field: navigate to each package page → Settings (gear icon) → Trusted Publishers → edit the existing GitHub Actions entry → set Environment to `npm-publish`; repeat for all four packages: `@dawmatt/api-grade-core`, `@dawmatt/backstage-plugin-api-grade`, `@dawmatt/backstage-plugin-api-grade-backend`, and `@dawmatt/api-grade`
+- [x] T061 [P] Update `docs/contributing/initial-setup.md` Step 4 to add `Environment` as a required field in the Trusted Publisher configuration table with value `npm-publish` — insert a new row between "Workflow filename" and "Allowed actions" so future setup correctly includes this field
+- [ ] T062 Trigger a new automated release to verify the corrected TP configuration resolves the 404: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four publish steps succeed and a GitHub Release is created
+- [ ] T063 Mark the Run 3 item in `specs/006-publish-npmjs/checklists/issues.md` as `[x]`
+
+**Checkpoint**: The release pipeline completes without errors using OIDC. A GitHub Release is created with the correct version, actor, and commit SHA. All four packages appear on npmjs.com at the new version.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -265,6 +282,7 @@ npm run build
 - **Fix Phase 11 (Typecheck ordering)**: Depends on Phase 4 (CI/release workflows must exist) — can be done immediately; unblocks the publish pipeline
 - **Fix Phase 12 (Integration test build ordering)**: Depends on Phase 11 (CI/release workflows must exist and typecheck must pass) — insert pre-test build step; unblocks the publish pipeline for Run 2
 - **Polish (Phase 13)**: Depends on all user story phases complete
+- **Fix Phase 14 (npmjs bootstrap)**: Depends on Phase 13 complete — all quality gates pass and packages are publish-ready; execute after Polish is done
 
 ### User Story Dependencies
 
@@ -309,7 +327,14 @@ US5 (T047–T049)
 
 ## Implementation Strategy
 
-### Immediate Priority (Phase 12 — Run 2 Fix)
+### Immediate Priority (Phase 14 — Run 3 Fix)
+
+1. Add Environment `npm-publish` to each TP on npmjs.com (T060) — manual step in npmjs.com UI
+2. Update `docs/contributing/initial-setup.md` to document the Environment field (T061)
+3. Trigger a new automated release to verify the 404 is resolved (T062)
+4. Mark issues.md Run 3 resolved (T063)
+
+### Historical Immediate Priority (Phase 12 — Run 2 Fix)
 
 1. Fix pre-test build ordering in `ci.yml` (T057) and `release.yml` (T058)
 2. Push branch and confirm CI "Test (root) with coverage" step passes all 26 tests
