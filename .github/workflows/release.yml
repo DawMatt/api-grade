@@ -93,11 +93,14 @@ jobs:
 
       # ── Publish ───────────────────────────────────────────────────────────
 
-      - name: Check npm version
+      - name: Check npm version (must be >=11.5.1 for OIDC support)
         run: npm --version
 
-      - name: Check node version
+      - name: Check node version (must be >=22.14.0 for OIDC support)
         run: node --version
+
+      - name: Upgrade npm to latest (to ensure OIDC support)
+        run: npm install -g npm@latest
 
       - name: Rewrite workspace dependencies for publish
         run: node scripts/pre-publish.mjs
