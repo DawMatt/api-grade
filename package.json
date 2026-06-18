@@ -1,6 +1,6 @@
 {
   "name": "@dawmatt/api-grade",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "Grade API quality and share diagnostics using Spectral-compatible linting",
   "keywords": [
     "api",
