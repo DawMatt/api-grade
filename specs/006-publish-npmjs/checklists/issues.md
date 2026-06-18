@@ -378,3 +378,77 @@ npm error 404 tarball, folder, http url, or git url.
 npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-06-18T02_36_51_564Z-debug-0.log
 Error: Process completed with exit code 1.
 ```
+
+## Run 6
+
+- [ ] Still not working.
+
+```
+2026-06-18T03:19:23.0699390Z ##[group]Run npm publish --access public --provenance
+2026-06-18T03:19:23.0700109Z [36;1mnpm publish --access public --provenance[0m
+2026-06-18T03:19:23.0743125Z shell: /usr/bin/bash -e {0}
+2026-06-18T03:19:23.0743824Z ##[endgroup]
+2026-06-18T03:19:23.5061846Z npm warn publish npm auto-corrected some errors in your package.json when publishing.  Please run "npm pkg fix" to address these errors.
+2026-06-18T03:19:23.5063132Z npm warn publish errors corrected:
+2026-06-18T03:19:23.5064174Z npm warn publish "repository.url" was normalized to "git+https://github.com/DawMatt/api-grade.git"
+2026-06-18T03:19:23.5091572Z npm notice
+2026-06-18T03:19:23.5093774Z npm notice 📦  @dawmatt/api-grade-core@0.1.8
+2026-06-18T03:19:23.5094420Z npm notice Tarball Contents
+2026-06-18T03:19:23.5097304Z npm notice 2.4kB README.md
+2026-06-18T03:19:23.5097972Z npm notice 217B dist/formats/asyncapi.d.ts
+2026-06-18T03:19:23.5098681Z npm notice 257B dist/formats/asyncapi.d.ts.map
+2026-06-18T03:19:23.5099392Z npm notice 458B dist/formats/asyncapi.js
+2026-06-18T03:19:23.5100066Z npm notice 516B dist/formats/asyncapi.js.map
+2026-06-18T03:19:23.5100743Z npm notice 215B dist/formats/openapi.d.ts
+2026-06-18T03:19:23.5101434Z npm notice 255B dist/formats/openapi.d.ts.map
+2026-06-18T03:19:23.5102110Z npm notice 456B dist/formats/openapi.js
+2026-06-18T03:19:23.5102773Z npm notice 514B dist/formats/openapi.js.map
+2026-06-18T03:19:23.5103632Z npm notice 245B dist/formatter.d.ts
+2026-06-18T03:19:23.5104278Z npm notice 316B dist/formatter.d.ts.map
+2026-06-18T03:19:23.5104910Z npm notice 3.8kB dist/formatter.js
+2026-06-18T03:19:23.5105491Z npm notice 4.2kB dist/formatter.js.map
+2026-06-18T03:19:23.5106091Z npm notice 281B dist/grader.d.ts
+2026-06-18T03:19:23.5106680Z npm notice 313B dist/grader.d.ts.map
+2026-06-18T03:19:23.5107272Z npm notice 4.7kB dist/grader.js
+2026-06-18T03:19:23.5107842Z npm notice 4.3kB dist/grader.js.map
+2026-06-18T03:19:23.5108397Z npm notice 501B dist/index.d.ts
+2026-06-18T03:19:23.5108948Z npm notice 476B dist/index.d.ts.map
+2026-06-18T03:19:23.5109457Z npm notice 259B dist/index.js
+2026-06-18T03:19:23.5109971Z npm notice 298B dist/index.js.map
+2026-06-18T03:19:23.5110531Z npm notice 497B dist/rulesets/loader.d.ts
+2026-06-18T03:19:23.5111174Z npm notice 546B dist/rulesets/loader.d.ts.map
+2026-06-18T03:19:23.5112155Z npm notice 3.8kB dist/rulesets/loader.js
+2026-06-18T03:19:23.5112798Z npm notice 3.7kB dist/rulesets/loader.js.map
+2026-06-18T03:19:23.5113667Z npm notice 452B dist/scorer.d.ts
+2026-06-18T03:19:23.5114251Z npm notice 466B dist/scorer.d.ts.map
+2026-06-18T03:19:23.5114810Z npm notice 1.2kB dist/scorer.js
+2026-06-18T03:19:23.5115381Z npm notice 1.4kB dist/scorer.js.map
+2026-06-18T03:19:23.5115999Z npm notice 256B dist/spec-loader.d.ts
+2026-06-18T03:19:23.5116630Z npm notice 307B dist/spec-loader.d.ts.map
+2026-06-18T03:19:23.5117271Z npm notice 1.5kB dist/spec-loader.js
+2026-06-18T03:19:23.5117894Z npm notice 1.5kB dist/spec-loader.js.map
+2026-06-18T03:19:23.5118492Z npm notice 248B dist/summariser.d.ts
+2026-06-18T03:19:23.5119103Z npm notice 287B dist/summariser.d.ts.map
+2026-06-18T03:19:23.5119711Z npm notice 7.8kB dist/summariser.js
+2026-06-18T03:19:23.5120334Z npm notice 7.6kB dist/summariser.js.map
+2026-06-18T03:19:23.5120948Z npm notice 1.9kB dist/types.d.ts
+2026-06-18T03:19:23.5121519Z npm notice 2.0kB dist/types.d.ts.map
+2026-06-18T03:19:23.5122090Z npm notice 160B dist/types.js
+2026-06-18T03:19:23.5122671Z npm notice 275B dist/types.js.map
+2026-06-18T03:19:23.5123206Z npm notice 1.5kB package.json
+2026-06-18T03:19:23.5123969Z npm notice Tarball Details
+2026-06-18T03:19:23.5124564Z npm notice name: @dawmatt/api-grade-core
+2026-06-18T03:19:23.5125170Z npm notice version: 0.1.8
+2026-06-18T03:19:23.5125831Z npm notice filename: dawmatt-api-grade-core-0.1.8.tgz
+2026-06-18T03:19:23.5126533Z npm notice package size: 15.4 kB
+2026-06-18T03:19:23.5127100Z npm notice unpacked size: 62.2 kB
+2026-06-18T03:19:23.5127825Z npm notice shasum: 178b7d28f8c43f4385d18cddde3bc4d6493729e5
+2026-06-18T03:19:23.5129030Z npm notice integrity: sha512-k02F/vy2Xib4M[...]l57Mvd3LhYyOA==
+2026-06-18T03:19:23.5129725Z npm notice total files: 42
+2026-06-18T03:19:23.5130132Z npm notice
+2026-06-18T03:19:23.5143833Z npm error code ENEEDAUTH
+2026-06-18T03:19:23.5144867Z npm error need auth This command requires you to be logged in to https://registry.npmjs.org
+2026-06-18T03:19:23.5146137Z npm error need auth You need to authorize this machine using `npm adduser`
+2026-06-18T03:19:23.5154923Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-06-18T03_19_23_129Z-debug-0.log
+2026-06-18T03:19:23.5264058Z ##[error]Process completed with exit code 1.
+```
