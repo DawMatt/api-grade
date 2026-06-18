@@ -23,12 +23,14 @@ Push the branch to GitHub and open a PR: the CI workflow runs automatically on e
 
 **Required**: configure branch protection on `main` to enforce the quality gate and require maintainer review before any PR can be merged. This is a mandatory step — without it, code can bypass quality checks and merges can happen without approval.
 
+> **Prerequisite**: the `quality-gate` status check only appears in GitHub's search after the CI workflow has run at least once. Push a commit to trigger a CI run on any branch before completing step 6 below — the check name will then appear in search results.
+
 1. Go to **Settings → Branches → Add rule**
 2. Branch name pattern: `main`
 3. Enable **Require a pull request before merging**
 4. Set **Required number of approvals** to `1`
 5. Enable **Require status checks to pass before merging**
-6. Search for and add `quality-gate`
+6. In the status check search box, type `quality-gate` — if no results appear, trigger a CI run first by pushing any commit, wait for it to complete, then return here and search again
 7. Enable **Require branches to be up to date before merging**
 8. Save the rule
 

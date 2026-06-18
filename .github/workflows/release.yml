@@ -19,6 +19,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history required for branch reachability check and release notes
+
+      - name: Verify tag is on main branch
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "${{ github.sha }}" origin/main; then
+            echo "Error: The tagged commit is not reachable from the main branch."
+            echo "Push the tag only after the feature branch has been merged to main."
+            exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -131,9 +142,27 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${GITHUB_REF_NAME}"
+          PREV_TAG=$(git tag --sort=-version:refname | sed -n '2p')
+          if [ -n "${PREV_TAG}" ]; then
+            CHANGES=$(git log "${PREV_TAG}..${VERSION}" --pretty=format:"- %s" \
+              | grep -v '^- chore: release' \
+              | grep -v '^- chore: bump version')
+          else
+            CHANGES=$(git log "${VERSION}" --pretty=format:"- %s" \
+              | grep -v '^- chore: release' \
+              | grep -v '^- chore: bump version')
+          fi
+          if [ -z "${CHANGES}" ]; then
+            CHANGES="- No user-facing changes in this release."
+          fi
           gh release create "${VERSION}" \
             --title "${VERSION}" \
-            --notes "**Released by**: @${{ github.actor }}
+            --notes "## What's Changed
+
+          ${CHANGES}
+
+          ---
+          **Released by**: @${{ github.actor }}
           **Source commit**: ${{ github.sha }}
           **Packages published**:
           - \`@dawmatt/api-grade-core@${VERSION#v}\`
