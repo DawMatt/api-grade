@@ -32,7 +32,18 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # Stage 3: Type check (root + all workspaces)
+      # Stage 3: Build internal workspace dependencies so their dist/index.d.ts
+      # exists before TypeScript resolves cross-package imports during typecheck.
+      # Yarn workspaces symlinks packages into node_modules but TypeScript reads
+      # the `types` field (./dist/index.d.ts) which is absent pre-build.
+      - name: Build api-grade-core (required for cross-package type checking)
+        run: npm run build
+        working-directory: packages/api-grade-core
+
+      - name: Build backstage-plugin-api-grade-backend (required for frontend plugin type checking)
+        run: npm run build
+        working-directory: packages/backstage-plugin-api-grade-backend
+
       - name: Type check
         run: npm run typecheck --workspaces --if-present && npm run typecheck
 

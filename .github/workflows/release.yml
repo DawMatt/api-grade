@@ -36,6 +36,14 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Build api-grade-core (required for cross-package type checking)
+        run: npm run build
+        working-directory: packages/api-grade-core
+
+      - name: Build backstage-plugin-api-grade-backend (required for frontend plugin type checking)
+        run: npm run build
+        working-directory: packages/backstage-plugin-api-grade-backend
+
       - name: Type check
         run: npm run typecheck --workspaces --if-present && npm run typecheck
 

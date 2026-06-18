@@ -208,7 +208,22 @@ npm run build
 
 ---
 
-## Phase 11: Polish & Cross-Cutting Concerns
+## Phase 11: Fix — Typecheck Fails in CI/Release When Workspace `dist/` Not Built (Run 1)
+
+**Goal**: Resolve the publish pipeline failure where `npm run typecheck --workspaces --if-present` reports `Cannot find module '@dawmatt/api-grade-core'` and `Cannot find module '@dawmatt/backstage-plugin-api-grade-backend'` because the typecheck step runs before any `dist/` directories exist. Adding build steps for the two upstream packages immediately before the typecheck step makes their type declarations available, resolving all seven errors (including the downstream implicit-`any` cascade in `GradingDetailSection.tsx`).
+
+**Root cause**: Yarn workspaces symlinks `packages/api-grade-core` and `packages/backstage-plugin-api-grade-backend` into `node_modules/@dawmatt/`. TypeScript follows those symlinks and reads `types: "./dist/index.d.ts"` from each package's `package.json` — but `dist/` is not populated until `npm run build` runs, which currently happens *after* typecheck in both workflows.
+
+**Independent Test**: Push a branch and confirm the CI `quality-gate` job passes the "Type check" step without any TS2307 or TS7006 errors.
+
+- [x] T055 [US6] In `.github/workflows/ci.yml`, insert two new steps immediately before the existing "Type check" step: first, `npm run build` with `working-directory: packages/api-grade-core` (builds `api-grade-core/dist/` so downstream packages can resolve its types); second, `npm run build` with `working-directory: packages/backstage-plugin-api-grade-backend` (can now find `@dawmatt/api-grade-core` types and builds its own `dist/` needed by the frontend plugin's devDependency typecheck)
+- [x] T056 [US7] Apply the identical pre-typecheck build steps to `.github/workflows/release.yml`: insert `npm run build` for `packages/api-grade-core` then `packages/backstage-plugin-api-grade-backend` immediately before the "Type check" step — the release quality gate mirrors CI and has the same root cause
+
+**Checkpoint**: Push to the feature branch; the CI `quality-gate` job's "Type check" step exits 0 with no TS2307 or TS7006 errors for any workspace package.
+
+---
+
+## Phase 13: Polish & Cross-Cutting Concerns
 
 **Purpose**: Final validation, housekeeping, and protection rules that span all stories.
 
@@ -231,7 +246,8 @@ npm run build
 - **CI Gate Compliance (Phase 5)**: Depends on Phase 4 complete — runs all six gate stages locally to prove the codebase satisfies CI before any publish work proceeds
 - **US1, US2, US3, US5 (Phases 6–8, 10)**: Depend on Phase 5 (CI gate must be clean before verifying packages are publishable); can proceed in parallel once Phase 5 is complete
 - **US4 Documentation (Phase 9)**: Depends on Phases 6–8 being complete (docs reference final package names and install paths)
-- **Polish (Phase 11)**: Depends on all user story phases complete
+- **Fix Phase 11 (Typecheck ordering)**: Depends on Phase 4 (CI/release workflows must exist) — can be done immediately; unblocks the publish pipeline
+- **Polish (Phase 13)**: Depends on all user story phases complete
 
 ### User Story Dependencies
 
@@ -276,7 +292,13 @@ US5 (T047–T049)
 
 ## Implementation Strategy
 
-### Immediate Priority (Phase 5 only)
+### Immediate Priority (Phase 11 — Run 1 Fix)
+
+1. Fix typecheck ordering in `ci.yml` (T055) and `release.yml` (T056)
+2. Push branch and confirm CI "Type check" step passes
+3. Proceed to Polish (Phase 13) once the pipeline is green
+
+### Historical Immediate Priority (Phase 5 only)
 
 1. Run audit → lint → typecheck → test:coverage × 4 → build in order
 2. Fix failures as they surface; re-run each stage after fixing
