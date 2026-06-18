@@ -53,6 +53,18 @@ Two Backstage plugin packages that display API grades directly on your Backstage
 
 ---
 
+### MCP Server (`@dawmatt/api-grade-mcp`)
+
+An MCP (Model Context Protocol) server that exposes api-grade as four AI tools: `grade-api`, `grade-api-detailed`, `assert-api-grade`, and `get-non-breaking-violations`. Register it in Claude Code, GitHub Copilot (VS Code Agent mode), or any MCP-compatible AI host and let the AI grade specs directly.
+
+```bash
+claude mcp add api-grade -- npx -y @dawmatt/api-grade-mcp
+```
+
+→ [MCP Server documentation](package/api-grade-mcp.md)
+
+---
+
 ## Choose Your Path
 
 | I want to… | Start here |
@@ -60,6 +72,7 @@ Two Backstage plugin packages that display API grades directly on your Backstage
 | Grade a spec from the terminal | [CLI Tool](cli/README.md) |
 | Set up a CI/CD grade gate | [CLI Commands → CI/CD example](cli/commands.md) |
 | Integrate grading into my own code | [Core Package (`@dawmatt/api-grade-core`)](package/README.md) |
+| Grade specs from an AI assistant | [MCP Server (`@dawmatt/api-grade-mcp`)](package/api-grade-mcp.md) |
 | Show grades in Backstage | [Backstage Quick Start](backstage-plugins/quick-start.md) |
 | Understand the full documentation | [Documentation Index](index.md) |
 
