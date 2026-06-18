@@ -63,6 +63,7 @@ Feature 7 - AI support
 - Support all of the standard functions of the api-grade CLI, including: grading an API (both overall and detailed levels), and asserting whether an API is at or above a particular grade (e.g. >= C)
 - Use the api-grade's JSON format output so the AI is able to process and reformat the information in a way that suits its requirements
 - Leverage the AI support to not just grade the API, but also resolve the "non-breaking change" issues highlighted by the grading that are bringing down the result
+- Any AI tooling support must explicitly include Claude Code, GitHub Copilot and Copilot Studio
 
 ## Constitution
 
