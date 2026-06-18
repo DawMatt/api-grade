@@ -223,6 +223,22 @@ npm run build
 
 ---
 
+## Phase 12: Fix — Integration Tests Fail When dist/cli/ Not Built (Run 2)
+
+**Goal**: Resolve the publish pipeline failure where `npm run test:coverage` at repo root reports `Cannot find module '.../dist/cli/index.js'` for all integration tests. The integration test suite spawns the compiled CLI binary directly at `dist/cli/index.js` — that file does not exist until the root `tsc` step runs, which is currently ordered *after* tests in both workflows.
+
+**Root cause**: Root `npm run build` runs `npm run build --workspaces --if-present && tsc`. The `tsc` step produces `dist/cli/index.js`, but it only runs in Stage 5 (Build). Tests run in Stage 4 before Stage 5, so `dist/cli/index.js` is absent when integration tests execute in CI/release pipelines. The three unit-style workspace tests pass because they do not spawn the CLI binary.
+
+**Independent Test**: Push a branch; confirm the CI `quality-gate` job passes the "Test (root) with coverage" step with all 26 tests passing (no `Cannot find module` errors in any integration test file).
+
+- [x] T057 [US6] In `.github/workflows/ci.yml`, insert a new step `run: npm run build` (no `working-directory` — builds all workspace packages then runs root `tsc` to produce `dist/cli/index.js`) immediately before the "Test (root) with coverage" step; name the step "Build CLI (required for integration tests)"
+- [x] T058 [US7] Apply the identical pre-test build step to `.github/workflows/release.yml`: insert `run: npm run build` with name "Build CLI (required for integration tests)" immediately before "Test (root) with coverage" — the release quality gate mirrors CI and has the same root cause
+- [x] T059 Mark the Run 2 item in `specs/006-publish-npmjs/checklists/issues.md` as `[x]` once CI confirms all 26 root tests pass
+
+**Checkpoint**: Push to the feature branch; the CI `quality-gate` job's "Test (root) with coverage" step exits 0 with all 26 root tests passing and no `Cannot find module` errors.
+
+---
+
 ## Phase 13: Polish & Cross-Cutting Concerns
 
 **Purpose**: Final validation, housekeeping, and protection rules that span all stories.
@@ -247,6 +263,7 @@ npm run build
 - **US1, US2, US3, US5 (Phases 6–8, 10)**: Depend on Phase 5 (CI gate must be clean before verifying packages are publishable); can proceed in parallel once Phase 5 is complete
 - **US4 Documentation (Phase 9)**: Depends on Phases 6–8 being complete (docs reference final package names and install paths)
 - **Fix Phase 11 (Typecheck ordering)**: Depends on Phase 4 (CI/release workflows must exist) — can be done immediately; unblocks the publish pipeline
+- **Fix Phase 12 (Integration test build ordering)**: Depends on Phase 11 (CI/release workflows must exist and typecheck must pass) — insert pre-test build step; unblocks the publish pipeline for Run 2
 - **Polish (Phase 13)**: Depends on all user story phases complete
 
 ### User Story Dependencies
@@ -292,7 +309,14 @@ US5 (T047–T049)
 
 ## Implementation Strategy
 
-### Immediate Priority (Phase 11 — Run 1 Fix)
+### Immediate Priority (Phase 12 — Run 2 Fix)
+
+1. Fix pre-test build ordering in `ci.yml` (T057) and `release.yml` (T058)
+2. Push branch and confirm CI "Test (root) with coverage" step passes all 26 tests
+3. Mark issues.md Run 2 resolved (T059)
+4. Proceed to Polish (Phase 13) once the pipeline is green
+
+### Historical Immediate Priority (Phase 11 — Run 1 Fix)
 
 1. Fix typecheck ordering in `ci.yml` (T055) and `release.yml` (T056)
 2. Push branch and confirm CI "Type check" step passes

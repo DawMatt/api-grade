@@ -38,3 +38,101 @@ npm error command sh -c tsc --noEmit
 Error: Process completed with exit code 2.
 
 ```
+
+## Run 2 2026/06/18
+
+- [x] The publish GitHub Action failed due to the following errors. Everything else in the action appeared to execute correctly.
+
+```
+> @dawmatt/api-grade@0.1.4 test:coverage
+> vitest run --coverage
+ RUN  v1.6.1 /home/runner/work/api-grade/api-grade
+      Coverage enabled with v8
+ ❯ tests/integration/verbose-errors.test.ts  (4 tests | 2 failed) 151ms
+   ❯ tests/integration/verbose-errors.test.ts > --verbose flag (US4 / FR-015 / FR-016) > default mode: shows prompt, numbered header with source location, and no call chain
+     → expected 'node:internal/modules/cjs/loader:1433…' to contain 'Error running api-grade! Use --verbos…'
+   ❯ tests/integration/verbose-errors.test.ts > --verbose flag (US4 / FR-015 / FR-016) > --verbose mode: shows numbered header with source location, call chain, and no prompt
+     → expected 'node:internal/modules/cjs/loader:1433…' to match /Error #1: .+missingfunction\.yaml:\d+…/
+ ❯ tests/integration/min-grade.test.ts  (5 tests | 5 failed) 223ms
+   ❯ tests/integration/min-grade.test.ts > --min-grade flag > exits 1 when achieved grade is below the required minimum
+     → expected 'node:internal/modules/cjs/loader:1433…' to contain 'A'
+   ❯ tests/integration/min-grade.test.ts > --min-grade flag > stderr message includes both the achieved grade and required grade
+     → expected 'node:internal/modules/cjs/loader:1433…' to contain 'A'
+   ❯ tests/integration/min-grade.test.ts > --min-grade flag > exits 0 when achieved grade meets the minimum (museum-api with --min-grade F)
+     → expected 1 to be +0 // Object.is equality
+   ❯ tests/integration/min-grade.test.ts > --min-grade flag > exits 0 when no --min-grade is set
+     → expected 1 to be +0 // Object.is equality
+   ❯ tests/integration/min-grade.test.ts > --min-grade flag > exits 1 with error message for invalid grade letter
+     → expected 'node:internal/modules/cjs/loader:1433…' to match /invalid|must be one of/i
+ ✓ tests/unit/config-loader.test.ts  (5 tests) 8ms
+ ❯ tests/integration/custom-ruleset.test.ts  (4 tests | 2 failed) 501ms
+   ❯ tests/integration/custom-ruleset.test.ts > --ruleset flag > exits 1 with descriptive error when ruleset file does not exist
+     → expected 'node:internal/modules/cjs/loader:1433…' to match /ruleset.*not found|not found.*ruleset/i
+   ❯ tests/integration/custom-ruleset.test.ts > --ruleset flag > exits 1 with message naming the URL when ruleset references an unreachable external URL
+     → expected 'node:internal/modules/cjs/loader:1433…' to contain 'unreachable.example.invalid'
+ ✓ tests/integration/openapi-grading.test.ts  (5 tests) 813ms
+ ✓ tests/integration/asyncapi-grading.test.ts  (3 tests) 867ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/integration/custom-ruleset.test.ts > --ruleset flag > exits 1 with descriptive error when ruleset file does not exist
+AssertionError: expected 'node:internal/modules/cjs/loader:1433…' to match /ruleset.*not found|not found.*ruleset/i
+- Expected: 
+/ruleset.*not found|not found.*ruleset/i
++ Received: 
+"node:internal/modules/cjs/loader:1433
+  throw err;
+  ^
+Error: Cannot find module '/home/runner/work/api-grade/api-grade/dist/cli/index.js'
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+
+Node.js v22.22.3
+"
+
+ ❯ tests/integration/verbose-errors.test.ts:52:20
+
+
+     32| 
+     33|     // Prompt MUST be present in default mode
+     34|     expect(stderr).toContain('Error running api-grade! Use --verbose f…
+       |                    ^
+     35| 
+     36|     // Error #1 header MUST include source location prefix: "Error #1:…
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯
+ FAIL  tests/integration/verbose-errors.test.ts > --verbose flag (US4 / FR-015 / FR-016) > --verbose mode: shows numbered header with source location, call chain, and no prompt
+AssertionError: expected 'node:internal/modules/cjs/loader:1433…' to match /Error #1: .+missingfunction\.yaml:\d+…/
+- Expected: 
+/Error #1: .+missingfunction\.yaml:\d+:\d+ — /
++ Received: 
+"node:internal/modules/cjs/loader:1433
+  throw err;
+  ^
+Error: Cannot find module '/home/runner/work/api-grade/api-grade/dist/cli/index.js'
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+}
+Node.js v22.22.3
+"
+ ❯ tests/integration/verbose-errors.test.ts:52:20
+     50| 
+     51|     // Error #1 header MUST include source location prefix (same forma…
+     52|     expect(stderr).toMatch(/Error #1: .+missingfunction\.yaml:\d+:\d+ …
+       |                    ^
+     53| 
+     54|     // Call chain (indented "at " frames) MUST be present below the he…
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/9]⎯
+ Test Files  3 failed | 3 passed (6)
+      Tests  9 failed | 17 passed (26)
+   Start at  01:09:57
+   Duration  3.22s (transform 200ms, setup 1ms, collect 1.87s, tests 2.56s, environment 2ms, prepare 945ms)
+Error: Process completed with exit code 1.
+```

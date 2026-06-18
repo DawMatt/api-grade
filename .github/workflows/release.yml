@@ -47,6 +47,12 @@ jobs:
       - name: Type check
         run: npm run typecheck --workspaces --if-present && npm run typecheck
 
+      # Build CLI so dist/cli/index.js exists before integration tests run.
+      # Integration tests spawn the compiled CLI binary directly; without this
+      # build step they fail with Cannot find module '.../dist/cli/index.js'.
+      - name: Build CLI (required for integration tests)
+        run: npm run build
+
       - name: Test (root) with coverage
         run: npm run test:coverage
 
