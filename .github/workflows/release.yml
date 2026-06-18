@@ -8,7 +8,7 @@ on:
 # As per https://docs.npmjs.com/trusted-publishers
 permissions:
   id-token: write  # Required for OIDC
-  contents: read
+  contents: write  # Required for gh release create
 
 jobs:
   release:
@@ -79,19 +79,19 @@ jobs:
         run: node scripts/pre-publish.mjs
 
       - name: Publish @dawmatt/api-grade-core
-        run: npm publish --access public
+        run: npm publish --access public --provenance
         working-directory: packages/api-grade-core
 
       - name: Publish @dawmatt/backstage-plugin-api-grade
-        run: npm publish --access public
+        run: npm publish --access public --provenance
         working-directory: packages/backstage-plugin-api-grade
 
       - name: Publish @dawmatt/backstage-plugin-api-grade-backend
-        run: npm publish --access public
+        run: npm publish --access public --provenance
         working-directory: packages/backstage-plugin-api-grade-backend
 
       - name: Publish @dawmatt/api-grade (CLI)
-        run: npm publish --access public
+        run: npm publish --access public --provenance
 
       - name: Restore workspace dependencies
         if: always()

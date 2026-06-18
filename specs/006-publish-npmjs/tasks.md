@@ -286,6 +286,25 @@ npm run build
 
 ---
 
+## Phase 17: Fix — `--provenance` Required for OIDC Auth + Missing `contents: write` Permission (Runs 6 & 7)
+
+**Goal**: Resolve the persistent `ENEEDAUTH` error and restore the missing `contents: write` permission needed for GitHub Release creation.
+
+**Root cause (ENEEDAUTH)**: The `--provenance` flag was removed from all four `npm publish` commands after a misreading of the npmjs Trusted Publishers documentation. The phrase "provenance is automatically provided" refers to npm automatically generating the provenance *attestation* — it does not mean the `--provenance` *flag* itself is optional. `--provenance` is what signals npm to initiate the OIDC token exchange: npm requests a GitHub OIDC token, presents it to npmjs.com, and receives a short-lived publish credential. Without the flag, npm skips this exchange entirely and falls back to requiring `NODE_AUTH_TOKEN` — which does not exist (correctly, since Trusted Publishing is credential-free). The result is `ENEEDAUTH`.
+
+**Root cause (permissions)**: Commit `8bd9327` removed job-level permissions (`contents: write`, `id-token: write`) because they appeared to duplicate the workflow-level `permissions` block. However, the workflow-level block only specifies `contents: read`. After removal, `contents` reverts to `read`, which is insufficient for `gh release create` to create a GitHub Release. The `id-token: write` permission remains at workflow level (OIDC is unaffected), but `contents: write` is now missing and will cause the release creation step to fail once the publish steps are fixed.
+
+**Independent Test**: Trigger a new automated release; confirm all four `npm publish --access public --provenance` steps succeed, packages appear on npmjs.com at the new version, and a GitHub Release is created with correct version, actor, and commit SHA.
+
+- [x] T071 [US7] In `.github/workflows/release.yml`, add `--provenance` back to all four `npm publish --access public` commands so they become `npm publish --access public --provenance`: the four steps are "Publish @dawmatt/api-grade-core", "Publish @dawmatt/backstage-plugin-api-grade", "Publish @dawmatt/backstage-plugin-api-grade-backend", and "Publish @dawmatt/api-grade (CLI)" — this restores the OIDC token exchange that npm Trusted Publishing requires
+- [x] T072 [US7] In `.github/workflows/release.yml`, update the workflow-level `permissions` block: change `contents: read` to `contents: write` — this restores the permission needed for `gh release create` (the job-level `contents: write` that previously provided this was removed in commit `8bd9327`)
+- [ ] T073 Trigger a new automated release to verify both fixes end-to-end: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four `npm publish --access public --provenance` steps succeed, packages appear on npmjs.com at the new version, and a GitHub Release is created with correct version, actor, and commit SHA
+- [ ] T074 Mark all open issue entries (Run 3, Run 4, Run 5, Run 6, Run 7) in `specs/006-publish-npmjs/checklists/issues.md` as `[x]`; mark T063, T065, T066, T069, T070 as `[x]` in `specs/006-publish-npmjs/tasks.md`
+
+**Checkpoint**: All four `npm publish --access public --provenance` steps exit 0. Packages appear on npmjs.com at the new version. A GitHub Release is created with correct traceability fields.
+
+---
+
 ## Phase 16: Fix — `setup-node` registry-url Overrides .npmrc, Blocking TP OIDC Auth (Run 5)
 
 **Goal**: Resolve the persistent 404 error from `npm publish --access public --provenance` in the automated release pipeline. Run 5 confirmed that T064 (adding `--provenance`) caused provenance to be signed and published to the transparency log, but the registry PUT request still returned 404 — proving that `--provenance` alone does not fix the authentication failure.
@@ -323,6 +342,7 @@ npm run build
 - **Polish (Phase 13)**: Depends on all user story phases complete
 - **Fix Phase 14 (npmjs bootstrap)**: Depends on Phase 13 complete — all quality gates pass and packages are publish-ready; execute after Polish is done
 - **Fix Phase 16 (setup-node registry-url)**: Depends on Phase 15 (T064 done, --provenance added); supersedes T065 as the correct release verification trigger; T070 closes T063 and T066 from Phases 14–15
+- **Fix Phase 17 (--provenance + contents:write)**: Depends on Phase 16 (registry-url removed, NPM_TOKEN deleted); restores the `--provenance` flag that was incorrectly removed and fixes the missing `contents: write` permission; T074 closes all open issue entries and pending tracking tasks (T063, T065, T066, T069, T070)
 
 ### User Story Dependencies
 
@@ -367,7 +387,14 @@ US5 (T047–T049)
 
 ## Implementation Strategy
 
-### Immediate Priority (Phase 16 — Run 5 Fix)
+### Immediate Priority (Phase 17 — Runs 6 & 7 Fix)
+
+1. Add `--provenance` back to all four `npm publish` commands in `release.yml` (T071)
+2. Change `contents: read` to `contents: write` in the workflow-level `permissions` block in `release.yml` (T072)
+3. Trigger a new automated release to verify both fixes end-to-end (T073)
+4. Mark all open issues (Runs 3–7) and pending tasks (T063, T065, T066, T069, T070) as `[x]` (T074)
+
+### Historical Immediate Priority (Phase 16 — Run 5 Fix)
 
 1. Remove `registry-url` from `setup-node` in `release.yml` (T067)
 2. Delete `NPM_TOKEN` secret from GitHub repo settings if present (T068)
