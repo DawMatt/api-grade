@@ -1,5 +1,5 @@
 import React from 'react';
-import type { DiagnosticSummary, Diagnostic } from 'api-grade-core';
+import type { DiagnosticSummary, Diagnostic } from '@dawmatt/api-grade-core';
 
 export interface GradingDetailSectionProps {
   summary: DiagnosticSummary;

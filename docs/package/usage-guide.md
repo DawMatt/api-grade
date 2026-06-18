@@ -2,7 +2,7 @@
 
 # Package Usage Guide
 
-> Common integration patterns and worked examples for `api-grade-core`.
+> Common integration patterns and worked examples for `@dawmatt/api-grade-core`.
 
 ---
 
@@ -11,7 +11,7 @@
 The most common use case — grade a spec from a file path on disk.
 
 ```typescript
-import { GradeEngine } from 'api-grade-core';
+import { GradeEngine } from '@dawmatt/api-grade-core';
 
 const engine = new GradeEngine();
 
@@ -46,7 +46,7 @@ significant damage to the quality.
 When you already have the spec content as a string — for example, fetched from an API or generated dynamically — use `gradeContent()` instead of `grade()`.
 
 ```typescript
-import { GradeEngine, formatJson } from 'api-grade-core';
+import { GradeEngine, formatJson } from '@dawmatt/api-grade-core';
 import { readFileSync } from 'fs';
 
 const engine = new GradeEngine();
@@ -69,7 +69,7 @@ console.log(formatJson(result));
 Pass a `rulesetPath` to replace the built-in default rules with your own Spectral-compatible ruleset.
 
 ```typescript
-import { GradeEngine } from 'api-grade-core';
+import { GradeEngine } from '@dawmatt/api-grade-core';
 
 const engine = new GradeEngine();
 
@@ -91,7 +91,7 @@ The same `rulesetPath` option is available on `gradeContent()`.
 Access individual fields on `GradeResult` to build your own reporting or integration logic.
 
 ```typescript
-import { GradeEngine } from 'api-grade-core';
+import { GradeEngine } from '@dawmatt/api-grade-core';
 
 const engine = new GradeEngine();
 const result = await engine.grade({ specPath: './openapi.yaml' });

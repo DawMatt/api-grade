@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { LetterGrade } from 'api-grade-core';
+import type { LetterGrade } from '@dawmatt/api-grade-core';
 
 const CONFIG_FILENAME = '.apigrade.json';
 

@@ -7,6 +7,7 @@ import { GradingDetailSection } from './GradingDetailSection.js';
 import { useApiGrade } from '../../hooks/useApiGrade.js';
 import { ApiGradeClient } from '../../api/ApiGradeClient.js';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ApiGradeCardProps {}
 
 export function ApiGradeCard(): React.JSX.Element {

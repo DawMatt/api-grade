@@ -1,5 +1,5 @@
 import React from 'react';
-import type { LetterGrade, GradeLabel } from 'api-grade-core';
+import type { LetterGrade, GradeLabel } from '@dawmatt/api-grade-core';
 
 export type GradeCardMode = 'summary' | 'detailed';
 

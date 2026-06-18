@@ -44,7 +44,7 @@ export async function loadRuleset(format: ApiFormat, rulesetPath?: string): Prom
     const urlInError = errMsg.match(/https?:\/\/[^\s'">\]]+/)?.[0];
     const url = urlInError ?? externalUrls[0];
     if (url) {
-      throw new Error(`Ruleset could not be loaded: external URL unreachable: ${url}`);
+      throw new Error(`Ruleset could not be loaded: external URL unreachable: ${url}`, { cause: err });
     }
     // Enrich sub-errors with source location derived from the ruleset YAML,
     // since bundleAndLoadRuleset does not populate .source/.range at runtime.

@@ -1,0 +1,171 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+
+# As per https://docs.npmjs.com/trusted-publishers
+permissions:
+  id-token: write  # Required for OIDC
+  contents: write  # Required for gh release create
+
+jobs:
+  release:
+    name: Publish to npmjs
+    runs-on: ubuntu-latest
+    environment: npm-publish
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history required for branch reachability check and release notes
+
+      - name: Verify tag is on main branch
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "${{ github.sha }}" origin/main; then
+            echo "Error: The tagged commit is not reachable from the main branch."
+            echo "Push the tag only after the feature branch has been merged to main."
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'yarn'
+          package-manager-cache: false  # never use caching in release builds
+
+      - name: Show npmrc file content
+        run: cat /home/runner/work/_temp/.npmrc
+
+      # via https://github.com/npm/documentation/issues/1960
+      #
+      # `setup-node` with `registry-url` writes an `_authToken` line in
+      # `.npmrc` that expands to empty when `NODE_AUTH_TOKEN` is unset.
+      # Empty auth tokens prevent npm CLI from initiating OIDC. Strip
+      # the line so the OIDC flow kicks in.
+      - name: Strip empty _authToken from .npmrc
+        run: |
+          npmrc="${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
+          sed -i '/_authToken/d' "$npmrc"
+
+      - name: Show npmrc file content
+        run: cat /home/runner/work/_temp/.npmrc
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # ── Quality Gate (same stages as CI) ──────────────────────────────────
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high --omit=dev
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build api-grade-core (required for cross-package type checking)
+        run: npm run build
+        working-directory: packages/api-grade-core
+
+      - name: Build backstage-plugin-api-grade-backend (required for frontend plugin type checking)
+        run: npm run build
+        working-directory: packages/backstage-plugin-api-grade-backend
+
+      - name: Type check
+        run: npm run typecheck --workspaces --if-present && npm run typecheck
+
+      # Build CLI so dist/cli/index.js exists before integration tests run.
+      # Integration tests spawn the compiled CLI binary directly; without this
+      # build step they fail with Cannot find module '.../dist/cli/index.js'.
+      - name: Build CLI (required for integration tests)
+        run: npm run build
+
+      - name: Test (root) with coverage
+        run: npm run test:coverage
+
+      - name: Test (api-grade-core) with coverage
+        run: npm run test:coverage
+        working-directory: packages/api-grade-core
+
+      - name: Test (backstage-plugin-api-grade) with coverage
+        run: npm run test:coverage
+        working-directory: packages/backstage-plugin-api-grade
+
+      - name: Test (backstage-plugin-api-grade-backend) with coverage
+        run: npm run test:coverage
+        working-directory: packages/backstage-plugin-api-grade-backend
+
+      - name: Build
+        run: npm run build
+
+      # ── Publish ───────────────────────────────────────────────────────────
+
+      - name: Check npm version (must be >=11.5.1 for OIDC support)
+        run: npm --version
+
+      - name: Check node version (must be >=22.14.0 for OIDC support)
+        run: node --version
+
+      - name: Upgrade npm to latest (must be >=11.5.1 for OIDC support)
+        run: npm install -g npm@latest
+
+      - name: Rewrite workspace dependencies for publish
+        run: node scripts/pre-publish.mjs
+
+      - name: Publish @dawmatt/api-grade-core
+        run: npm publish --access public --provenance
+        working-directory: packages/api-grade-core
+          
+      - name: Publish @dawmatt/backstage-plugin-api-grade
+        run: npm publish --access public --provenance
+        working-directory: packages/backstage-plugin-api-grade
+
+      - name: Publish @dawmatt/backstage-plugin-api-grade-backend
+        run: npm publish --access public --provenance
+        working-directory: packages/backstage-plugin-api-grade-backend
+
+      - name: Publish @dawmatt/api-grade (CLI)
+        run: npm publish --access public --provenance
+
+      - name: Restore workspace dependencies
+        if: always()
+        run: node scripts/post-publish.mjs
+
+      # ── Release Record ────────────────────────────────────────────────────
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          PREV_TAG=$(git tag --sort=-version:refname | sed -n '2p')
+          if [ -n "${PREV_TAG}" ]; then
+            CHANGES=$(git log "${PREV_TAG}..${VERSION}" --pretty=format:"- %s" \
+              | grep -v '^- chore: release' \
+              | grep -v '^- chore: bump version')
+          else
+            CHANGES=$(git log "${VERSION}" --pretty=format:"- %s" \
+              | grep -v '^- chore: release' \
+              | grep -v '^- chore: bump version')
+          fi
+          if [ -z "${CHANGES}" ]; then
+            CHANGES="- No user-facing changes in this release."
+          fi
+          gh release create "${VERSION}" \
+            --title "${VERSION}" \
+            --notes "## What's Changed
+
+          ${CHANGES}
+
+          ---
+          **Released by**: @${{ github.actor }}
+          **Source commit**: ${{ github.sha }}
+          **Packages published**:
+          - \`@dawmatt/api-grade-core@${VERSION#v}\`
+          - \`@dawmatt/backstage-plugin-api-grade@${VERSION#v}\`
+          - \`@dawmatt/backstage-plugin-api-grade-backend@${VERSION#v}\`
+          - \`@dawmatt/api-grade@${VERSION#v}\`"

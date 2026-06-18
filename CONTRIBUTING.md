@@ -192,6 +192,16 @@ To add support for a new API specification format:
    - Add fixture files in `tests/fixtures/` (a high-quality and a low-quality example).
    - Add integration tests in `tests/integration/`.
 
+## Releasing
+
+Releases are triggered by pushing a `v*.*.*` tag to `main`. The full release process — including one-time GitHub setup, versioning decisions, step-by-step instructions, and recovery procedures — is documented in:
+
+**[docs/contributing/release-process.md](docs/contributing/release-process.md)**
+
+Only maintainers with access to the `npm-publish` GitHub Actions environment may trigger a release. Do not introduce an `NPM_TOKEN` secret — authentication uses npm Trusted Publishing (OIDC).
+
+---
+
 ## Reporting a bug
 
 Open a [GitHub issue](https://github.com/DawMatt/api-grade/issues) and include:

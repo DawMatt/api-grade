@@ -42,13 +42,13 @@ The CLI supports **OpenAPI 2/3** and **AsyncAPI 2/3**, custom Spectral rulesets,
 Install globally with npm:
 
 ```bash
-npm install -g api-grade
+npm install -g @dawmatt/api-grade
 ```
 
 Or use without installing via `npx`:
 
 ```bash
-npx api-grade openapi.yaml
+npx @dawmatt/api-grade openapi.yaml
 ```
 
 ---

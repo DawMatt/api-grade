@@ -131,12 +131,19 @@ hooks:
     description: Auto-commit after task generation
     condition: null
   after_implement:
+  - extension: local
+    command: speckit.quality-gate
+    enabled: true
+    optional: false
+    prompt: Run CI quality gate?
+    description: Enforce CI quality gate — blocks completion if any stage fails
+    condition: null
   - extension: git
     command: speckit.git.commit
     enabled: true
     optional: true
     prompt: Commit implementation changes?
-    description: Auto-commit after implementation
+    description: Auto-commit after implementation (runs only if quality gate passes)
     condition: null
   after_checklist:
   - extension: git

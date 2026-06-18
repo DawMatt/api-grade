@@ -1,0 +1,8 @@
+# CODEOWNERS — release-critical paths require maintainer review
+
+.github/workflows/  @DawMatt
+scripts/            @DawMatt
+package.json        @DawMatt
+packages/api-grade-core/package.json                    @DawMatt
+packages/backstage-plugin-api-grade/package.json        @DawMatt
+packages/backstage-plugin-api-grade-backend/package.json @DawMatt

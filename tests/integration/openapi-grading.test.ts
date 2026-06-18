@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GradeEngine } from 'api-grade-core';
+import { GradeEngine } from '@dawmatt/api-grade-core';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';

@@ -1,7 +1,24 @@
 {
-  "name": "api-grade-core",
-  "version": "0.1.1",
+  "name": "@dawmatt/api-grade-core",
+  "version": "0.1.20",
   "description": "Core grading library for api-grade — standalone, framework-agnostic",
+  "keywords": [
+    "api",
+    "openapi",
+    "asyncapi",
+    "spectral",
+    "quality",
+    "grading",
+    "linting"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DawMatt/api-grade.git"
+  },
+  "homepage": "https://github.com/DawMatt/api-grade/tree/main/packages/api-grade-core#readme",
+  "bugs": {
+    "url": "https://github.com/DawMatt/api-grade/issues"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,7 +32,10 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@stoplight/spectral-core": "^1.23.0",

@@ -25,7 +25,7 @@ The fastest way to grade a spec. Run one command and get an immediate report. Us
 Install globally or use without installing:
 
 ```bash
-npm install -g api-grade
+npm install -g @dawmatt/api-grade
 api-grade openapi.yaml
 ```
 
@@ -33,12 +33,12 @@ api-grade openapi.yaml
 
 ---
 
-### Core Package (`api-grade-core`)
+### Core Package (`@dawmatt/api-grade-core`)
 
 The grading engine as a standalone npm package. Import it into your own tools, scripts, build pipelines, or integrations — without installing the CLI.
 
 ```bash
-npm install api-grade-core
+npm install @dawmatt/api-grade-core
 ```
 
 → [Full package documentation](package/README.md)
@@ -59,7 +59,7 @@ Two Backstage plugin packages that display API grades directly on your Backstage
 |------------|-----------|
 | Grade a spec from the terminal | [CLI Tool](cli/README.md) |
 | Set up a CI/CD grade gate | [CLI Commands → CI/CD example](cli/commands.md) |
-| Integrate grading into my own code | [Core Package](package/README.md) |
+| Integrate grading into my own code | [Core Package (`@dawmatt/api-grade-core`)](package/README.md) |
 | Show grades in Backstage | [Backstage Quick Start](backstage-plugins/quick-start.md) |
 | Understand the full documentation | [Documentation Index](index.md) |
 

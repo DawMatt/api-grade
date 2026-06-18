@@ -4,14 +4,14 @@ Detailed installation and wiring steps for both plugins.
 
 ---
 
-## Frontend Plugin — `backstage-plugin-api-grade`
+## Frontend Plugin — `@dawmatt/backstage-plugin-api-grade`
 
 ### 1. Install the package
 
 In your Backstage `packages/app` directory:
 
 ```bash
-yarn add backstage-plugin-api-grade
+yarn add @dawmatt/backstage-plugin-api-grade
 ```
 
 ### 2. Wire into EntityPage
@@ -21,7 +21,7 @@ Open `packages/app/src/components/catalog/EntityPage.tsx`.
 **Add the import:**
 
 ```tsx
-import { ApiGradeCard } from 'backstage-plugin-api-grade';
+import { ApiGradeCard } from '@dawmatt/backstage-plugin-api-grade';
 ```
 
 **Add the card to the API entity page Info column:**
@@ -50,14 +50,14 @@ Navigate to any API entity page. The **API Grade** card should appear in the Inf
 
 ---
 
-## Backend Plugin — `backstage-plugin-api-grade-backend`
+## Backend Plugin — `@dawmatt/backstage-plugin-api-grade-backend`
 
 ### 1. Install the package
 
 In your Backstage `packages/backend` directory:
 
 ```bash
-yarn add backstage-plugin-api-grade-backend
+yarn add @dawmatt/backstage-plugin-api-grade-backend
 ```
 
 ### 2. Register with the New Backend System
@@ -70,7 +70,7 @@ import { createBackend } from '@backstage/backend-defaults';
 const backend = createBackend();
 
 // ...your other plugin registrations
-backend.add(import('backstage-plugin-api-grade-backend'));
+backend.add(import('@dawmatt/backstage-plugin-api-grade-backend'));
 
 backend.start();
 ```

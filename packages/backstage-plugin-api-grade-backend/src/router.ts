@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { GradeEngine } from 'api-grade-core';
-import type { GradeResult } from 'api-grade-core';
+import { GradeEngine } from '@dawmatt/api-grade-core';
+import type { GradeResult } from '@dawmatt/api-grade-core';
 
 // Minimal Backstage service interfaces (peer deps — provided by host app at runtime)
 export interface CatalogService {
@@ -258,7 +258,7 @@ export async function createRouter(options: RouterOptions): Promise<Router> {
       if (rulesetConfig.url && grade.rulesetSource === 'default') {
         rulesetWarning = `Could not load custom ruleset from ${rulesetConfig.url}. Graded using the default ruleset.`;
       }
-    } catch (err) {
+    } catch {
       res.status(500).json({
         status: 'error',
         errorType: 'grading-failed',

@@ -50,6 +50,20 @@ Feature 5 - API grade documentation refactoring
 
 - Refactor documentation for the repo, aligning with documentation_architecture.md
 
+Feature 6 - npmjs
+
+- Automate publishing packages to npmjs from the main branch. Use namespace dawmatt. e.g. core package would be named @dawmatt/api-grade-core
+- Make sure any PRs against the main branch are of appropriate quality, and accepted by a maintainer, before they can be accepted and automatically published.
+- Make sure the GitHub release description reflects the changes in the release. Gather this information from commit descriptions included in the release, ignoring any commit that only includes a release tag.
+- Update documentation to cover npmjs. Includes both the user oriented documentation and the contribution guide
+
+Feature 7 - AI support
+
+- Allow API grading to be performed directly from LLMs and agentic AI tooling
+- Support all of the standard functions of the api-grade CLI, including: grading an API (both overall and detailed levels), and asserting whether an API is at or above a particular grade (e.g. >= C)
+- Use the api-grade's JSON format output so the AI is able to process and reformat the information in a way that suits its requirements
+- Leverage the AI support to not just grade the API, but also resolve the "non-breaking change" issues highlighted by the grading that are bringing down the result
+
 ## Constitution
 
 - API grading will use a similar algorithm and approach to the API grading and diagnostics capabilities found in OpenAPI Doctor: https://github.com/pb33f/doctor . This includes providing an overall grade (e.g. D) and numeric rating (e.g. 73%), a diagnostic summary identifying priority areas to focus on, followed by the diagnostic detail. The algorithm is summarised in api_diagnostic_algorithm_spec.md .
@@ -62,3 +76,4 @@ Feature 5 - API grade documentation refactoring
 - Identify all pre-requisites necessary for the functionality to run correctly, and how to source them.
 - The cost for all pre-requisites must be $0. Do not require any pre-requisites that have a cost associated with them. 
 - Ultimately API grading is about teaching users good API development practices. To help reinforce this the project will use modern, well designed API examples such as Redocly's Museum API ( https://github.com/Redocly/museum-openapi-example ) or the Train Travel API ( https://github.com/bump-sh-examples/train-travel-api ).
+- Every /speckit-implement must meet the quality threshold for publication to npmjs. If it doesn't meet the quality gate, it means /speckit-implement hasn't finished its work.
