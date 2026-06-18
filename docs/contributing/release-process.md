@@ -6,40 +6,7 @@ This guide covers everything a maintainer needs to perform a release of the `@da
 
 ## One-Time GitHub Setup
 
-These steps are done once per repository and do not need to be repeated for each release.
-
-### 1. Create the `npm-publish` GitHub Actions environment
-
-1. Go to **Settings → Environments** in the GitHub repository.
-2. Create a new environment named exactly `npm-publish`.
-3. Under **Deployment protection rules**, add a **Required reviewers** rule with the maintainer GitHub accounts (e.g. `@DawMatt`).
-4. Save the environment.
-
-This environment gates the release job — no release runs without a maintainer approval.
-
-### 2. Configure tag protection
-
-1. Go to **Settings → Tags** (under **Rules** or **Branches/Tags** depending on your GitHub plan).
-2. Create a protection rule for the pattern `v[0-9]*`.
-3. Set the allowed roles to **Maintain** or **Admin** only.
-
-This prevents non-maintainers from pushing `v*` tags that would trigger the release pipeline.
-
-### 3. Register each package as a Trusted Publisher on npmjs.com
-
-Repeat for each `@dawmatt` package:
-
-1. Log in to npmjs.com as the `DawMatt` account.
-2. Go to the package page → **Settings → Automation tokens → Provenance**.
-3. Under **Trusted Publishing**, add a new publisher:
-   - **Organization/Owner**: `DawMatt`
-   - **Repository**: `api-grade`
-   - **Workflow**: `release.yml`
-4. Save.
-
-Packages: `@dawmatt/api-grade-core`, `@dawmatt/backstage-plugin-api-grade`, `@dawmatt/backstage-plugin-api-grade-backend`, `@dawmatt/api-grade`.
-
-No `NPM_TOKEN` secret is needed or stored. Authentication is handled automatically via OIDC.
+Refer to [initial-setup.md](initial-setup.md) for steps that are done once per repository and do not need to be repeated for each release.
 
 ---
 
@@ -126,9 +93,9 @@ If packages were partially published (e.g. `@dawmatt/api-grade-core` succeeded b
    npm publish --access public
    ```
 
-   in the relevant package directory, after running `node scripts/pre-publish.mjs`.
+   in the relevant package directory, after running `node scripts/pre-publish.mjs` (root api-grade package) or `node ../../scripts/pre-publish.mjs` (all other packages).
 
-4. Always run `node scripts/post-publish.mjs` afterwards to restore workspace deps.
+4. Always run `node scripts/post-publish.mjs` (root api-grade package) or `node ../../scripts/post-publish.mjs` (all other packages) afterwards to restore workspace deps.
 
 ---
 
