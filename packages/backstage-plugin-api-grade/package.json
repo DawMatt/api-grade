@@ -1,6 +1,6 @@
 {
   "name": "@dawmatt/backstage-plugin-api-grade",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Backstage frontend plugin — displays API quality grades on API entity pages",
   "keywords": [
     "backstage",
