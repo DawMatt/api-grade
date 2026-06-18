@@ -262,7 +262,7 @@ npm run build
 - [x] T060 [US7] On npmjs.com, update the Trusted Publisher configuration for each of the four `@dawmatt` packages to add the `Environment` field: navigate to each package page → Settings (gear icon) → Trusted Publishers → edit the existing GitHub Actions entry → set Environment to `npm-publish`; repeat for all four packages: `@dawmatt/api-grade-core`, `@dawmatt/backstage-plugin-api-grade`, `@dawmatt/backstage-plugin-api-grade-backend`, and `@dawmatt/api-grade`
 - [x] T061 [P] Update `docs/contributing/initial-setup.md` Step 4 to add `Environment` as a required field in the Trusted Publisher configuration table with value `npm-publish` — insert a new row between "Workflow filename" and "Allowed actions" so future setup correctly includes this field
 - [x] T062 Trigger a new automated release to verify the corrected TP configuration resolves the 404: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four publish steps succeed and a GitHub Release is created
-- [ ] T063 Mark the Run 3 and Run 4 items in `specs/006-publish-npmjs/checklists/issues.md` as `[x]` once the Phase 15 fix is confirmed working
+- [x] T063 Mark the Run 3 and Run 4 items in `specs/006-publish-npmjs/checklists/issues.md` as `[x]` once the Phase 15 fix is confirmed working — **Phase 15 fix (T064/T065) did not work; superseded by T080/Phase 19**
 
 **Checkpoint**: The release pipeline completes without errors using OIDC. A GitHub Release is created with the correct version, actor, and commit SHA. All four packages appear on npmjs.com at the new version.
 
@@ -279,8 +279,8 @@ npm run build
 **Independent Test**: After completing this phase, trigger a new automated release; confirm all four `npm publish` steps in release.yml exit 0 and the packages appear on npmjs.com at the new version.
 
 - [x] T064 [US7] In `.github/workflows/release.yml`, update all four `npm publish --access public` commands to `npm publish --access public --provenance`: the four steps are "Publish @dawmatt/api-grade-core", "Publish @dawmatt/backstage-plugin-api-grade", "Publish @dawmatt/backstage-plugin-api-grade-backend", and "Publish @dawmatt/api-grade (CLI)"
-- [ ] T065 Trigger a new automated release to verify the OIDC fix: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four publish steps succeed and a GitHub Release is created at the new version
-- [ ] T066 Mark Run 3 and Run 4 items in `specs/006-publish-npmjs/checklists/issues.md` as `[x]` and update T063 to `[x]`
+- [x] T065 Trigger a new automated release to verify the OIDC fix: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four publish steps succeed and a GitHub Release is created at the new version — **release triggered (Run 4) but still failed with E404; fix did not work; superseded by T079/Phase 19**
+- [x] T066 Mark Run 3 and Run 4 items in `specs/006-publish-npmjs/checklists/issues.md` as `[x]` and update T063 to `[x]` — **superseded by T080/Phase 19**
 
 **Checkpoint**: All four `npm publish --access public --provenance` steps in the release pipeline exit 0. Packages appear on npmjs.com at the new version. GitHub Release is created with correct version, actor, and commit SHA.
 
@@ -297,8 +297,8 @@ npm run build
 **Independent Test**: Trigger a new automated release; confirm all four `npm publish --access public --provenance` steps succeed without `ENEEDAUTH`, packages appear on npmjs.com at the new version, and a GitHub Release is created.
 
 - [x] T075 [US7] In `.github/workflows/release.yml`, re-add `registry-url: 'https://registry.npmjs.org'` to the `setup-node@v4` step (directly after `node-version: '22'`, before `cache: 'yarn'`) — this reverses T067 from Phase 16; npm requires the registry URL to be configured at the global level to know which OIDC endpoint to contact during the Trusted Publisher authentication exchange
-- [ ] T076 Trigger a new automated release to verify the fix: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four `npm publish --access public --provenance` steps succeed and packages appear on npmjs.com at the new version and a GitHub Release is created with correct version, actor, and commit SHA
-- [ ] T077 Mark all open issue entries (Run 3, Run 4, Run 5, Run 6, Run 7, Run 8) in `specs/006-publish-npmjs/checklists/issues.md` as `[x]`; mark T063, T065, T066, T069, T070, T073, T074 as `[x]` in `specs/006-publish-npmjs/tasks.md`
+- [x] T076 Trigger a new automated release to verify the fix: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four `npm publish --access public --provenance` steps succeed and packages appear on npmjs.com at the new version and a GitHub Release is created with correct version, actor, and commit SHA — **release triggered (Run 8) but failed with ENEEDAUTH; fix did not work; superseded by T079/Phase 19**
+- [x] T077 Mark all open issue entries (Run 3, Run 4, Run 5, Run 6, Run 7, Run 8) in `specs/006-publish-npmjs/checklists/issues.md` as `[x]`; mark T063, T065, T066, T069, T070, T073, T074 as `[x]` in `specs/006-publish-npmjs/tasks.md` — **superseded by T080/Phase 19**
 
 **Checkpoint**: All four `npm publish --access public --provenance` steps exit 0. Packages appear on npmjs.com at the new version. No `ENEEDAUTH` or `E404` errors. `NODE_AUTH_TOKEN` is absent from the step environment (no NPM_TOKEN secret). GitHub Release created with correct traceability fields.
 
@@ -316,8 +316,8 @@ npm run build
 
 - [x] T071 [US7] In `.github/workflows/release.yml`, add `--provenance` back to all four `npm publish --access public` commands so they become `npm publish --access public --provenance`: the four steps are "Publish @dawmatt/api-grade-core", "Publish @dawmatt/backstage-plugin-api-grade", "Publish @dawmatt/backstage-plugin-api-grade-backend", and "Publish @dawmatt/api-grade (CLI)" — this restores the OIDC token exchange that npm Trusted Publishing requires
 - [x] T072 [US7] In `.github/workflows/release.yml`, update the workflow-level `permissions` block: change `contents: read` to `contents: write` — this restores the permission needed for `gh release create` (the job-level `contents: write` that previously provided this was removed in commit `8bd9327`)
-- [ ] T073 Trigger a new automated release to verify both fixes end-to-end: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four `npm publish --access public --provenance` steps succeed, packages appear on npmjs.com at the new version, and a GitHub Release is created with correct version, actor, and commit SHA
-- [ ] T074 Mark all open issue entries (Run 3, Run 4, Run 5, Run 6, Run 7) in `specs/006-publish-npmjs/checklists/issues.md` as `[x]`; mark T063, T065, T066, T069, T070 as `[x]` in `specs/006-publish-npmjs/tasks.md`
+- [x] T073 Trigger a new automated release to verify both fixes end-to-end: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four `npm publish --access public --provenance` steps succeed, packages appear on npmjs.com at the new version, and a GitHub Release is created with correct version, actor, and commit SHA — **release triggered (Runs 6 & 7) but failed with ENEEDAUTH; fix did not work; superseded by T079/Phase 19**
+- [x] T074 Mark all open issue entries (Run 3, Run 4, Run 5, Run 6, Run 7) in `specs/006-publish-npmjs/checklists/issues.md` as `[x]`; mark T063, T065, T066, T069, T070 as `[x]` in `specs/006-publish-npmjs/tasks.md` — **superseded by T080/Phase 19**
 
 **Checkpoint**: All four `npm publish --access public --provenance` steps exit 0. Packages appear on npmjs.com at the new version. A GitHub Release is created with correct traceability fields.
 
@@ -337,10 +337,19 @@ npm run build
 
 - [x] T067 [US7] In `.github/workflows/release.yml`, remove the `registry-url: 'https://registry.npmjs.org'` line from the `setup-node@v4` step; retain `node-version: '22'` and `cache: 'yarn'`; the project's `.npmrc` (`@dawmatt:registry=https://registry.npmjs.org`) already configures the registry for `@dawmatt`-scoped packages and no explicit registry-url is required for Trusted Publishing
 - [x] T068 In GitHub repository settings → Secrets and variables → Actions, check for an `NPM_TOKEN` secret; if present, delete it — Trusted Publishing requires no stored credential and any configured `NPM_TOKEN` will be exported as `NODE_AUTH_TOKEN` by `setup-node`, reinstating the `_authToken` override that blocks TP OIDC auth
-- [ ] T069 Trigger a new automated release to verify the TP OIDC auth now works end-to-end: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four `npm publish` steps succeed and packages appear on npmjs.com at the new version; confirm a GitHub Release is created with correct version, actor, and commit SHA
-- [ ] T070 Mark the Run 3, Run 4, and Run 5 items in `specs/006-publish-npmjs/checklists/issues.md` as `[x]`; mark T063 and T066 as `[x]` in `specs/006-publish-npmjs/tasks.md`
+- [x] T069 Trigger a new automated release to verify the TP OIDC auth now works end-to-end: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four `npm publish` steps succeed and packages appear on npmjs.com at the new version; confirm a GitHub Release is created with correct version, actor, and commit SHA — **release triggered (Run 5) but still failed with E404; fix did not work; superseded by T079/Phase 19**
+- [x] T070 Mark the Run 3, Run 4, and Run 5 items in `specs/006-publish-npmjs/checklists/issues.md` as `[x]`; mark T063 and T066 as `[x]` in `specs/006-publish-npmjs/tasks.md` — **superseded by T080/Phase 19**
 
 **Checkpoint**: All four `npm publish --access public --provenance` steps exit 0. Packages appear on npmjs.com at the new version. `NODE_AUTH_TOKEN` and `NPM_CONFIG_USERCONFIG` are absent from the publish step environment. GitHub Release is created with correct traceability fields.
+
+## Phase 19: Fix — Human debug issues preventing npm publication and TP OIDC Auth (Runs 3 to 8)
+
+**Root cause:** `release.yml` used an old npm version (must be >=11.5.1 for OIDC support), and an npm bug (see https://github.com/npm/documentation/issues/1960 ) needed to be worked around (see step Strip empty _authToken from .npmrc in release.yml), preventing Trusted Providers from authenticating correctly and publishing packages. Version checks, npm upgrade, some .npmrc debugging checks (cat the contents), and step Strip empty _authToken from .npmrc in release.yml were added to resolve the issues.
+
+- [x] T079 Wait for a human to debug the issue and fix `release.yml` as per root cause.
+- [x] T080 Mark all open issue entries (Run 3, Run 4, Run 5, Run 6, Run 7, Run 8) in `specs/006-publish-npmjs/checklists/issues.md` as `[x]`; mark T063, T065, T066, T069, T070, T073, T074 as `[x]` in `specs/006-publish-npmjs/tasks.md`
+
+**Checkpoint**: All four `npm publish --access public --provenance` steps exit 0. Packages appear on npmjs.com at the new version. No `ENEEDAUTH` or `E404` errors. `NODE_AUTH_TOKEN` is absent from the step environment (no NPM_TOKEN secret). GitHub Release created with correct traceability fields.
 
 ---
 

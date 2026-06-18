@@ -139,7 +139,7 @@ Error: Process completed with exit code 1.
 
 ## Run 3 2026/06/18
 
-- [ ] The publish GitHub Action failed due to the following errors. Everything else in the action appeared to execute correctly.
+- [x] The publish GitHub Action failed due to the following errors. Everything else in the action appeared to execute correctly.
 
 ```
 npm warn publish npm auto-corrected some errors in your package.json when publishing.  Please run "npm pkg fix" to address these errors.
@@ -214,7 +214,7 @@ Error: Process completed with exit code 1.
 
 ## Run 4 2026/06/18
 
-- [ ] T061 and T062 were performed, but T062 did not produce the expected result (root cause: `npm publish` commands missing `--provenance` flag — see Phase 15 T064–T066). The publish GitHub Action failed due to the following errors. Everything else in the action appeared to execute correctly. 
+- [x] T061 and T062 were performed, but T062 did not produce the expected result (root cause: `npm publish` commands missing `--provenance` flag — see Phase 15 T064–T066). The publish GitHub Action failed due to the following errors. Everything else in the action appeared to execute correctly. 
 
 ```
 npm warn publish npm auto-corrected some errors in your package.json when publishing.  Please run "npm pkg fix" to address these errors.
@@ -297,7 +297,7 @@ npm error 404  '@dawmatt/api-grade-core@0.1.6' is not in this registry.
 
 ## Run 5
 
-- [ ] Still not publishing:
+- [x] Still not publishing:
 
 ```
 Run npm publish --access public --provenance
@@ -381,7 +381,7 @@ Error: Process completed with exit code 1.
 
 ## Run 6
 
-- [ ] Still not working.
+- [x] Still not working.
 
 ```
 2026-06-18T03:19:23.0699390Z ##[group]Run npm publish --access public --provenance
@@ -455,7 +455,7 @@ Error: Process completed with exit code 1.
 
 ## Run 7 
 
-- [ ] Still not working. I tried bringing the release.yml in line with the guidance here: https://docs.npmjs.com/trusted-publishers . The page was clear which permissions are required, where they are defined, and that provenance is automatically provided (so we don't need that command line argument). Still ending up with errors. Did you do something to delete the a .npmrc file earlier? Might that have caused a problem?
+- [x] Still not working. I tried bringing the release.yml in line with the guidance here: https://docs.npmjs.com/trusted-publishers . The page was clear which permissions are required, where they are defined, and that provenance is automatically provided (so we don't need that command line argument). Still ending up with errors. Did you do something to delete the a .npmrc file earlier? Might that have caused a problem?
 
 ```
 Run npm publish --access public
@@ -528,7 +528,11 @@ Error: Process completed with exit code 1.
 
 ## Run 8
 
-- [ ] As expected this run also failed. All you did was retry previous changes that had already been proven ineffective. Can you do any better on your 6th attempt to fix the same issue?
+
+**Root cause:** An old npm version (must be >=11.5.1 for OIDC support), and an npm bug (see https://github.com/npm/documentation/issues/1960 ) that needed to be worked around (see step Strip empty _authToken from .npmrc in release.yml), prevented Trusted Providers from authenticating correctly and publishing packages. 
+**Implementation note:** Claude Code repeatedly tried the same fixes that were proven not to work despite having access to the same information as the author. Had to debug this one myself.
+
+- [x] As expected this run also failed. All you did was retry previous changes that had already been proven ineffective. Can you do any better on your 6th attempt to fix the same issue?
 
 ```
 Run npm publish --access public --provenance
