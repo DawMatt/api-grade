@@ -200,6 +200,174 @@ The `expectedImprovement` is derived from the rule message and the rule's known 
 
 ---
 
+## US5: GitHub Enterprise PAT Authentication (FR-018)
+
+### Decision: Native `fetch` with `Authorization: Bearer` header; token from env var or session config
+
+**Rationale**: Node 20+ includes `fetch` natively, so no additional HTTP client is needed. GitHub Enterprise raw file URLs use standard Bearer token auth. Token precedence: `GITHUB_TOKEN` environment variable → `auth.githubToken` supplied transiently on `configure-ruleset scope: session`. The token is never persisted to workspace or global config files (FR-021), so the workspace config stores only `auth.type: "github-pat"` as a hint.
+
+**Implementation pattern**:
+```typescript
+async function fetchWithGithubPat(url: string, token: string, timeoutMs: number): Promise<string> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: controller.signal,
+    });
+    if (res.status === 401 || res.status === 403) throw new RulesetAuthError('auth-failed', url);
+    if (!res.ok) throw new RulesetAuthError('network-unreachable', url);
+    return res.text();
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError')
+      throw new RulesetAuthError('network-unreachable', url);
+    throw e;
+  } finally {
+    clearTimeout(id);
+  }
+}
+```
+
+**Alternatives considered**: `node-fetch` — rejected; native `fetch` is available on Node 20+ and adding a dependency for something already in the runtime is unnecessary.
+
+---
+
+## US5: Microsoft Entra ID Device-Code Flow (FR-019)
+
+### Decision: `@azure/msal-node` `PublicClientApplication` with disk-persisted token cache
+
+**Rationale**: MSAL Node is the official Microsoft authentication library. Device-code flow is the correct OAuth 2.0 flow for server processes that cannot open a browser. The flow returns a `userCode` and `verificationUri` that the AI surfaces to the user, who completes sign-in in a browser. Subsequent requests use the cached refresh token without re-prompting.
+
+**Token cache persistence**: MSAL's `cachePlugin` interface (`beforeCacheAccess` / `afterCacheAccess` callbacks) is used to read/write `~/.api-grade/entra-token-cache.json`. `afterCacheAccess` only writes when `cacheContext.cacheHasChanged` is true to avoid unnecessary I/O.
+
+**Implementation pattern**:
+```typescript
+import { PublicClientApplication } from '@azure/msal-node';
+
+const diskCachePlugin = {
+  async beforeCacheAccess(ctx) {
+    const data = await fs.readFile(ENTRA_CACHE_PATH, 'utf-8').catch(() => '');
+    ctx.tokenCache.deserialize(data);
+  },
+  async afterCacheAccess(ctx) {
+    if (ctx.cacheHasChanged) {
+      await fs.mkdir(path.dirname(ENTRA_CACHE_PATH), { recursive: true });
+      await fs.writeFile(ENTRA_CACHE_PATH, ctx.tokenCache.serialize());
+    }
+  },
+};
+
+const pca = new PublicClientApplication({
+  auth: { clientId, authority: `https://login.microsoftonline.com/${tenantId}` },
+  cache: { cachePlugin: diskCachePlugin },
+});
+
+// Try silent acquisition first (uses cached refresh token)
+const accounts = await pca.getTokenCache().getAllAccounts();
+if (accounts.length > 0) {
+  try {
+    const result = await pca.acquireTokenSilent({ scopes, account: accounts[0] });
+    return result.accessToken;
+  } catch { /* fall through to device code */ }
+}
+
+// Device-code flow — surfaces code to user via AI
+const result = await pca.acquireTokenByDeviceCode({
+  scopes,
+  deviceCodeCallback: (response) => {
+    throw new EntraAuthRequired(response.userCode, response.verificationUri, response.expiresIn);
+  },
+});
+return result.accessToken;
+```
+
+**Scopes**: For SharePoint resources the scope is `https://<tenant>.sharepoint.com/.default`. For generic enterprise web resources protected with Entra ID it is `api://<client-id>/.default`. The MCP server does not infer scopes; they are derived from the resource URL at runtime using the standard convention.
+
+**Alternatives considered**: `@azure/identity` `DeviceCodeCredential` — provides a higher-level abstraction but does not expose the raw `userCode`/`verificationUri` needed to surface them to the AI via the `ENTRA_AUTH_REQUIRED` error shape. MSAL Node gives direct access to the device-code response.
+
+---
+
+## US5: Fetch Timeout (FR-024)
+
+### Decision: `AbortController` + `setTimeout`; 5 seconds initial, 30 seconds retry
+
+**Rationale**: `AbortController` is the standard Node 20+ mechanism for aborting a `fetch`. The abort causes the fetch to throw a `DOMException` with `name === 'AbortError'`, which maps cleanly to `failureReason: 'network-unreachable'`. Two timeout values are used: 5s on the initial attempt (guarantees the auth-failure recovery response arrives well within SC-001's 10-second budget) and 30s on explicit retry (user has acknowledged willingness to wait).
+
+```typescript
+export const INITIAL_FETCH_TIMEOUT_MS = 5_000;
+export const RETRY_FETCH_TIMEOUT_MS = 30_000;
+
+export function fetchWithTimeout(url: string, timeoutMs: number, headers?: HeadersInit) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { signal: controller.signal, headers }).finally(() => clearTimeout(id));
+}
+```
+
+The `recoveryOption` parameter on grading tools determines which constant is passed: `"retry"` → `RETRY_FETCH_TIMEOUT_MS`; all other calls → `INITIAL_FETCH_TIMEOUT_MS`.
+
+---
+
+## US5: Config File Storage (FR-015, FR-017, FR-018)
+
+### Decision: `.api-grade/config.json` relative to CWD; `~/.api-grade/config.json` via `os.homedir()`
+
+**Rationale**: `.api-grade/` follows the convention of tool-specific config directories (`.github/`, `.vscode/`). Using a dedicated directory rather than a root-level dotfile (e.g. `.apigraderc`) allows future keys without polluting the workspace root. `os.homedir()` is the correct cross-platform equivalent of `~` on macOS, Linux, and Windows.
+
+**Workspace root = CWD** (clarified 2026-06-19): All three MCP hosts (Claude Code, VS Code Copilot, Copilot Studio) start the server process with the workspace root as CWD. `process.cwd()` is therefore the workspace root — no `--workspace-root` flag or per-call parameter is needed.
+
+**Config file schema** (both workspace and global share the same shape):
+```json
+{
+  "ruleset": {
+    "path": "https://github.example.com/org/standards/raw/main/ruleset.yaml"
+  },
+  "auth": {
+    "type": "github-pat"
+  }
+}
+```
+
+`auth.githubToken` is intentionally absent from the persisted schema — the token comes from `GITHUB_TOKEN` env var at runtime. Entra ID tokens are persisted separately via the MSAL cache at `~/.api-grade/entra-token-cache.json`.
+
+**gitignore guidance**: `.api-grade/config.json` is safe to commit (no credentials). `~/.api-grade/` is outside the repo. `~/.api-grade/entra-token-cache.json` contains tokens and should not be committed, but as a global home-directory file it is already not in any repo.
+
+**Alternatives considered**: XDG Base Directory (`~/.config/api-grade/`) — more correct on Linux but less obvious on macOS/Windows. Keeping `~/.api-grade/` mirrors the pattern used by tools familiar to JavaScript developers (`.npmrc`, `.yarnrc`).
+
+---
+
+## US5: Session State Management
+
+### Decision: Mutable `SessionState` object created in `createServer()`, passed by reference to all tools
+
+**Rationale**: `McpServer` does not provide a built-in per-server state mechanism. A plain mutable object passed by reference to each `registerXxxTool()` function is the simplest correct pattern. Node.js's single-threaded event loop means synchronous state mutations (`sessionState.defaultRuleset = ...`) are safe without locks — an incoming tool call cannot interleave with a running handler's synchronous code.
+
+```typescript
+interface SessionState {
+  defaultRuleset: RulesetConfig | null;
+  sessionRulesetOverride: 'builtin' | null; // set by use-builtin-session recovery
+}
+
+export function createServer(): McpServer {
+  const server = new McpServer({ name: 'api-grade', version: pkg.version });
+  const sessionState: SessionState = { defaultRuleset: null, sessionRulesetOverride: null };
+  registerGradeTool(server, sessionState);
+  registerGradeDetailedTool(server, sessionState);
+  registerAssertGradeTool(server, sessionState);
+  registerNonBreakingTool(server, sessionState);
+  registerConfigureRulesetTool(server, sessionState);
+  registerGetRulesetConfigTool(server, sessionState);
+  return server;
+}
+```
+
+**`sessionRulesetOverride` clearing rule** (clarified 2026-06-19): A `configure-ruleset scope: session` call with a non-null `rulesetPath` MUST set `sessionRulesetOverride` to `null` — the user is explicitly configuring a default, which supersedes the "use built-in" session override. Calling `configure-ruleset` with `rulesetPath: null` does NOT clear the override (it only clears `defaultRuleset`).
+
+**Alternatives considered**: Class-based server with state as instance fields — heavier abstraction with no benefit at this scale; rejected per YAGNI.
+
+---
+
 ## MCP Host Configuration Pattern
 
 AI tools (Claude Desktop, Cursor, etc.) require a config entry to register the MCP server. The standard config format:

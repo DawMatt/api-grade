@@ -144,7 +144,7 @@ Follow Windsurf's MCP configuration guide and add the same `api-grade` server en
 
 ## Available Tools
 
-Once configured, the AI tool has access to four api-grade capabilities:
+Once configured, the AI tool has access to six api-grade capabilities:
 
 | Tool | What it does |
 |---|---|
@@ -152,6 +152,8 @@ Once configured, the AI tool has access to four api-grade capabilities:
 | `grade-api-detailed` | Full grade with all violations and recommendations |
 | `assert-api-grade` | Pass/fail assertion for a minimum grade threshold |
 | `get-non-breaking-violations` | Classified list of fixable violations for AI-assisted correction |
+| `configure-ruleset` | Set the default Spectral ruleset at session, workspace, or global scope |
+| `get-ruleset-config` | Show the active ruleset configuration at all scopes |
 
 ---
 
@@ -189,9 +191,74 @@ without altering the API's interface contract (paths, methods, parameters, schem
 
 ## Using a Custom Ruleset
 
-All four tools accept an optional `rulesetPath` parameter. Ask your AI tool:
+All grading tools accept an optional `rulesetPath` parameter for a one-off custom ruleset:
 
 > Grade `/workspace/my-api/openapi.yaml` using the ruleset at `/workspace/rulesets/company-standards.yaml`
+
+To avoid supplying the path on every request, configure a default ruleset instead (see below).
+
+---
+
+## Configuring a Default Ruleset
+
+Use `configure-ruleset` to set a default so you never have to supply `rulesetPath` explicitly.
+
+### Session default (current session only)
+
+> Set the default ruleset for this session to `/workspace/rulesets/company-standards.yaml`
+
+The AI calls `configure-ruleset` with `scope: "session"`. All subsequent grading requests use this ruleset automatically until the MCP server restarts.
+
+### Workspace default (persisted to this project)
+
+> Set the workspace default ruleset to `https://github.example.com/org/standards/raw/main/ruleset.yaml`
+
+The AI calls `configure-ruleset` with `scope: "workspace"`. The setting is saved to `.api-grade/config.json` in the project root and survives MCP server restarts. Commit this file to share the standard with your team.
+
+### Global default (all projects)
+
+> Set my global default ruleset to `/Users/jane/rulesets/personal-standards.yaml`
+
+The AI calls `configure-ruleset` with `scope: "global"`. The setting is saved to `~/.api-grade/config.json` and applies to all projects unless overridden by a workspace or session default.
+
+### Checking the active configuration
+
+> Show me the current ruleset configuration
+
+The AI calls `get-ruleset-config` and returns which ruleset is active at every scope and which one is currently in effect.
+
+### Precedence order
+
+Per-request `rulesetPath` → session default → workspace default → global default → built-in
+
+---
+
+## Configuring Authentication for Secured Rulesets
+
+### GitHub Enterprise (PAT)
+
+Set the `GITHUB_TOKEN` environment variable before starting the AI tool, or ask the AI to configure it for the session:
+
+> Set the workspace default ruleset to `https://github.example.com/org/standards/raw/main/ruleset.yaml` with GitHub PAT authentication
+
+The AI calls `configure-ruleset` with `auth: { type: "github-pat" }`. At runtime the server reads the token from the `GITHUB_TOKEN` environment variable.
+
+### Microsoft Entra ID (SharePoint / enterprise sites)
+
+> Set the workspace default ruleset to `https://mycompany.sharepoint.com/sites/api-standards/ruleset.yaml` with Entra ID authentication, tenant ID `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` and client ID `yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy`
+
+The AI calls `configure-ruleset` with `auth: { type: "entra-id", tenantId: "...", clientId: "..." }`. On the next grading request the server will initiate the device-code flow and return a code for you to enter at `https://microsoft.com/devicelogin`. Once authenticated, the token is cached to `~/.api-grade/entra-token-cache.json` and reused on subsequent requests.
+
+### When authentication fails
+
+If the configured default ruleset cannot be fetched (network unavailable, token expired, VPN disconnected), the grading tool returns four recovery options:
+
+1. **Retry** — attempt the fetch again (use when you've just reconnected to the network/VPN)
+2. **Use built-in default for this request** — grade using the built-in ruleset once
+3. **Use built-in default for this session** — skip the configured default for all remaining requests this session
+4. **Cancel** — cancel the grading request
+
+Tell the AI which option to use and it will re-invoke the grading tool with your choice.
 
 ---
 
@@ -203,7 +270,7 @@ To verify the server starts correctly, run:
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | npx @dawmatt/api-grade-mcp
 ```
 
-You should see a JSON response listing all four tools.
+You should see a JSON response listing all six tools.
 
 ---
 
@@ -219,3 +286,10 @@ You should see a JSON response listing all four tools.
 
 **Large spec warning**
 - Specifications over 500KB trigger a warning; grading still proceeds but detailed results may be truncated. Consider splitting large specs before grading.
+
+**`RULESET_AUTH_FAILED` on every grading request**
+- The configured default ruleset is unreachable. Use `get-ruleset-config` to see what's configured, then either fix the auth (check `GITHUB_TOKEN` env var, reconnect to VPN) or clear the default with `configure-ruleset scope: session rulesetPath: null`.
+
+**Entra ID device-code flow not completing**
+- The code expires after a short window (typically 15 minutes). If you miss the window, retry the grading request — the server will initiate a new device-code flow.
+- Ensure `tenantId` and `clientId` are correct in the workspace or global config.

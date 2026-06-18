@@ -33,6 +33,8 @@
 
 - All items passed on first validation pass (2026-06-18).
 - All items remain passing after clarification session (2026-06-18) — 16/16.
+- All items remain passing after clarification session (2026-06-19) — 16/16. US5 (Configure Default Ruleset) added; five ambiguities resolved: workspace root = CWD, Entra token cache = `~/.api-grade/entra-token-cache.json`, cancel response = `REQUEST_CANCELLED` error, fetch timeouts = 5s initial / 30s retry, session override model = `sessionRulesetOverride: "builtin" | null`.
+- All items remain passing after documentation scope update (2026-06-19) — 16/16. FR-025 and SC-009 added: `docs/mcp/` directory with quick-start, configuration reference, and troubleshooting guide required at parity with Backstage and CLI docs.
 - MCP (Model Context Protocol) is named throughout the spec as a deliberate architectural decision (clarified in session), consistent with the project pattern of naming integration targets (e.g., Backstage in Feature 4).
 - "Non-breaking violation" is now precisely defined in FR-007: any fix that does not alter paths, methods, required parameters, schema types, or response structures.
 - Large spec handling defined: best-effort grading with a warning field when threshold is exceeded (FR-013).

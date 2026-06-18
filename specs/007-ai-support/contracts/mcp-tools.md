@@ -264,6 +264,228 @@
 
 ---
 
+---
+
+## Tool 5: `configure-ruleset`
+
+**Purpose**: Set the default ruleset used by this MCP server when no `rulesetPath` is supplied on a grading request. Supports three scopes: `session` (in-memory, resets on server restart), `workspace` (persisted to `.api-grade/config.json` in the workspace root), and `global` (persisted to `~/.api-grade/config.json`). Optionally configure authentication for rulesets hosted in secured locations.
+
+**Input Schema**:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "scope": {
+      "type": "string",
+      "enum": ["session", "workspace", "global"],
+      "description": "Where to store this default: 'session' is in-memory for this server process only; 'workspace' persists to .api-grade/config.json in the current workspace root; 'global' persists to ~/.api-grade/config.json."
+    },
+    "rulesetPath": {
+      "type": "string",
+      "description": "Absolute or relative file path, or HTTPS URL, to a Spectral-compatible ruleset file. To clear the default at this scope, omit this field or pass null."
+    },
+    "auth": {
+      "type": "object",
+      "description": "Optional authentication configuration for secured ruleset sources. Credentials are stored in a separate auth section from the ruleset path to support safe source-control practices.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["github-pat", "entra-id"],
+          "description": "'github-pat' uses a Bearer token for GitHub Enterprise URLs. 'entra-id' uses Microsoft Entra ID OAuth 2.0 device-code flow for SharePoint and enterprise internal sites."
+        },
+        "githubToken": {
+          "type": "string",
+          "description": "GitHub Personal Access Token (PAT). Only used when type is 'github-pat'. If omitted, the server falls back to the GITHUB_TOKEN environment variable."
+        },
+        "tenantId": {
+          "type": "string",
+          "description": "Microsoft Entra ID tenant ID. Required when type is 'entra-id'."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Microsoft Entra ID application (client) ID. Required when type is 'entra-id'."
+        }
+      },
+      "required": ["type"]
+    }
+  },
+  "required": ["scope"]
+}
+```
+
+**Output**:
+
+```json
+{
+  "scope": "workspace",
+  "rulesetPath": "https://github.example.com/org/api-standards/raw/main/ruleset.yaml",
+  "auth": { "type": "github-pat" },
+  "configFile": "/Users/jane/projects/myapi/.api-grade/config.json",
+  "message": "Workspace default ruleset configured. This setting will apply to all grading requests in this workspace unless overridden by a session-level default or a per-request rulesetPath."
+}
+```
+
+**Clear a scope** (pass `rulesetPath: null`):
+
+```json
+{
+  "scope": "session",
+  "rulesetPath": null
+}
+```
+
+Response confirms the scope was cleared and which scope will now take effect.
+
+**Error response** — invalid auth configuration:
+
+```json
+{
+  "error": "INVALID_AUTH_CONFIG",
+  "message": "auth.type 'entra-id' requires tenantId and clientId fields.",
+  "input": { "scope": "global", "auth": { "type": "entra-id" } }
+}
+```
+
+**Error response** — config file not writable:
+
+```json
+{
+  "error": "CONFIG_WRITE_ERROR",
+  "message": "Could not write workspace config to /project/.api-grade/config.json: permission denied.",
+  "input": { "scope": "workspace", "rulesetPath": "..." }
+}
+```
+
+---
+
+## Tool 6: `get-ruleset-config`
+
+**Purpose**: Return the active ruleset configuration at every scope (session, workspace, global), indicate which scope is currently in effect (the effective ruleset), and show the full resolution chain. Use this to diagnose why a particular ruleset is being applied or to confirm a `configure-ruleset` call took effect.
+
+**Input Schema**:
+
+```json
+{
+  "type": "object",
+  "properties": {},
+  "required": []
+}
+```
+
+(No input required.)
+
+**Output**:
+
+```json
+{
+  "effective": {
+    "scope": "workspace",
+    "rulesetPath": "https://github.example.com/org/api-standards/raw/main/ruleset.yaml",
+    "auth": { "type": "github-pat", "tokenSource": "config-file" }
+  },
+  "session": null,
+  "workspace": {
+    "rulesetPath": "https://github.example.com/org/api-standards/raw/main/ruleset.yaml",
+    "auth": { "type": "github-pat", "tokenSource": "config-file" },
+    "configFile": "/Users/jane/projects/myapi/.api-grade/config.json"
+  },
+  "global": null,
+  "builtIn": "default",
+  "precedenceOrder": ["session", "workspace", "global", "built-in"],
+  "note": "Per-request rulesetPath (if supplied on a grading call) always takes precedence over all configured defaults."
+}
+```
+
+**When no defaults are configured**:
+
+```json
+{
+  "effective": { "scope": "built-in", "rulesetPath": null },
+  "session": null,
+  "workspace": null,
+  "global": null,
+  "builtIn": "default",
+  "precedenceOrder": ["session", "workspace", "global", "built-in"]
+}
+```
+
+**Note on auth fields**: `auth` in the response always omits raw token values. `tokenSource` may be `"config-file"`, `"env-var"`, or `"none"`.
+
+---
+
+## Auth Failure Recovery Response
+
+When a grading tool (`grade-api`, `grade-api-detailed`, `assert-api-grade`, or `get-non-breaking-violations`) is invoked and the configured default ruleset cannot be fetched due to an authentication, authorisation, or network failure, the tool returns this structured response instead of an unhandled error:
+
+```json
+{
+  "error": "RULESET_AUTH_FAILED",
+  "failureReason": "network-unreachable",
+  "rulesetUrl": "https://sharepoint.example.com/sites/api-standards/ruleset.yaml",
+  "scope": "workspace",
+  "message": "The configured workspace default ruleset could not be fetched. The host 'sharepoint.example.com' is unreachable — you may be disconnected from the corporate network or VPN.",
+  "recoveryOptions": [
+    {
+      "id": "retry",
+      "label": "Retry",
+      "description": "Attempt to fetch the ruleset again (re-run this grading request using the configured default)."
+    },
+    {
+      "id": "use-builtin-once",
+      "label": "Use built-in default for this request",
+      "description": "Grade using the built-in api-grade ruleset for this one request only. The configured default remains active for future requests."
+    },
+    {
+      "id": "use-builtin-session",
+      "label": "Use built-in default for this session",
+      "description": "Grade using the built-in api-grade ruleset for all remaining requests this session. The configured default is not changed."
+    },
+    {
+      "id": "cancel",
+      "label": "Cancel",
+      "description": "Cancel this grading request without returning a result."
+    }
+  ]
+}
+```
+
+**Fetch timeout behaviour**: The initial fetch attempt uses a **5-second timeout**. If the user selects `retry`, the retry uses a **30-second timeout**. All other recovery options bypass the fetch.
+
+**`failureReason` values**:
+
+| Value | Meaning |
+|---|---|
+| `auth-failed` | Credentials present but rejected (401/403 response) |
+| `token-expired` | Token recognised but expired (GitHub PAT or Entra ID token) |
+| `network-unreachable` | DNS resolution or TCP connection failed (VPN/network issue) |
+| `entra-auth-required` | Entra ID authentication required but no cached token; device-code flow needed |
+| `config-invalid` | Stored auth config is malformed or missing required fields |
+
+**Acting on a recovery option**: The AI presents the options to the user, then re-calls the original grading tool with an additional `recoveryOption` parameter set to the chosen `id`. The grading tool honours the choice and proceeds accordingly.
+
+**Cancel response** — when `recoveryOption: "cancel"` is supplied:
+
+```json
+{
+  "error": "REQUEST_CANCELLED",
+  "message": "Grading request cancelled by user.",
+  "input": { "specPath": "/path/to/api.yaml" }
+}
+```
+
+**Updated grading tool schemas**: `grade-api`, `grade-api-detailed`, `assert-api-grade`, and `get-non-breaking-violations` all accept one additional optional input field:
+
+```json
+"recoveryOption": {
+  "type": "string",
+  "enum": ["retry", "use-builtin-once", "use-builtin-session", "cancel"],
+  "description": "Recovery action to take when the configured default ruleset is inaccessible. Only supply this field in response to a RULESET_AUTH_FAILED response — do not set it on initial requests."
+}
+```
+
+---
+
 ## MCP Host Configuration
 
 To use this server in a supported MCP host, add the following to its configuration:

@@ -4,7 +4,7 @@
 
 ## Overview
 
-The MCP server introduces no new persistent entities. All domain types originate in `@dawmatt/api-grade-core` and are either passed through directly or projected into MCP-specific response shapes. This document defines the projections and the one net-new type (`NonBreakingViolation`).
+The MCP server's grading operations are stateless. US5 (Configure Default Ruleset) introduces limited state: a session-level default held in memory on the `McpServer` instance, and two config files for persistence. All domain types originate in `@dawmatt/api-grade-core` and are either passed through directly or projected into MCP-specific response shapes. This document defines the projections and all net-new types.
 
 ---
 
@@ -68,6 +68,75 @@ The processed interpretation of the full diagnostic set.
 ---
 
 ## Net-New Types (defined in `api-grade-mcp`)
+
+### RulesetConfig
+
+Represents the stored configuration at a single scope. Serialised to JSON in `.api-grade/config.json` (workspace) or `~/.api-grade/config.json` (global); held in memory for session scope.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `rulesetPath` | `string \| null` | ✅ | File path or HTTPS URL to a Spectral ruleset. `null` means this scope has no default configured. |
+| `auth` | `AuthConfig \| null` | — | Authentication configuration. `null` when the ruleset is accessible without authentication. |
+
+### AuthConfig
+
+Authentication details for fetching a secured ruleset. Stored in a separate `auth` key from `rulesetPath` to allow config files to be committed to source control with the `auth` section excluded or redacted.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `type` | `"github-pat" \| "entra-id"` | ✅ | Authentication mechanism |
+| `githubToken` | `string \| undefined` | — | PAT value (only for `github-pat`). If absent, server reads `GITHUB_TOKEN` env var at runtime. |
+| `tenantId` | `string \| undefined` | — | Entra ID tenant ID (only for `entra-id`) |
+| `clientId` | `string \| undefined` | — | Entra ID application client ID (only for `entra-id`) |
+
+**Validation rules**:
+- `type: "entra-id"` requires both `tenantId` and `clientId`
+- `githubToken` is never written to the workspace config file (only to the session-level in-memory store or supplied transiently) — workspace config stores only `type: "github-pat"` as a hint, so the runtime falls back to `GITHUB_TOKEN` env var
+
+### RulesetResolution
+
+The result of the precedence chain lookup, produced by `resolve-ruleset.ts` before each grading request.
+
+| Field | Type | Description |
+|---|---|---|
+| `rulesetPath` | `string \| null` | Resolved path/URL, or `null` if built-in default applies |
+| `scope` | `"per-request" \| "session" \| "workspace" \| "global" \| "built-in"` | Which scope provided the resolved value |
+| `auth` | `AuthConfig \| null` | Auth config to apply when fetching, or `null` |
+
+### AuthFailureRecoveryResponse
+
+Returned by any grading tool when the configured default ruleset cannot be fetched.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `error` | `"RULESET_AUTH_FAILED"` | ✅ | Fixed error code |
+| `failureReason` | `string` | ✅ | Machine-readable reason: `auth-failed`, `token-expired`, `network-unreachable`, `entra-auth-required`, `config-invalid` |
+| `rulesetUrl` | `string` | ✅ | URL that could not be fetched |
+| `scope` | `string` | ✅ | Scope where the failing default was configured |
+| `message` | `string` | ✅ | Human-readable explanation for the AI to relay |
+| `recoveryOptions` | `RecoveryOption[]` | ✅ | The four options the user can choose from |
+
+### RecoveryOption
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `"retry" \| "use-builtin-once" \| "use-builtin-session" \| "cancel"` | Machine-readable option identifier |
+| `label` | `string` | Short label for the option |
+| `description` | `string` | Explanation of what this option will do |
+
+### EntraDeviceCodeResponse
+
+Returned when `type: "entra-id"` auth is needed but no cached token is available. Allows the AI to prompt the user to complete the device-code flow in a browser.
+
+| Field | Type | Description |
+|---|---|---|
+| `error` | `"ENTRA_AUTH_REQUIRED"` | Fixed error code |
+| `deviceCodeUrl` | `string` | URL the user should open in a browser |
+| `userCode` | `string` | Code the user enters on that page |
+| `expiresIn` | `number` | Seconds before the code expires |
+| `message` | `string` | Human-readable instruction string |
+
+---
 
 ### NonBreakingViolation
 
@@ -134,13 +203,29 @@ Projected from `GradeResult`; diagnostics array excluded to reduce token usage.
 
 ## State Model
 
-All operations are stateless. There is no session, no cache, and no file written by the MCP server. Each tool invocation:
+Grading operations remain stateless — no session, no cache. US5 introduces two forms of limited state:
 
+**In-memory session state** (`SessionState` object held on the `McpServer` instance):
+
+| Field | Type | Description |
+|---|---|---|
+| `defaultRuleset` | `RulesetConfig \| null` | Session-level default set via `configure-ruleset scope: session`; `null` if not configured |
+| `sessionRulesetOverride` | `"builtin" \| null` | Set to `"builtin"` when the user selects `use-builtin-session`; takes precedence over `defaultRuleset` for all subsequent requests. Cleared implicitly when `configure-ruleset scope: session` is called with a non-null `rulesetPath`. |
+
+- Session-level Entra ID token cache (held by the MSAL `PublicClientApplication` instance)
+
+**Persistent file state**:
+- `.api-grade/config.json` (relative to CWD/workspace root) — workspace-level `RulesetConfig`
+- `~/.api-grade/config.json` — global `RulesetConfig`
+- `~/.api-grade/entra-token-cache.json` — MSAL `TokenCacheContext` serialisation; written only to user home directory, never to workspace
+
+Each grading tool invocation:
 1. Receives input via MCP stdio
-2. Constructs a `GradeRequest`
-3. Instantiates `GradeEngine` (or reuses a singleton — TBD in implementation; either is valid given statelesness)
-4. Returns a projected JSON response
-5. Retains nothing after the response is sent
+2. Calls `resolveRuleset(input.rulesetPath, sessionState, workspaceConfig, globalConfig)` to determine the effective ruleset. Precedence: per-request → `sessionRulesetOverride: "builtin"` (short-circuits to built-in immediately) → `session.defaultRuleset` → workspace → global → built-in
+3. If the resolved ruleset is a remote URL, fetches it using the associated `AuthConfig` (PAT header or cached Entra token)
+4. If fetch fails with an auth/network error, returns `AuthFailureRecoveryResponse` immediately
+5. Constructs a `GradeRequest` and calls `GradeEngine`
+6. Returns a projected JSON response
 
 ---
 
@@ -163,3 +248,8 @@ Structured errors are returned as MCP tool errors (not thrown exceptions). All e
 | `RULESET_NOT_FOUND` | `rulesetPath` was provided but does not exist |
 | `INVALID_GRADE` | `minimumGrade` is not one of A/B/C/D/F |
 | `GRADE_ENGINE_ERROR` | Unexpected error from GradeEngine (wrapped with details) |
+| `RULESET_AUTH_FAILED` | Configured default ruleset could not be fetched (auth/network failure) — see `AuthFailureRecoveryResponse` |
+| `ENTRA_AUTH_REQUIRED` | Entra ID device-code flow must be completed before the secured ruleset can be fetched |
+| `INVALID_AUTH_CONFIG` | Auth configuration is malformed or missing required fields |
+| `CONFIG_WRITE_ERROR` | Workspace or global config file could not be written (permission denied or invalid path) |
+| `REQUEST_CANCELLED` | User selected the `cancel` recovery option; no grading result is returned |
