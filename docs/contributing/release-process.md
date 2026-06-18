@@ -26,44 +26,67 @@ When in doubt, use `minor` — it signals new functionality without breaking exi
 
 ## Step-by-Step Release
 
+### When to assign the version
+
+Version assignment happens **in the feature branch**, before the PR is opened. This makes the version bump part of the reviewed change, keeps the main branch clean of direct commits, and ensures the release pipeline only triggers after the change has been reviewed and approved.
+
 ### Prerequisites
 
-- You are on a clean `main` branch with no uncommitted changes.
-- All CI checks pass on the latest commit.
+- You are on a feature branch that is ready to release (all work committed, CI passing locally).
+- You know which version bump type is appropriate (see Versioning Rules above).
 
 ### Steps
 
-1. **Bump the version** using the version script:
+1. **Bump the version on the feature branch** using the version script:
 
    ```bash
    node scripts/version.mjs patch   # or minor, or major
    ```
 
-   This updates `version` in all four `package.json` files, creates a git commit (`chore: bump version to v<N>`), and creates a `v<N>` tag.
+   This updates `version` in all four `package.json` files, creates a git commit (`chore: release v<N>`), and creates a local `v<N>` tag. The tag stays local — do not push it yet.
 
-2. **Push the commit and tag**:
+2. **Push only the branch** (not the tag):
 
    ```bash
-   git push origin main --follow-tags
+   git push origin <your-branch-name>
    ```
 
-   Pushing the tag triggers the release pipeline at `.github/workflows/release.yml`.
+   This makes the version bump commit visible in the PR diff without triggering the release pipeline.
 
-3. **Approve the deployment** in GitHub Actions:
+3. **Open a pull request** targeting `main`. The PR must pass the quality gate CI and receive at least one maintainer approval before it can be merged (enforced by branch protection).
+
+4. **After the PR is merged**, fetch and switch to main:
+
+   ```bash
+   git fetch origin main
+   git checkout main
+   git pull origin main
+   ```
+
+5. **Push the tag** to trigger the release pipeline:
+
+   ```bash
+   git push origin v<N>
+   ```
+
+   Pushing the tag triggers `.github/workflows/release.yml`. The pipeline first verifies that the tagged commit is on `main`; it will fail immediately if it is not.
+
+6. **Approve the deployment** in GitHub Actions:
    - Go to **Actions → Release** → the running workflow.
    - Under **Environments**, click **Review deployments** → **Approve**.
 
-4. **Monitor the pipeline** — the workflow runs six quality gate stages (audit, lint, typecheck, coverage × 4, build), then publishes all four packages in dependency order, then creates a GitHub Release.
+7. **Monitor the pipeline** — the workflow runs six quality gate stages (audit, lint, typecheck, coverage × 4, build), then publishes all four packages in dependency order, then creates a GitHub Release with notes generated from commit messages.
 
-5. **Verify** the packages appear on npmjs.com under the `@dawmatt` scope.
+8. **Verify** the packages appear on npmjs.com under the `@dawmatt` scope and the GitHub Release description lists the changes.
 
 ---
 
 ## Monitoring the Release Pipeline
 
 - **Actions tab**: Go to **Actions → Release** to see the running workflow. Each step shows its status in real time.
-- **Failed quality gate**: If any gate step fails, the workflow stops before publishing. Fix the issue on `main`, then repeat from step 1.
-- **GitHub Release**: After a successful run, a new release appears under **Releases** with the tag name, actor, commit SHA, and list of published packages.
+- **Main-branch check**: The first step verifies that the tagged commit is reachable from `main`. If you pushed the tag before the PR was merged, this step fails — delete the remote tag, merge the PR, then re-push the tag.
+- **Failed quality gate**: If any gate step fails, the workflow stops before publishing. Fix the issue in a branch, get it reviewed and merged, then re-push the tag.
+- **GitHub Release**: After a successful run, a new release appears under **Releases** with the tag name, the commit messages for changes in this release (excluding version-bump commits), the actor, commit SHA, and list of published packages.
 
 ---
 
@@ -71,14 +94,17 @@ When in doubt, use `minor` — it signals new functionality without breaking exi
 
 ### Pipeline failed before any packages published
 
-The quality gate caught a problem. No packages were published. Fix the issue on `main` (no version bump needed — the tag and commit from the failed attempt can be deleted), then re-release:
+The quality gate caught a problem. No packages were published. Delete the tag, fix the issue in a new or updated branch, and re-release:
 
 ```bash
 git tag -d v<N>                        # delete local tag
 git push origin --delete v<N>          # delete remote tag
-# fix the issue, commit to main
-node scripts/version.mjs patch         # re-bump
-git push origin main --follow-tags
+# fix the issue in a branch, open PR, get it merged to main
+node scripts/version.mjs patch         # re-bump on the branch
+git push origin <branch-name>          # push branch (not tag)
+# after PR is reviewed, approved, and merged:
+git checkout main && git pull origin main
+git push origin v<N>                   # push tag to trigger release
 ```
 
 ### Pipeline failed after some packages published (partial release)

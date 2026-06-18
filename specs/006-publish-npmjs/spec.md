@@ -160,10 +160,13 @@ A maintainer is ready to publish a new version of one or more packages. They ass
 - **FR-018**: The build for each package MUST succeed as a quality gate condition. A release MUST be blocked if any package build fails.
 - **FR-019**: Code coverage MUST meet a defined minimum threshold as a quality gate condition. A release MUST be blocked if overall coverage falls below the threshold.
 - **FR-020**: A dependency security audit MUST pass as a quality gate condition. A release MUST be blocked if any dependency with a high-severity vulnerability is found.
-- **FR-021**: The same quality gates used for release MUST also run automatically on every code change submitted for review, providing early feedback before a release is ever attempted.
+- **FR-021**: The same quality gates used for release MUST also run automatically on every code change submitted for review, providing early feedback before a release is ever attempted. Every pull request targeting the main branch MUST require both the quality gate to pass AND approval by at least one maintainer before merging is permitted.
 - **FR-022**: The version assigned to each release MUST be explicitly chosen by the releasing maintainer following semantic versioning conventions. The choice of major, minor, or patch increment MUST be documented with clear rules in the contribution guide.
 - **FR-023**: Each completed release MUST produce a traceable record that captures: the version published, the identity of the maintainer who triggered the release, and the exact source code commit the release was built from.
 - **FR-024**: The contribution guide MUST document the complete release process end-to-end, covering: how to decide on a version number, how to initiate the release pipeline, what quality gates will run and how to interpret results, and how to recover from a failed release.
+- **FR-025**: Package publication to npmjs MUST only occur when the release is built from the main branch. The release pipeline MUST verify that the tagged commit is reachable from the `main` branch before proceeding with publication; tags not on main MUST NOT result in any packages being published.
+- **FR-026**: Every GitHub Release description MUST be generated from the commit messages included in the release since the previous release tag. Commits whose message consists solely of a version/release bump (e.g., commits created by the version script) MUST be excluded from the generated release notes so that the description reflects only meaningful changes.
+- **FR-027**: Package versions MUST be incremented and the corresponding `v<N>` git tag MUST be created in the feature branch, before that branch is merged to main. The version bump commit MUST be visible in the pull request diff. The tag MUST NOT be pushed to the remote until after the feature branch has been merged to main, so that the release pipeline only triggers once the change is on main.
 
 ### Key Entities
 
@@ -185,6 +188,9 @@ A maintainer is ready to publish a new version of one or more packages. They ass
 - **SC-007**: Non-maintainers are unable to trigger a release under any circumstance, verified by attempted release from a non-maintainer account being rejected 100% of the time.
 - **SC-008**: Quality gate results are available to contributors within 10 minutes of submitting a code change, providing actionable feedback before review begins.
 - **SC-009**: Every published release has a complete, queryable record identifying the version, releasing maintainer, and source commit, with zero gaps in traceability across all releases.
+- **SC-010**: Every published release is built from a commit that is reachable from the main branch, verified by the release pipeline checking branch membership before publishing begins.
+- **SC-011**: Every GitHub Release description includes the commit messages for all non-version-bump commits since the previous release, allowing anyone to understand what changed without reading the git log directly.
+- **SC-012**: Pull requests to main that do not have at least one maintainer approval are blocked from merging by branch protection, regardless of CI status.
 
 ## Assumptions
 

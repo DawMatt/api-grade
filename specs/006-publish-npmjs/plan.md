@@ -6,7 +6,7 @@
 
 ## Summary
 
-Publish all four `@dawmatt`-scoped packages to the npmjs public registry and automate the entire release pipeline via GitHub Actions. The pipeline enforces quality gates (tests, linting, type checking, build, coverage threshold, dependency audit) on every code change and before every release. Only maintainers may trigger a release via protected tags. The full release process — including version assignment and recovery steps — is documented in the contribution guide.
+Publish all four `@dawmatt`-scoped packages to the npmjs public registry and automate the entire release pipeline via GitHub Actions. The pipeline enforces quality gates (tests, linting, type checking, build, coverage threshold, dependency audit) on every code change and before every release. PRs to main require both a passing quality gate and at least one maintainer approval before merging. Publication only occurs from the main branch — the release pipeline verifies the tagged commit is on main before proceeding. Release notes are generated from commit messages (excluding version-bump commits). Version assignment and tag creation happen in the feature branch before the PR is merged; the tag is pushed to origin only after the branch lands on main. Only maintainers may trigger a release via protected tags. The full release process — including version assignment and recovery steps — is documented in the contribution guide.
 
 ## Technical Context
 

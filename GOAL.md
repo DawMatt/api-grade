@@ -52,7 +52,9 @@ Feature 5 - API grade documentation refactoring
 
 Feature 6 - npmjs
 
-- Publish packages to npmjs. Use namespace dawmatt. e.g. core package would be named @dawmatt/api-grade-core
+- Automate publishing packages to npmjs from the main branch. Use namespace dawmatt. e.g. core package would be named @dawmatt/api-grade-core
+- Make sure any PRs against the main branch are of appropriate quality, and accepted by a maintainer, before they can be accepted and automatically published.
+- Make sure the GitHub release description reflects the changes in the release. Gather this information from commit descriptions included in the release, ignoring any commit that only includes a release tag.
 - Update documentation to cover npmjs. Includes both the user oriented documentation and the contribution guide
 
 Feature 7 - AI support

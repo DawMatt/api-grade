@@ -353,6 +353,21 @@ npm run build
 
 ---
 
+## Phase 20: Requirements Refinements — Main-Branch Publication, PR Gate, Release Notes, Feature-Branch Versioning
+
+**Purpose**: Address four requirements clarified after the initial implementation. These tasks update existing workflows, documentation, and configuration to enforce that publication only occurs from main, that PRs require maintainer approval, that release notes are generated from commit messages, and that version assignment happens in the feature branch before merging.
+
+**Prerequisites**: All prior phases complete (release.yml and docs must already exist).
+
+- [ ] T081 [US7] In `.github/workflows/release.yml`, add a validation step immediately after the `Checkout` step that verifies the tagged commit is reachable from the `main` branch: run `git fetch origin main && git merge-base --is-ancestor "${{ github.sha }}" origin/main` — exit 1 with a descriptive message if the check fails, ensuring no publication proceeds when the tag is not on main; name the step "Verify tag is on main branch"
+- [ ] T082 [US6] In `docs/contributing/initial-setup.md` Part 1, replace the "Optional but recommended" branch protection section with required setup steps that include: (a) enable **Require a pull request before merging**, (b) set **Required approvals** to 1, (c) require the `quality-gate` status check to pass, and (d) enable **Require branches to be up to date before merging** — update the surrounding prose to make clear that branch protection is mandatory, not optional
+- [ ] T083 [US7, US4] Rewrite `docs/contributing/release-process.md` Step-by-Step Release to reflect the feature-branch versioning workflow: (1) while on the feature branch (not main), run `node scripts/version.mjs <type>` to create the version bump commit and local tag; (2) push the feature branch to origin **without** the tag (`git push origin <branch-name>` — omit `--follow-tags`); (3) open a PR, get quality-gate approval and maintainer review, and merge; (4) after merge, fetch main and switch to it; (5) push only the tag to trigger the release: `git push origin v<N>`; update the Prerequisites section to reflect that version assignment happens on the feature branch, not on main
+- [ ] T084 [US7] Update the "Create GitHub Release" step in `.github/workflows/release.yml` to generate release notes from commit messages: use `git log` between the previous release tag and the current tag to collect commit subjects, then filter out any lines matching the version-bump commit pattern (e.g., lines starting with `chore: release`); include the filtered commit list in the release body above the existing actor/SHA/package lines; use `git describe --tags --abbrev=0 HEAD^` (or `git tag --sort=-version:refname | sed -n '2p'`) to find the previous tag
+
+**Checkpoint**: Release pipeline rejects a tag pushed from a non-main branch. Branch protection blocks PRs to main without maintainer approval. A completed release's GitHub Release description lists meaningful commit messages. Contributor documentation shows version assignment happening in the feature branch before PR is opened.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
