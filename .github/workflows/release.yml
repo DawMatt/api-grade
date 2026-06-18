@@ -15,9 +15,6 @@ jobs:
     name: Publish to npmjs
     runs-on: ubuntu-latest
     environment: npm-publish
-    permissions:
-      contents: write   # to create GitHub Release
-      id-token: write   # for npm provenance attestation
 
     steps:
       - name: Checkout
