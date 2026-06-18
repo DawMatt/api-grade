@@ -286,6 +286,27 @@ npm run build
 
 ---
 
+## Phase 16: Fix — `setup-node` registry-url Overrides .npmrc, Blocking TP OIDC Auth (Run 5)
+
+**Goal**: Resolve the persistent 404 error from `npm publish --access public --provenance` in the automated release pipeline. Run 5 confirmed that T064 (adding `--provenance`) caused provenance to be signed and published to the transparency log, but the registry PUT request still returned 404 — proving that `--provenance` alone does not fix the authentication failure.
+
+**Root cause**: `setup-node@v4` with `registry-url: 'https://registry.npmjs.org'` creates a temporary `.npmrc` at `/home/runner/work/_temp/.npmrc` containing `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}` and sets `NPM_CONFIG_USERCONFIG` to point to it. This temporary `.npmrc` takes precedence over the project's own `.npmrc`. The masked value `NODE_AUTH_TOKEN: XXXXX-XXXXX-XXXXX-XXXXX` visible in the Run 5 step environment confirms the variable resolves to a non-empty value — most likely an `NPM_TOKEN` secret that has been configured in GitHub repository settings with a placeholder or invalid value. npm reads this `_authToken` and uses classic token auth for the registry PUT request. Since the token is invalid, npmjs.com rejects it with 404. npm does **not** fall through to the Trusted Publisher OIDC exchange when an explicit `_authToken` is already configured for the registry.
+
+**Why provenance worked but publish failed**: Provenance signing uses the GitHub→Sigstore OIDC flow, which is entirely separate from npm registry authentication. The `id-token: write` permission is sufficient for Sigstore. The TP OIDC exchange (GitHub→npmjs.com) is a different code path that npm only attempts when there is no `_authToken` already configured for the registry.
+
+**Fix**: Remove `registry-url: 'https://registry.npmjs.org'` from the `setup-node@v4` step in `release.yml`. Without `registry-url`, `setup-node` will not create a temporary `.npmrc` with `_authToken`, and `NODE_AUTH_TOKEN` will not be set by the action. npm will then use the project's `.npmrc` (`@dawmatt:registry=https://registry.npmjs.org`), which configures the correct registry without an auth token, allowing the Trusted Publisher OIDC exchange to proceed. If an `NPM_TOKEN` secret exists in the repository, it must also be removed — it is incompatible with Trusted Publishing and will re-introduce the same `_authToken` override via `NODE_AUTH_TOKEN`.
+
+**Independent Test**: After completing this phase, trigger a new automated release; confirm all four `npm publish --access public --provenance` steps in release.yml exit 0 and the packages appear on npmjs.com at the new version. Confirm no `NODE_AUTH_TOKEN` or `NPM_CONFIG_USERCONFIG` entries appear in the step environment.
+
+- [x] T067 [US7] In `.github/workflows/release.yml`, remove the `registry-url: 'https://registry.npmjs.org'` line from the `setup-node@v4` step; retain `node-version: '22'` and `cache: 'yarn'`; the project's `.npmrc` (`@dawmatt:registry=https://registry.npmjs.org`) already configures the registry for `@dawmatt`-scoped packages and no explicit registry-url is required for Trusted Publishing
+- [x] T068 In GitHub repository settings → Secrets and variables → Actions, check for an `NPM_TOKEN` secret; if present, delete it — Trusted Publishing requires no stored credential and any configured `NPM_TOKEN` will be exported as `NODE_AUTH_TOKEN` by `setup-node`, reinstating the `_authToken` override that blocks TP OIDC auth
+- [ ] T069 Trigger a new automated release to verify the TP OIDC auth now works end-to-end: run `node scripts/version.mjs patch`, then `git push origin main --follow-tags`; approve the `npm-publish` environment gate in GitHub Actions; confirm all four `npm publish` steps succeed and packages appear on npmjs.com at the new version; confirm a GitHub Release is created with correct version, actor, and commit SHA
+- [ ] T070 Mark the Run 3, Run 4, and Run 5 items in `specs/006-publish-npmjs/checklists/issues.md` as `[x]`; mark T063 and T066 as `[x]` in `specs/006-publish-npmjs/tasks.md`
+
+**Checkpoint**: All four `npm publish --access public --provenance` steps exit 0. Packages appear on npmjs.com at the new version. `NODE_AUTH_TOKEN` and `NPM_CONFIG_USERCONFIG` are absent from the publish step environment. GitHub Release is created with correct traceability fields.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -301,6 +322,7 @@ npm run build
 - **Fix Phase 12 (Integration test build ordering)**: Depends on Phase 11 (CI/release workflows must exist and typecheck must pass) — insert pre-test build step; unblocks the publish pipeline for Run 2
 - **Polish (Phase 13)**: Depends on all user story phases complete
 - **Fix Phase 14 (npmjs bootstrap)**: Depends on Phase 13 complete — all quality gates pass and packages are publish-ready; execute after Polish is done
+- **Fix Phase 16 (setup-node registry-url)**: Depends on Phase 15 (T064 done, --provenance added); supersedes T065 as the correct release verification trigger; T070 closes T063 and T066 from Phases 14–15
 
 ### User Story Dependencies
 
@@ -345,7 +367,14 @@ US5 (T047–T049)
 
 ## Implementation Strategy
 
-### Immediate Priority (Phase 15 — Run 4 Fix)
+### Immediate Priority (Phase 16 — Run 5 Fix)
+
+1. Remove `registry-url` from `setup-node` in `release.yml` (T067)
+2. Delete `NPM_TOKEN` secret from GitHub repo settings if present (T068)
+3. Trigger a new automated release to verify TP OIDC auth works end-to-end (T069)
+4. Mark all open issues (Run 3, Run 4, Run 5) and pending tasks (T063, T066) as `[x]` (T070)
+
+### Historical Immediate Priority (Phase 15 — Run 4 Fix)
 
 1. Add `--provenance` to all four `npm publish` commands in `release.yml` (T064)
 2. Trigger a new automated release to verify OIDC now works (T065)
