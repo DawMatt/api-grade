@@ -115,7 +115,7 @@ export GITHUB_TOKEN=ghp_xxxx  # then start your AI tool
 
 ### Microsoft Entra ID (Device Code Flow) — the server handles tokens for you, no env var needed
 
-For rulesets hosted on SharePoint or other Entra ID-protected sites:
+For rulesets hosted on SharePoint or other Entra ID-protected sites. This requires an Entra ID app registration to already exist in your tenant — see [Entra ID Setup](entra-id-setup.md) for the one-time administrator steps to create it before continuing here.
 
 ```json
 {
@@ -190,6 +190,7 @@ Passing `rulesetPath: null` clears the configuration at that scope without affec
 ## Further Reading
 
 - [Quick Start](quick-start.md) — install and configure in minutes
+- [Entra ID Setup](entra-id-setup.md) — one-time Azure-side app registration required for Entra ID auth
 - [Troubleshooting](troubleshooting.md) — auth failures, missing tools, and common errors
 - [Package Documentation](../package/api-grade-mcp.md) — full tool reference with all parameters
 - [Documentation Index](../index.md)
