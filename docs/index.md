@@ -19,6 +19,7 @@
 | [MCP Quick Start](mcp/quick-start.md) | Install and configure the MCP server in minutes |
 | [MCP Configuration Reference](mcp/configuration.md) | Default rulesets, auth, and scope precedence |
 | [MCP Entra ID Setup](mcp/entra-id-setup.md) | One-time Azure-side app registration for Entra ID auth |
+| [MCP GitHub Token Setup](mcp/github-pat-setup.md) | One-time GitHub PAT creation for `github-pat` ruleset auth |
 | [MCP Troubleshooting](mcp/troubleshooting.md) | Auth failures, missing tools, and common errors |
 | [Backstage Plugins](backstage-plugins/README.md) | Display grades on Backstage API entity pages |
 | [Backstage Quick Start](backstage-plugins/quick-start.md) | Get both plugins running in under 30 minutes |

@@ -90,7 +90,7 @@ rm ~/.api-grade/entra-token-cache.json
 
 ## GitHub Token Issues
 
-**Symptom**: `RULESET_AUTH_FAILED` with `failureReason: "auth-failed"` when fetching from GitHub Enterprise.
+**Symptom**: `RULESET_AUTH_FAILED` with `failureReason: "auth-failed"` when fetching from GitHub Enterprise. If you haven't created a token yet, see [GitHub Token Setup](github-pat-setup.md) for the one-time steps.
 
 **Check**:
 1. Is `GITHUB_TOKEN` set? `echo $GITHUB_TOKEN`
@@ -126,5 +126,6 @@ This is expected behaviour. The server is meant to be started by the AI tool's M
 
 - [Quick Start](quick-start.md) — initial setup and configuration
 - [Configuration Reference](configuration.md) — auth, scopes, and config file format
+- [GitHub Token Setup](github-pat-setup.md) — one-time GitHub PAT creation required for `github-pat` auth
 - [Package Documentation](../package/api-grade-mcp.md) — full tool reference
 - [Documentation Index](../index.md)

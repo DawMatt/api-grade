@@ -62,6 +62,7 @@ npx -y @dawmatt/api-grade-mcp
 | [Quick Start](./quick-start.md) | Install and configure in minutes — covers Claude Code, Copilot, Claude Desktop |
 | [Configuration Reference](./configuration.md) | Default rulesets, auth, scope precedence, and config file format |
 | [Entra ID Setup](./entra-id-setup.md) | One-time Azure-side app registration required for Entra ID auth |
+| [GitHub Token Setup](./github-pat-setup.md) | One-time GitHub PAT creation required for `github-pat` ruleset auth |
 | [Troubleshooting](./troubleshooting.md) | Auth failures, missing tools, and common errors |
 
 ---
@@ -71,6 +72,7 @@ npx -y @dawmatt/api-grade-mcp
 - [→ Quick Start](./quick-start.md) — get the MCP server running in your AI tool
 - [→ Configuration Reference](./configuration.md) — configure a default ruleset and auth
 - [→ Entra ID Setup](./entra-id-setup.md) — Azure-side app registration for Entra ID auth
+- [→ GitHub Token Setup](./github-pat-setup.md) — create and configure a GitHub PAT for `github-pat` auth
 - [→ Troubleshooting](./troubleshooting.md) — fix common issues
 - [→ Package Documentation](../package/api-grade-mcp.md) — full tool reference with all inputs and outputs
 - [→ Documentation Index](../index.md) — full navigation across all project docs

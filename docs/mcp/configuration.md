@@ -94,6 +94,8 @@ For publicly accessible ruleset URLs, no auth configuration is needed:
 
 ### GitHub Enterprise (Personal Access Token) — you supply a token via an environment variable
 
+This requires a GitHub personal access token to already exist with read access to the repository hosting the ruleset — see [GitHub Token Setup](github-pat-setup.md) for the one-time steps to create one before continuing here.
+
 Set the `GITHUB_TOKEN` environment variable before starting your AI tool, or configure the auth type in the ruleset config:
 
 ```json
@@ -191,6 +193,7 @@ Passing `rulesetPath: null` clears the configuration at that scope without affec
 
 - [Quick Start](quick-start.md) — install and configure in minutes
 - [Entra ID Setup](entra-id-setup.md) — one-time Azure-side app registration required for Entra ID auth
+- [GitHub Token Setup](github-pat-setup.md) — one-time GitHub PAT creation required for `github-pat` auth
 - [Troubleshooting](troubleshooting.md) — auth failures, missing tools, and common errors
 - [Package Documentation](../package/api-grade-mcp.md) — full tool reference with all parameters
 - [Documentation Index](../index.md)
