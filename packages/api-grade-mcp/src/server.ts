@@ -6,6 +6,9 @@ import { registerGradeTool } from './tools/grade.js';
 import { registerAssertGradeTool } from './tools/assert-grade.js';
 import { registerGradeDetailedTool } from './tools/grade-detailed.js';
 import { registerNonBreakingTool } from './tools/non-breaking.js';
+import { registerConfigureRulesetTool } from './tools/configure-ruleset.js';
+import { registerGetRulesetConfigTool } from './tools/get-ruleset-config.js';
+import type { SessionState } from './types.js';
 
 function getVersion(): string {
   try {
@@ -20,9 +23,12 @@ function getVersion(): string {
 
 export function createServer(): McpServer {
   const server = new McpServer({ name: 'api-grade', version: getVersion() });
-  registerGradeTool(server);
-  registerAssertGradeTool(server);
-  registerGradeDetailedTool(server);
-  registerNonBreakingTool(server);
+  const sessionState: SessionState = { defaultRuleset: null, sessionRulesetOverride: null };
+  registerGradeTool(server, sessionState);
+  registerAssertGradeTool(server, sessionState);
+  registerGradeDetailedTool(server, sessionState);
+  registerNonBreakingTool(server, sessionState);
+  registerConfigureRulesetTool(server, sessionState);
+  registerGetRulesetConfigTool(server, sessionState);
   return server;
 }

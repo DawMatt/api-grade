@@ -14,6 +14,11 @@
 | [Core Package](package/README.md) | Embed `api-grade-core` in your own tools and scripts |
 | [Package Usage Guide](package/usage-guide.md) | Common integration patterns and worked examples |
 | [Package API Reference](package/api-reference.md) | All exported functions, classes, and types |
+| [MCP Server](mcp/README.md) | Grade specs from AI tools via MCP |
+| [MCP Server Overview](package/api-grade-mcp.md) | All six MCP tools and their inputs/outputs |
+| [MCP Quick Start](mcp/quick-start.md) | Install and configure the MCP server in minutes |
+| [MCP Configuration Reference](mcp/configuration.md) | Default rulesets, auth, and scope precedence |
+| [MCP Troubleshooting](mcp/troubleshooting.md) | Auth failures, missing tools, and common errors |
 | [Backstage Plugins](backstage-plugins/README.md) | Display grades on Backstage API entity pages |
 | [Backstage Quick Start](backstage-plugins/quick-start.md) | Get both plugins running in under 30 minutes |
 | [Backstage Configuration](backstage-plugins/configuration.md) | All plugin configuration options |
@@ -38,6 +43,7 @@ The grading algorithm is error-first: a single error outweighs many warnings. It
 
 - **I want to grade a spec from the command line** → [CLI Tool](cli/README.md)
 - **I want to use grading in my own code or tooling** → [Core Package](package/README.md)
+- **I want to grade specs from an AI assistant** → [MCP Server Quick Start](mcp/README.md)
 - **I want grades to appear in my Backstage developer portal** → [Backstage Plugins](backstage-plugins/README.md)
 - **I'm not sure where to start** → [Getting Started](getting-started.md)
 

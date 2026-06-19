@@ -1,13 +1,20 @@
-import { statSync, readFileSync } from 'node:fs';
+import { statSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { z } from 'zod';
 import { GradeEngine } from '@dawmatt/api-grade-core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { mcpError, ERROR_CODES } from '../utils/errors.js';
+import { mcpError, buildAuthFailureResponse, ERROR_CODES } from '../utils/errors.js';
+import { loadWorkspaceConfig, loadGlobalConfig } from '../config/ruleset-config.js';
+import { resolveRuleset } from '../config/resolve-ruleset.js';
+import { fetchRulesetContent, RulesetAuthError, INITIAL_FETCH_TIMEOUT_MS, RETRY_FETCH_TIMEOUT_MS } from '../auth/github.js';
+import { EntraAuthRequired, acquireEntraToken } from '../auth/entra.js';
 import { classifyViolation, buildNonBreakingViolation } from '../utils/classify.js';
+import type { SessionState } from '../types.js';
 
 const LARGE_SPEC_THRESHOLD_BYTES = 500_000;
 
-export function registerNonBreakingTool(server: McpServer): void {
+export function registerNonBreakingTool(server: McpServer, sessionState: SessionState): void {
   server.tool(
     'get-non-breaking-violations',
     'Return a classified, AI-actionable list of non-breaking violations in an API specification. Non-breaking violations are those whose fixes do not alter the API interface contract (paths, methods, required parameters, schema types, or response structures). Use this tool to obtain issues the AI can safely resolve — the AI generates the corrected specification content; the MCP server does not modify files.',
@@ -21,8 +28,85 @@ export function registerNonBreakingTool(server: McpServer): void {
         .string()
         .optional()
         .describe('Optional path to a custom Spectral-compatible ruleset file'),
+      recoveryOption: z
+        .enum(['retry', 'use-builtin-once', 'use-builtin-session', 'cancel'])
+        .optional()
+        .describe(
+          'Recovery action when the configured default ruleset is inaccessible. Only supply in response to a RULESET_AUTH_FAILED response.'
+        ),
     },
-    async ({ specPath, rulesetPath }) => {
+    async ({ specPath, rulesetPath, recoveryOption }) => {
+      if (recoveryOption === 'cancel') {
+        return mcpError(ERROR_CODES.REQUEST_CANCELLED, 'Grading request cancelled by user.', { specPath });
+      }
+
+      if (recoveryOption === 'use-builtin-session') {
+        sessionState.sessionRulesetOverride = 'builtin';
+      }
+
+      const workspaceConfig = await loadWorkspaceConfig();
+      const globalConfig = await loadGlobalConfig();
+      const resolved = resolveRuleset(rulesetPath, sessionState, workspaceConfig, globalConfig);
+
+      let effectiveRulesetPath: string | undefined = resolved.rulesetPath ?? undefined;
+      let tempRulesetFile: string | undefined;
+
+      if (resolved.rulesetPath?.startsWith('http')) {
+        if (recoveryOption === 'use-builtin-once') {
+          effectiveRulesetPath = undefined;
+        } else {
+          const timeoutMs = recoveryOption === 'retry' ? RETRY_FETCH_TIMEOUT_MS : INITIAL_FETCH_TIMEOUT_MS;
+          try {
+            let content: string;
+            if (resolved.auth?.type === 'github-pat') {
+              const token = resolved.auth.githubToken ?? process.env.GITHUB_TOKEN ?? '';
+              content = await fetchRulesetContent(resolved.rulesetPath, token || undefined, timeoutMs);
+            } else if (resolved.auth?.type === 'entra-id' && resolved.auth.tenantId && resolved.auth.clientId) {
+              const token = await acquireEntraToken(resolved.auth.tenantId, resolved.auth.clientId);
+              content = await fetchRulesetContent(resolved.rulesetPath, token, timeoutMs);
+            } else {
+              content = await fetchRulesetContent(resolved.rulesetPath, undefined, timeoutMs);
+            }
+            tempRulesetFile = join(tmpdir(), `api-grade-ruleset-${Date.now()}.yaml`);
+            writeFileSync(tempRulesetFile, content);
+            effectiveRulesetPath = tempRulesetFile;
+          } catch (err) {
+            if (err instanceof EntraAuthRequired) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: JSON.stringify({
+                    error: ERROR_CODES.ENTRA_AUTH_REQUIRED,
+                    deviceCodeUrl: err.verificationUri,
+                    userCode: err.userCode,
+                    expiresIn: err.expiresIn,
+                    message: `Complete Entra ID sign-in: Visit ${err.verificationUri} and enter code ${err.userCode}`,
+                  }),
+                }],
+                isError: true as const,
+              };
+            }
+            const reason = err instanceof RulesetAuthError ? err.reason : 'network-unreachable';
+            return buildAuthFailureResponse(
+              reason,
+              resolved.rulesetPath,
+              resolved.scope,
+              `Could not fetch ruleset from '${resolved.rulesetPath}' (${resolved.scope} default): ${reason.replace('-', ' ')}.`
+            );
+          }
+        }
+      } else if (effectiveRulesetPath) {
+        try {
+          statSync(effectiveRulesetPath);
+        } catch {
+          return mcpError(
+            ERROR_CODES.RULESET_NOT_FOUND,
+            `The ruleset file '${effectiveRulesetPath}' does not exist. Check the path and try again.`,
+            { rulesetPath: effectiveRulesetPath }
+          );
+        }
+      }
+
       let largeSpecWarning: string | undefined;
       let specContent = '';
 
@@ -33,6 +117,7 @@ export function registerNonBreakingTool(server: McpServer): void {
         }
         specContent = readFileSync(specPath, 'utf-8');
       } catch {
+        if (tempRulesetFile) try { unlinkSync(tempRulesetFile); } catch { /* ignore */ }
         return mcpError(
           ERROR_CODES.SPEC_NOT_FOUND,
           `The specification file '${specPath}' does not exist. Check the path and try again.`,
@@ -40,21 +125,9 @@ export function registerNonBreakingTool(server: McpServer): void {
         );
       }
 
-      if (rulesetPath) {
-        try {
-          statSync(rulesetPath);
-        } catch {
-          return mcpError(
-            ERROR_CODES.RULESET_NOT_FOUND,
-            `The ruleset file '${rulesetPath}' does not exist. Check the path and try again.`,
-            { rulesetPath }
-          );
-        }
-      }
-
       try {
         const engine = new GradeEngine();
-        const result = await engine.grade({ specPath, rulesetPath });
+        const result = await engine.grade({ specPath, rulesetPath: effectiveRulesetPath });
 
         const nonBreakingViolations = result.diagnostics
           .filter((d) => classifyViolation(d) === 'nonBreaking')
@@ -80,6 +153,8 @@ export function registerNonBreakingTool(server: McpServer): void {
           `GradeEngine error: ${message}`,
           { specPath }
         );
+      } finally {
+        if (tempRulesetFile) try { unlinkSync(tempRulesetFile); } catch { /* ignore */ }
       }
     }
   );

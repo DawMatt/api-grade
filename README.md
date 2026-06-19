@@ -46,6 +46,12 @@ npm install @dawmatt/api-grade-core
 
 **[Backstage Plugins](docs/backstage-plugins/README.md)** — Display API grades on Backstage API entity pages. A frontend card shows the grade summary; a backend plugin computes grades server-side using `@dawmatt/api-grade-core`.
 
+**[MCP Server](docs/mcp/quick-start.md)** — Expose api-grade capabilities to AI tools via the Model Context Protocol. Register in Claude Code, GitHub Copilot (VS Code Agent mode), or any MCP-compatible AI host and let the AI grade specs directly.
+
+```bash
+claude mcp add api-grade -- npx -y @dawmatt/api-grade-mcp
+```
+
 ---
 
 ## Documentation
@@ -56,6 +62,7 @@ Full documentation is available in the **[Documentation Index](docs/index.md)**:
 - [CLI Reference](docs/cli/README.md) — installation, commands, and CI/CD setup
 - [Package Reference](docs/package/README.md) — integrate `api-grade-core` into your tooling
 - [Backstage Plugins](docs/backstage-plugins/README.md) — display grades in your developer portal
+- [MCP Server](docs/mcp/README.md) — grade specs from AI tools via MCP
 
 ---
 

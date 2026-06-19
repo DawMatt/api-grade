@@ -2,13 +2,7 @@
 
 # MCP Server (`@dawmatt/api-grade-mcp`)
 
-> Expose api-grade capabilities to LLMs and agentic AI tooling via the Model Context Protocol.
-
----
-
-## Overview
-
-`@dawmatt/api-grade-mcp` is an MCP (Model Context Protocol) server that wraps the `@dawmatt/api-grade-core` grading engine and exposes it as four MCP tools. Once registered in a supported AI host, the AI can grade API specifications, assert grade thresholds, retrieve detailed diagnostics, and obtain a classified list of non-breaking violations — without any manual CLI invocation.
+> An MCP (Model Context Protocol) server that exposes api-grade capabilities as six AI tools for Claude Code, GitHub Copilot, and any MCP-compatible AI host.
 
 ---
 
@@ -32,7 +26,7 @@ npm install -g @dawmatt/api-grade-mcp
 
 ### Claude Code
 
-Register globally in the terminal:
+Register from the terminal:
 
 ```bash
 claude mcp add api-grade -- npx -y @dawmatt/api-grade-mcp
@@ -51,7 +45,7 @@ Or add to `.claude/settings.json`:
 }
 ```
 
-### GitHub Copilot — VS Code
+### GitHub Copilot — VS Code Agent mode
 
 Add `.vscode/mcp.json` to your project (requires VS Code 1.99+):
 
@@ -90,9 +84,9 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ### `grade-api`
 
-Grade an API specification and return a token-efficient summary (letter grade, score, and diagnostic overview — no full violations list).
+Grade an API specification and return a token-efficient summary — letter grade, score, and diagnostic overview without the full violations list.
 
-**Input**: `specPath` (required), `rulesetPath` (optional)
+**Input**: `specPath` (required), `rulesetPath` (optional), `recoveryOption` (optional)
 
 **Use when**: You want a quick quality overview without overwhelming the context window.
 
@@ -102,7 +96,7 @@ Grade an API specification and return a token-efficient summary (letter grade, s
 
 Grade an API specification and return the full result including all individual violations. Truncates to 100 diagnostics with `truncated: true` for large specs.
 
-**Input**: `specPath` (required), `rulesetPath` (optional)
+**Input**: `specPath` (required), `rulesetPath` (optional), `recoveryOption` (optional)
 
 **Use when**: You need to analyse specific violations or present detailed findings.
 
@@ -112,7 +106,7 @@ Grade an API specification and return the full result including all individual v
 
 Assert that an API specification meets a minimum grade threshold (A > B > C > D > F). Returns `{ passed, actual, minimum, numericScore }`.
 
-**Input**: `specPath` (required), `minimumGrade` (required: A/B/C/D/F), `rulesetPath` (optional)
+**Input**: `specPath` (required), `minimumGrade` (required: A/B/C/D/F), `rulesetPath` (optional), `recoveryOption` (optional)
 
 **Use when**: Running AI-assisted code review or quality gates.
 
@@ -122,14 +116,57 @@ Assert that an API specification meets a minimum grade threshold (A > B > C > D 
 
 Return a classified, AI-actionable list of non-breaking violations — those whose fixes do not alter paths, methods, required parameters, schema types, or response structures. Each violation includes `ruleId`, `path`, `location`, `currentValue`, and `expectedImprovement`.
 
-**Input**: `specPath` (required), `rulesetPath` (optional)
+**Input**: `specPath` (required), `rulesetPath` (optional), `recoveryOption` (optional)
 
 **Use when**: Asking the AI to generate fixes for documentation and metadata issues without risking breaking changes.
 
 ---
 
+### `configure-ruleset`
+
+Set the default Spectral ruleset at session, workspace, or global scope. The configured default applies to all subsequent grading requests without needing to supply `rulesetPath` each time.
+
+**Input**: `scope` (required: session/workspace/global), `rulesetPath` (optional string or null), `auth` (optional)
+
+Scope precedence: session → workspace → global → built-in.
+
+- `scope: "session"` — in-memory only; cleared when the server restarts
+- `scope: "workspace"` — saved to `.api-grade/config.json` in the project root
+- `scope: "global"` — saved to `~/.api-grade/config.json`
+
+---
+
+### `get-ruleset-config`
+
+Show the active ruleset configuration at all scopes and which is currently effective.
+
+**Input**: none
+
+Returns `effective`, `session`, `workspace`, `global`, `builtIn`, `precedenceOrder`, and `note`. Raw token values are never returned — shows only `tokenSource: "config-file" | "env-var" | "none"`.
+
+---
+
+## Default Ruleset Configuration
+
+All grading tools support an optional `rulesetPath` parameter for one-off custom rulesets. To avoid supplying it on every request, configure a default:
+
+**Session default** (current session only):
+> Set the default ruleset for this session to `/workspace/rulesets/company-standards.yaml`
+
+**Workspace default** (persisted to `.api-grade/config.json`):
+> Set the workspace default ruleset to `https://github.example.com/org/standards/raw/main/ruleset.yaml`
+
+**Global default** (`~/.api-grade/config.json`):
+> Set my global default ruleset to `/Users/jane/rulesets/personal-standards.yaml`
+
+For full configuration options including GitHub PAT and Entra ID authentication, see the [Configuration Reference](../mcp/configuration.md).
+
+---
+
 ## Further Reading
 
-- [Full quickstart and AI tool configuration](../../specs/007-ai-support/quickstart.md)
-- [MCP tool contracts and response shapes](../../specs/007-ai-support/contracts/mcp-tools.md)
+- [Quick Start](../mcp/quick-start.md) — install and configure in minutes
+- [Configuration Reference](../mcp/configuration.md) — default rulesets, auth, and scope precedence
+- [Troubleshooting](../mcp/troubleshooting.md) — common issues and solutions
 - [Core Package (`@dawmatt/api-grade-core`)](README.md)
+- [Documentation Index](../index.md)

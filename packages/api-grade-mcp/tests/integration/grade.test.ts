@@ -51,6 +51,17 @@ describe('grade-api tool', () => {
     expect(body.message).toContain('/does/not/exist.yaml');
   });
 
+  it('returns RULESET_NOT_FOUND for non-existent local ruleset', async () => {
+    const server = createServer();
+    const result = await callTool(server, 'grade-api', {
+      specPath: OPENAPI_FIXTURE,
+      rulesetPath: '/nonexistent/ruleset.yaml',
+    });
+    expect(result.isError).toBe(true);
+    const body = JSON.parse(result.content[0].text);
+    expect(body.error).toBe('RULESET_NOT_FOUND');
+  });
+
   it('returns largeSpecWarning for spec over 500KB', async () => {
     const tmp = resolve(tmpdir(), `large-spec-${Date.now()}.yaml`);
     const bigContent = 'openapi: "3.0.0"\ninfo:\n  title: Big\n  version: "1.0"\npaths: {}\n' + ' '.repeat(500_001);

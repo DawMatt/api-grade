@@ -67,6 +67,17 @@ describe('get-non-breaking-violations tool', () => {
     expect(body.nonBreakingCount).toBe(body.nonBreakingViolations.length);
   });
 
+  it('returns RULESET_NOT_FOUND for non-existent local ruleset', async () => {
+    const server = createServer();
+    const result = await callTool(server, 'get-non-breaking-violations', {
+      specPath: OPENAPI_POOR,
+      rulesetPath: '/nonexistent/ruleset.yaml',
+    });
+    expect(result.isError).toBe(true);
+    const body = JSON.parse(result.content[0].text);
+    expect(body.error).toBe('RULESET_NOT_FOUND');
+  });
+
   it('returns SPEC_NOT_FOUND for non-existent spec', async () => {
     const server = createServer();
     const result = await callTool(server, 'get-non-breaking-violations', { specPath: '/no/such/file.yaml' });

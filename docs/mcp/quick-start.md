@@ -1,0 +1,182 @@
+[← Back to Documentation Index](../index.md)
+
+# MCP Server Quick Start
+
+> Install and configure `@dawmatt/api-grade-mcp` so your AI tool can grade API specifications directly.
+
+---
+
+## Prerequisites
+
+- **Node.js 20 or later** — [nodejs.org](https://nodejs.org)
+- An MCP-compatible AI tool (Claude Code, Claude Desktop, GitHub Copilot VS Code Agent mode, Cursor, Windsurf, or any MCP host)
+- An OpenAPI or AsyncAPI specification file to grade
+
+---
+
+## Installation
+
+No global install is required. The server runs on demand via `npx`:
+
+```sh
+npx -y @dawmatt/api-grade-mcp
+```
+
+Or install globally if you prefer a local binary:
+
+```sh
+npm install -g @dawmatt/api-grade-mcp
+```
+
+---
+
+## Configure Your AI Tool
+
+### Claude Code
+
+Register the server from the terminal:
+
+```sh
+claude mcp add api-grade -- npx -y @dawmatt/api-grade-mcp
+```
+
+Or add it to `.claude/settings.json` manually:
+
+```json
+{
+  "mcpServers": {
+    "api-grade": {
+      "command": "npx",
+      "args": ["-y", "@dawmatt/api-grade-mcp"]
+    }
+  }
+}
+```
+
+The tools are available immediately in your Claude Code session.
+
+### Claude Desktop
+
+1. Open the configuration file:
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+2. Add the server entry:
+
+```json
+{
+  "mcpServers": {
+    "api-grade": {
+      "command": "npx",
+      "args": ["-y", "@dawmatt/api-grade-mcp"]
+    }
+  }
+}
+```
+
+3. Restart Claude Desktop. The six api-grade tools will appear in the tools panel.
+
+### GitHub Copilot (VS Code Agent mode)
+
+Requires VS Code 1.99 or later with the GitHub Copilot extension.
+
+1. Create `.vscode/mcp.json` in your project root:
+
+```json
+{
+  "servers": {
+    "api-grade": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@dawmatt/api-grade-mcp"]
+    }
+  }
+}
+```
+
+2. Open the Copilot Chat panel and switch to **Agent mode**.
+
+3. The api-grade tools are now available to Copilot in agent mode.
+
+### GitHub Copilot Studio
+
+1. In your Copilot Studio agent, add a new **Action** of type **MCP Server**.
+
+2. Configure the action:
+   - **Name**: `api-grade`
+   - **Command**: `npx`
+   - **Arguments**: `-y @dawmatt/api-grade-mcp`
+   - **Transport**: stdio
+
+3. Publish the agent. The six tools will be available as callable actions.
+
+> For air-gapped environments, install `@dawmatt/api-grade-mcp` locally and reference the binary path directly instead of using `npx`.
+
+### Cursor
+
+Create `.cursor/mcp.json` in your project root (or `~/.cursor/mcp.json` for global):
+
+```json
+{
+  "mcpServers": {
+    "api-grade": {
+      "command": "npx",
+      "args": ["-y", "@dawmatt/api-grade-mcp"]
+    }
+  }
+}
+```
+
+Reload Cursor after saving.
+
+---
+
+## Available Tools
+
+| Tool | What it does |
+|------|-------------|
+| `grade-api` | Quick grade: letter grade, numeric score, and summary |
+| `grade-api-detailed` | Full grade with all violations, diagnostics, and recommendations |
+| `assert-api-grade` | Pass/fail assertion for a minimum grade threshold |
+| `get-non-breaking-violations` | Classified list of fixable violations for AI-assisted correction |
+| `configure-ruleset` | Set the default Spectral ruleset at session, workspace, or global scope |
+| `get-ruleset-config` | Show the active ruleset configuration and which scope is effective |
+
+---
+
+## Try It
+
+Once configured, ask your AI tool naturally:
+
+**Grade an API:**
+> Grade the API at `/workspace/my-api/openapi.yaml`
+
+**Get detailed diagnostics:**
+> Show me all the violations in `/workspace/my-api/openapi.yaml` with recommendations
+
+**Assert a minimum grade:**
+> Check whether `/workspace/my-api/openapi.yaml` meets a minimum grade of B
+
+**AI-assisted fix:**
+> Fix the non-breaking issues in `/workspace/my-api/openapi.yaml`
+
+---
+
+## Verifying the Setup
+
+To confirm the server starts correctly:
+
+```sh
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | npx -y @dawmatt/api-grade-mcp
+```
+
+You should see a JSON response listing all six tools.
+
+---
+
+## Further Reading
+
+- [Configuration Reference](configuration.md) — default rulesets, auth, and scope precedence
+- [Troubleshooting](troubleshooting.md) — common issues and solutions
+- [Package Documentation](../package/api-grade-mcp.md) — full tool reference
+- [Documentation Index](../index.md)
