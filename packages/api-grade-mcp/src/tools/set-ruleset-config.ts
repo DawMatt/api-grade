@@ -13,7 +13,7 @@ import type { SessionState, RulesetConfig, AuthConfig } from '../types.js';
 export function registerSetRulesetConfigTool(server: McpServer, sessionState: SessionState): void {
   server.tool(
     'set-ruleset-config',
-    'Set the default ruleset used by this MCP server when no rulesetPath is supplied on a grading request. Supports three scopes: session (in-memory, resets on server restart), workspace (persisted to .api-grade/config.json in the workspace root), and global (persisted to ~/.api-grade/config.json). Optionally configure authentication for rulesets hosted in secured locations.',
+    'Set the default Spectral ruleset used by this MCP server when no rulesetPath is supplied on a grading request. Supports three scopes: session (in-memory, resets on server restart), workspace (persisted to .api-grade/config.json in the workspace root), and global (persisted to ~/.api-grade/config.json). Optionally configure authentication for rulesets hosted in secured locations.',
     {
       scope: z
         .enum(['session', 'workspace', 'global'])

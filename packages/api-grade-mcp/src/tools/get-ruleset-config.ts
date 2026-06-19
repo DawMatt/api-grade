@@ -12,7 +12,7 @@ function sanitizeAuth(auth: AuthConfig | null | undefined, hasToken: boolean): R
 export function registerGetRulesetConfigTool(server: McpServer, sessionState: SessionState): void {
   server.tool(
     'get-ruleset-config',
-    'Return the active ruleset configuration at every scope (session, workspace, global), indicate which scope is currently in effect (the effective ruleset), and show the full resolution chain. Use this to diagnose why a particular ruleset is being applied or to confirm a set-ruleset-config call took effect.',
+    'Return the active Spectral ruleset used by this MCP server when no rulesetPath is supplied on a grading request. Supports three scopes: session (in-memory, resets on server restart), workspace (persisted in workspace), and global (persisted to home). Return configuration at every scope, indicate which scope is currently in effect (the effective ruleset), and show the full resolution chain. Use this to diagnose why a particular ruleset is being applied or to confirm a set-ruleset-config call took effect.',
     {},
     async () => {
       const workspaceConfig = await loadWorkspaceConfig();

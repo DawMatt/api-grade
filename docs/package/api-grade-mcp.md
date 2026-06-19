@@ -138,7 +138,7 @@ Scope precedence: session → workspace → global → built-in.
 
 ### `get-ruleset-config`
 
-Show the active ruleset configuration at all scopes and which is currently effective.
+Get the active Spectral ruleset at all scopes and which is currently effective.
 
 **Input**: none
 

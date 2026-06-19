@@ -62,7 +62,7 @@ Create `.vscode/mcp.json` in your project root:
 | `assert-api-grade` | Pass/fail assertion for a minimum grade threshold |
 | `grade-api-quick-fixes-only` | Classified list of quick fixes (safe, non-breaking improvements) for AI-assisted correction |
 | `set-ruleset-config` | Set the default Spectral ruleset at session, workspace, or global scope |
-| `get-ruleset-config` | Show the active ruleset configuration and which scope is effective |
+| `get-ruleset-config` | Get the active Spectral ruleset and which scope is effective |
 
 ## Usage Examples
 

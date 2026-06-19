@@ -153,7 +153,7 @@ Once configured, the AI tool has access to six api-grade capabilities:
 | `assert-api-grade` | Pass/fail assertion for a minimum grade threshold |
 | `grade-api-quick-fixes-only` | Classified list of fixable violations for AI-assisted correction |
 | `set-ruleset-config` | Set the default Spectral ruleset at session, workspace, or global scope |
-| `get-ruleset-config` | Show the active ruleset configuration at all scopes |
+| `get-ruleset-config` | Get the active Spectral ruleset and which scope is effective |
 
 ---
 
@@ -223,9 +223,9 @@ The AI calls `set-ruleset-config` with `scope: "global"`. The setting is saved t
 
 ### Checking the active configuration
 
-> Show me the current ruleset configuration
+> Show me the current Spectral ruleset being used
 
-The AI calls `get-ruleset-config` and returns which ruleset is active at every scope and which one is currently in effect.
+The AI calls `get-ruleset-config` and returns which Spectral ruleset is active at every scope and which one is currently in effect.
 
 ### Precedence order
 
