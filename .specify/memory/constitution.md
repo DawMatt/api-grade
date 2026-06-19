@@ -8,8 +8,8 @@ Principles modified: none
 Sections added:
   - AI Integration Requirements: new top-level section (parallel to CI/CD Integration
     Requirements) that requires any AI tooling integration to explicitly verify
-    compatibility with Claude Code, GitHub Copilot (VS Code Agent mode), and GitHub
-    Copilot Studio. Single-host implementations do not satisfy this requirement.
+    compatibility with Claude Code and GitHub Copilot (VS Code Agent mode).
+    Single-host implementations do not satisfy this requirement.
 
 Sections removed: none
 
@@ -117,8 +117,8 @@ help developers improve their practice.
 
 The following constraints apply to any feature that delivers AI tooling integration:
 
-- Any AI integration capability MUST be explicitly verified to function with **Claude Code**, **GitHub Copilot (VS Code Agent mode)**, and **GitHub Copilot Studio** as the three primary supported targets.
-- An implementation that functions in only a subset of these three environments does not satisfy this requirement.
+- Any AI integration capability MUST be explicitly verified to function with **Claude Code** and **GitHub Copilot (VS Code Agent mode)** as the two primary supported targets.
+- An implementation that functions in only one of these environments does not satisfy this requirement.
 - MCP tool definitions MUST be self-describing: any capable MCP host MUST be able to discover and invoke all tools using only the tool definitions, with no additional documentation or configuration required beyond registering the server.
 - All prerequisites for AI integration MUST have zero monetary cost, consistent with Principle V.
 

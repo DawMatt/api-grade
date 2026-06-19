@@ -315,7 +315,7 @@ The `recoveryOption` parameter on grading tools determines which constant is pas
 
 **Rationale**: `.api-grade/` follows the convention of tool-specific config directories (`.github/`, `.vscode/`). Using a dedicated directory rather than a root-level dotfile (e.g. `.apigraderc`) allows future keys without polluting the workspace root. `os.homedir()` is the correct cross-platform equivalent of `~` on macOS, Linux, and Windows.
 
-**Workspace root = CWD** (clarified 2026-06-19): All three MCP hosts (Claude Code, VS Code Copilot, Copilot Studio) start the server process with the workspace root as CWD. `process.cwd()` is therefore the workspace root — no `--workspace-root` flag or per-call parameter is needed.
+**Workspace root = CWD** (clarified 2026-06-19): Both required MCP hosts (Claude Code, VS Code Copilot) start the server process with the workspace root as CWD. `process.cwd()` is therefore the workspace root — no `--workspace-root` flag or per-call parameter is needed.
 
 **Config file schema** (both workspace and global share the same shape):
 ```json

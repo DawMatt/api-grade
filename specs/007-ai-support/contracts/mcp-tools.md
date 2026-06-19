@@ -538,8 +538,6 @@ Or add to `.claude/settings.json`:
 
 Tools are available in Copilot Chat **Agent mode** only (not inline completions).
 
-**GitHub Copilot Studio**: Add as a custom MCP Action with command `npx`, arguments `-y @dawmatt/api-grade-mcp`, and transport `stdio`. See the [quickstart](../quickstart.md) for details.
-
 **Cursor** (`.cursor/mcp.json` in project root, or `~/.cursor/mcp.json` globally):
 
 ```json

@@ -98,20 +98,6 @@ Requires VS Code 1.99 or later with the GitHub Copilot extension.
 
 3. The api-grade tools are now available to Copilot in agent mode.
 
-### GitHub Copilot Studio
-
-1. In your Copilot Studio agent, add a new **Action** of type **MCP Server**.
-
-2. Configure the action:
-   - **Name**: `api-grade`
-   - **Command**: `npx`
-   - **Arguments**: `-y @dawmatt/api-grade-mcp`
-   - **Transport**: stdio
-
-3. Publish the agent. The six tools will be available as callable actions.
-
-> For air-gapped environments, install `@dawmatt/api-grade-mcp` locally and reference the binary path directly instead of using `npx`.
-
 ### Cursor
 
 Create `.cursor/mcp.json` in your project root (or `~/.cursor/mcp.json` for global):

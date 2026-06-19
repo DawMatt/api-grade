@@ -20,7 +20,7 @@
 
 ### Session 2026-06-19
 
-- Q: How does the MCP server determine the workspace root when loading/saving `.api-grade/config.json`? → A: Use the server process's working directory (CWD) — MCP hosts (Claude Code, VS Code Copilot, Copilot Studio) start servers with the workspace root as CWD; no additional configuration required.
+- Q: How does the MCP server determine the workspace root when loading/saving `.api-grade/config.json`? → A: Use the server process's working directory (CWD) — MCP hosts (Claude Code, VS Code Copilot) start servers with the workspace root as CWD; no additional configuration required.
 - Q: Should Entra ID tokens be persisted across MCP server restarts? → A: Yes — cache to disk at `~/.api-grade/entra-token-cache.json` using MSAL Node's `TokenCacheContext` API. Persisted to the user home directory only (never the workspace), consistent with Azure CLI behaviour.
 - Q: What does a grading tool return when the user selects the `cancel` recovery option? → A: A structured error response with code `REQUEST_CANCELLED` and a human-readable message — consistent with all other terminal error shapes.
 - Q: What timeout applies when fetching a remote ruleset? → A: 5 seconds on the initial attempt (ensuring the auth-failure recovery response arrives well within SC-001's 10-second budget); 30 seconds when the user explicitly selects the `retry` recovery option (acknowledging they are willing to wait).
@@ -32,7 +32,7 @@
 
 ### User Story 1 - Grade an API from an AI Assistant (Priority: P1)
 
-A developer using Claude Code, GitHub Copilot (VS Code), or GitHub Copilot Studio asks their AI tool to grade an API specification file. The AI tool invokes the api-grade capability, receives structured results, and presents a human-readable summary to the user — all without the user needing to leave their AI environment or run CLI commands manually.
+A developer using Claude Code or GitHub Copilot (VS Code) asks their AI tool to grade an API specification file. The AI tool invokes the api-grade capability, receives structured results, and presents a human-readable summary to the user — all without the user needing to leave their AI environment or run CLI commands manually.
 
 **Why this priority**: This is the core value proposition of the feature. Without the ability to grade an API from an AI context, no other AI-support scenarios are possible. It unblocks all other stories and makes the tool accessible to a new class of users.
 
@@ -43,7 +43,7 @@ A developer using Claude Code, GitHub Copilot (VS Code), or GitHub Copilot Studi
 1. **Given** an AI assistant has access to the api-grade capability, **When** it requests an overall grade for a valid OpenAPI specification, **Then** it receives a structured result containing grade letter, numeric percentage, label, and diagnostic summary.
 2. **Given** an AI assistant has access to the api-grade capability, **When** it requests a grade for a valid AsyncAPI specification, **Then** it receives equivalent structured results demonstrating multi-format support.
 3. **Given** an AI assistant requests a grade for a file path that does not exist, **When** the capability is invoked, **Then** it returns a clear, structured error message the AI can relay to the user.
-4. **Given** the MCP server is configured in Claude Code, GitHub Copilot (VS Code Agent mode), or GitHub Copilot Studio, **When** an API specification grade is requested in each tool, **Then** the grading capability is successfully invoked and returns a structured result in all three environments.
+4. **Given** the MCP server is configured in Claude Code or GitHub Copilot (VS Code Agent mode), **When** an API specification grade is requested in each tool, **Then** the grading capability is successfully invoked and returns a structured result in both environments.
 
 ---
 
@@ -152,7 +152,7 @@ A developer using an AI assistant not only wants to know which issues are affect
 - **FR-009**: The AI integration MUST leverage the shared core grading package (api-grade-core) and MUST NOT duplicate core grading logic.
 - **FR-010**: All MCP tool definitions MUST include complete descriptions, parameter documentation, and example invocations so that AI tools can discover and correctly invoke them without additional configuration.
 - **FR-011**: The MCP server MUST operate entirely locally (no outbound network calls required for the MCP protocol layer itself) to satisfy the zero-cost prerequisite constraint.
-- **FR-014**: The MCP server MUST be explicitly verified to function correctly with Claude Code, GitHub Copilot (VS Code Agent mode), and GitHub Copilot Studio as primary supported AI tool targets. An implementation that functions in only a subset of these three environments does not satisfy this requirement.
+- **FR-014**: The MCP server MUST be explicitly verified to function correctly with Claude Code and GitHub Copilot (VS Code Agent mode) as primary supported AI tool targets. An implementation that functions in only one of these environments does not satisfy this requirement.
 
 ### Key Entities
 
@@ -172,7 +172,7 @@ A developer using an AI assistant not only wants to know which issues are affect
 ### Measurable Outcomes
 
 - **SC-001**: An AI tool can complete an end-to-end API grading request (from invocation to structured result) in under 10 seconds for a typical API specification. When a remote ruleset fetch fails, the auth-failure recovery response (not a grade result) MUST also arrive within 10 seconds; the 5-second fetch timeout ensures this. Retry attempts (user-initiated, 30-second timeout) are exempt from this bound.
-- **SC-002**: All three grading functions (overall grade, detailed diagnostics, grade assertion) are accessible from Claude Code, GitHub Copilot (VS Code), and GitHub Copilot Studio without any additional configuration beyond supplying the API specification path.
+- **SC-002**: All three grading functions (overall grade, detailed diagnostics, grade assertion) are accessible from Claude Code and GitHub Copilot (VS Code) without any additional configuration beyond supplying the API specification path.
 - **SC-003**: 100% of supported API specification formats (OpenAPI and AsyncAPI) can be graded successfully when invoked from an AI context.
 - **SC-004**: Grade assertion correctly identifies pass/fail for all valid grade levels (A through F) with 100% accuracy.
 - **SC-005**: An AI tool applying quick fixes produces a corrected specification where all targeted violations are resolved and no breaking changes are introduced, as verified by re-grading.
@@ -183,12 +183,12 @@ A developer using an AI assistant not only wants to know which issues are affect
 
 ## Assumptions
 
-- The AI integration is delivered as an MCP (Model Context Protocol) server. The three explicitly required and verified target environments are Claude Code, GitHub Copilot (VS Code Agent mode), and GitHub Copilot Studio. The server is expected to work with other MCP-compatible hosts, but only these three are required for acceptance.
+- The AI integration is delivered as an MCP (Model Context Protocol) server. The two explicitly required and verified target environments are Claude Code and GitHub Copilot (VS Code Agent mode). The server is expected to work with other MCP-compatible hosts, but only these two are required for acceptance.
 - Remote URL-based API specification fetching is treated as a stretch goal; the primary supported input is a local file path.
 - The AI tool is responsible for presenting the structured JSON output to its end user in a human-readable form; api-grade provides the data, not the final presentation.
 - The quick-fix capability is a two-step workflow: the `grade-api-quick-fixes-only` tool identifies, classifies, and returns quick fixes as a structured list; the calling AI model uses that list to generate the corrected specification content. The MCP server does not generate specification content.
 - Default ruleset configuration is specific to the MCP server; the CLI continues to accept `--ruleset` on each invocation without persistent configuration. Parity between CLI and MCP ruleset configuration is not a goal of this feature.
-- The MCP server's working directory (CWD) is treated as the workspace root for resolving `.api-grade/config.json`. All three required MCP hosts (Claude Code, VS Code Copilot, Copilot Studio) start server processes with the workspace root as CWD; no `--workspace-root` argument or per-call parameter is needed.
+- The MCP server's working directory (CWD) is treated as the workspace root for resolving `.api-grade/config.json`. Both required MCP hosts (Claude Code, VS Code Copilot) start server processes with the workspace root as CWD; no `--workspace-root` argument or per-call parameter is needed.
 - Supported authentication mechanisms for secured rulesets are GitHub Enterprise PAT (token-based) and Microsoft Entra ID (OAuth 2.0 device-code flow). Other SSO or authentication schemes (NTLM, Kerberos, custom OAuth providers) are out of scope.
 - The device-code flow for Entra ID requires the user to complete authentication in a browser; the MCP server surfaces the device code URL and user code but does not open a browser directly. The AI mediates this interaction.
 - All prerequisites for AI integration (e.g., tool registration, model access) have zero monetary cost, consistent with the project's cross-platform zero-cost prerequisite principle.

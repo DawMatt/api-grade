@@ -6,7 +6,7 @@
 
 ## Summary
 
-Deliver a new npm package (`@dawmatt/api-grade-mcp`) that exposes api-grade capabilities as an MCP (Model Context Protocol) server, allowing LLMs and agentic AI tooling to grade API specifications, retrieve detailed diagnostics, assert grade thresholds, and obtain a classified list of non-breaking violations — all by calling the existing `@dawmatt/api-grade-core` package. The three explicitly required and verified target environments are **Claude Code**, **GitHub Copilot (VS Code Agent mode)**, and **GitHub Copilot Studio**. The MCP server runs locally via stdio transport, satisfies the zero-cost prerequisite constraint, and supports concurrent requests without stateful coupling between them.
+Deliver a new npm package (`@dawmatt/api-grade-mcp`) that exposes api-grade capabilities as an MCP (Model Context Protocol) server, allowing LLMs and agentic AI tooling to grade API specifications, retrieve detailed diagnostics, assert grade thresholds, and obtain a classified list of non-breaking violations — all by calling the existing `@dawmatt/api-grade-core` package. The two explicitly required and verified target environments are **Claude Code** and **GitHub Copilot (VS Code Agent mode)**. The MCP server runs locally via stdio transport, satisfies the zero-cost prerequisite constraint, and supports concurrent requests without stateful coupling between them.
 
 ## Technical Context
 
@@ -36,7 +36,7 @@ Deliver a new npm package (`@dawmatt/api-grade-mcp`) that exposes api-grade capa
 
 **Constraints**: All prerequisites free (constitution V); stateless concurrent requests; no outbound network calls from the MCP protocol layer (local stdio transport)
 
-**Verified AI Targets**: Claude Code, GitHub Copilot (VS Code Agent mode), GitHub Copilot Studio — all three must be explicitly verified (FR-014)
+**Verified AI Targets**: Claude Code, GitHub Copilot (VS Code Agent mode) — both must be explicitly verified (FR-014)
 
 **Scale/Scope**: Local developer tooling; single developer per session; concurrent requests bounded only by available system resources
 
@@ -54,7 +54,7 @@ Deliver a new npm package (`@dawmatt/api-grade-mcp`) that exposes api-grade capa
 | VI. Educational Excellence | ✅ Pass | FR-010 requires complete tool descriptions so AI tools understand *why* findings matter; SC-006 requires self-describing tool definitions |
 | CI/CD Integration | ✅ Pass | New package added to existing CI quality gate; coverage threshold applied consistently |
 | YAGNI | ✅ Pass | No remote URL spec fetching (stretch goal per spec Assumptions); no SSE transport; no resource/prompt MCP surfaces — six tools total (four grading + two configuration); auth limited to GitHub PAT and Entra ID only (other SSO schemes out of scope per spec Assumptions) |
-| AI Integration Requirements | ✅ Pass | FR-014 requires explicit verification in Claude Code, GitHub Copilot (VS Code), and Copilot Studio; all three are in-scope targets |
+| AI Integration Requirements | ✅ Pass | FR-014 requires explicit verification in Claude Code and GitHub Copilot (VS Code); both are in-scope targets |
 | Development Workflow | ✅ Pass | Feature branch + PR; new package integrated into quality gate |
 
 **Post-Phase-1 re-check** (completed 2026-06-19):

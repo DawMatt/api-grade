@@ -45,7 +45,7 @@ AI tool (Claude Code, Copilot, etc.)
 ## Prerequisites
 
 - Node.js ≥ 20
-- An MCP-compatible AI host (Claude Code, Claude Desktop, GitHub Copilot VS Code Agent mode, GitHub Copilot Studio, Cursor, Windsurf, or any MCP host)
+- An MCP-compatible AI host (Claude Code, Claude Desktop, GitHub Copilot VS Code Agent mode, Cursor, Windsurf, or any MCP host)
 
 No global install is required — the server runs on demand via `npx`:
 
