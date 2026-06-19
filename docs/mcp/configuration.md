@@ -79,6 +79,8 @@ Or for a local file:
 
 ## Authentication
 
+GitHub PAT and Entra ID use different storage mechanisms because the credentials behave differently, not out of inconsistency: a GitHub PAT is a static secret you provide once, while an Entra ID token is dynamically issued and refreshed by Microsoft and must survive server restarts without you re-entering anything.
+
 ### No Authentication (Public URLs)
 
 For publicly accessible ruleset URLs, no auth configuration is needed:
@@ -90,7 +92,7 @@ For publicly accessible ruleset URLs, no auth configuration is needed:
 }
 ```
 
-### GitHub Enterprise (Personal Access Token)
+### GitHub Enterprise (Personal Access Token) — you supply a token via an environment variable
 
 Set the `GITHUB_TOKEN` environment variable before starting your AI tool, or configure the auth type in the ruleset config:
 
@@ -103,7 +105,7 @@ Set the `GITHUB_TOKEN` environment variable before starting your AI tool, or con
 }
 ```
 
-At runtime, the server reads the token from the `GITHUB_TOKEN` environment variable. The token requires read access to the repository containing the ruleset.
+At runtime, the server reads the token from the `GITHUB_TOKEN` environment variable — the same convention used by the `gh` CLI and most CI systems. The token requires read access to the repository containing the ruleset, and is never written to a config file (see `auth.githubToken` note above), so workspace config files stay safe to commit.
 
 Setting `GITHUB_TOKEN` in the environment:
 
@@ -111,7 +113,7 @@ Setting `GITHUB_TOKEN` in the environment:
 export GITHUB_TOKEN=ghp_xxxx  # then start your AI tool
 ```
 
-### Microsoft Entra ID (Device Code Flow)
+### Microsoft Entra ID (Device Code Flow) — the server handles tokens for you, no env var needed
 
 For rulesets hosted on SharePoint or other Entra ID-protected sites:
 
@@ -132,9 +134,9 @@ On the first grading request after configuration, the server initiates a **devic
 2. Visit the URI and enter the code to authenticate (typically 15-minute window).
 3. Retry the grading request — the token is now cached.
 
-**Token cache location**: `~/.api-grade/entra-token-cache.json`
+**Token cache location**: `~/.api-grade/entra-token-cache.json` — the same pattern Azure CLI uses at `~/.azure`. Written to the user home directory only, never the workspace.
 
-Cached tokens are reused on subsequent requests. If the token expires, the device code flow restarts automatically on the next grading request.
+Cached tokens are reused on subsequent requests, including after restarting the MCP server, with no further action from you. If the token expires, the device code flow restarts automatically on the next grading request.
 
 ---
 

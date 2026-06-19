@@ -219,19 +219,21 @@ Per-request `rulesetPath` → session default → workspace default → global d
 
 ## Configuring Authentication for Secured Rulesets
 
-### GitHub Enterprise (PAT)
+Auth setup differs by type because the credentials themselves behave differently — a GitHub PAT is a static secret you provide once, while an Entra ID token is dynamically issued and refreshed by Microsoft. There's nothing further to configure in either case beyond the one-time setup below.
+
+### GitHub Enterprise (PAT) — you supply a token via an environment variable
 
 Set the `GITHUB_TOKEN` environment variable before starting the AI tool, or ask the AI to configure it for the session:
 
 > Set the workspace default ruleset to `https://github.example.com/org/standards/raw/main/ruleset.yaml` with GitHub PAT authentication
 
-The AI calls `set-ruleset-config` with `auth: { type: "github-pat" }`. At runtime the server reads the token from the `GITHUB_TOKEN` environment variable.
+The AI calls `set-ruleset-config` with `auth: { type: "github-pat" }`. At runtime the server reads the token from the `GITHUB_TOKEN` environment variable — the same convention used by the `gh` CLI and most CI systems. The PAT itself is never written to a config file (FR-021), so workspace config files stay safe to commit.
 
-### Microsoft Entra ID (SharePoint / enterprise sites)
+### Microsoft Entra ID (SharePoint / enterprise sites) — the server handles tokens for you, no env var needed
 
 > Set the workspace default ruleset to `https://mycompany.sharepoint.com/sites/api-standards/ruleset.yaml` with Entra ID authentication, tenant ID `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` and client ID `yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy`
 
-The AI calls `set-ruleset-config` with `auth: { type: "entra-id", tenantId: "...", clientId: "..." }`. On the next grading request the server will initiate the device-code flow and return a code for you to enter at `https://microsoft.com/devicelogin`. Once authenticated, the token is cached to `~/.api-grade/entra-token-cache.json` and reused on subsequent requests.
+The AI calls `set-ruleset-config` with `auth: { type: "entra-id", tenantId: "...", clientId: "..." }`. On the next grading request the server will initiate the device-code flow and return a code for you to enter at `https://microsoft.com/devicelogin`. Once authenticated, the access and refresh tokens are cached automatically to `~/.api-grade/entra-token-cache.json` (the same pattern Azure CLI uses at `~/.azure`) and reused on subsequent requests — including after restarting the MCP server — with no further action from you.
 
 ### When authentication fails
 

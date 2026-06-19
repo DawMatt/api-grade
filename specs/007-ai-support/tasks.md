@@ -170,7 +170,19 @@
 - [X] T041 [P] Update `docs/index.md` to add MCP Server rows (overview, configuration reference, troubleshooting, quick-start) alongside the existing CLI and Backstage integration rows
 - [X] T042 [P] Update `docs/getting-started.md` to extend the MCP section to mention default ruleset configuration capability and link to `docs/mcp/configuration.md`
 - [X] T043 [P] Update `docs/package/README.md` to add `@dawmatt/api-grade-mcp` to the monorepo packages table
-- [ ] T044 Verify all six MCP tools function correctly in both required AI environments: (1) Claude Code — use `claude mcp add` and confirm `grade-api`, `assert-api-grade`, `grade-api-detailed`, `grade-api-quick-fixes-only`, `set-ruleset-config`, `get-ruleset-config` are discoverable and return correct results for an OpenAPI and AsyncAPI spec; (2) GitHub Copilot in VS Code Agent mode — configure `.vscode/mcp.json` and confirm all six tools work (FR-014, SC-002, SC-006) — **see [`checklists/t044-verification.md`](checklists/t044-verification.md) for step-by-step verification checklist per environment**
+- [X] T044 Verify all six MCP tools function correctly in both required AI environments: (1) Claude Code — use `claude mcp add` and confirm `grade-api`, `assert-api-grade`, `grade-api-detailed`, `grade-api-quick-fixes-only`, `set-ruleset-config`, `get-ruleset-config` are discoverable and return correct results for an OpenAPI and AsyncAPI spec; (2) GitHub Copilot in VS Code Agent mode — configure `.vscode/mcp.json` and confirm all six tools work (FR-014, SC-002, SC-006) — **see [`checklists/t044-verification.md`](checklists/t044-verification.md) for step-by-step verification checklist per environment**
+
+---
+
+## Phase 9: Bug Fix — `npx @dawmatt/api-grade-mcp` Invocation Failure
+
+**Purpose**: Fix the issue logged in [`checklists/issues.md`](checklists/issues.md) (Run 1, 2026/06/19): running `npx -y @dawmatt/api-grade-mcp` fails with `import: command not found` / `syntax error near unexpected token '('`. Root cause: `packages/api-grade-mcp/src/index.ts` has no `#!/usr/bin/env node` shebang, so the compiled `dist/index.js` lacks one too; when npx invokes the `bin` entry without a shebang, the OS falls back to executing it as a POSIX shell script instead of as a Node/ESM module, and the `import` statements are interpreted as shell commands.
+
+- [X] T045 [P] Create `packages/api-grade-mcp/tests/unit/index-shebang.test.ts` asserting the first line of `packages/api-grade-mcp/src/index.ts` is exactly `#!/usr/bin/env node` (regression test for the npx invocation failure in `checklists/issues.md`); confirm this test fails before T046
+- [X] T046 Add `#!/usr/bin/env node` as the first line of `packages/api-grade-mcp/src/index.ts` (above the existing `import` statements); rebuild with `yarn workspace api-grade-mcp run build` and confirm `dist/index.js` retains the shebang as its first emitted line; confirm T045 now passes
+- [X] T047 Verify the fix end-to-end: from `packages/api-grade-mcp`, run `npm pack` to produce a local tarball, then run `npx ./dawmatt-api-grade-mcp-*.tgz` and confirm the server starts cleanly (no shell syntax errors, process waits on stdio) instead of reproducing the original error; update `checklists/issues.md` to check off the Run 1 item and append a one-line resolution note (root cause + fix)
+
+**Checkpoint**: `npx -y @dawmatt/api-grade-mcp` works as documented in `docs/mcp/quick-start.md`; close out the open item in `checklists/issues.md`.
 
 ---
 
@@ -186,6 +198,7 @@
 - **US5 (Phase 6)**: Depends on Phase 2; T030 depends on T011/T015/T018 (updates those tool files)
 - **US4 (Phase 7)**: Depends on Phase 2; T033 depends on T006 (classifier)
 - **Polish (Phase 8)**: Depends on all story phases completing; T044 depends on all six tools being registered
+- **Bug Fix (Phase 9)**: Independent of all story phases (touches only `src/index.ts`); discovered during T044 verification — T045 (test) before T046 (fix) before T047 (end-to-end verification + issue close-out)
 
 ### User Story Dependencies
 

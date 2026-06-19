@@ -43,7 +43,7 @@ The grading algorithm is error-first: a single error outweighs many warnings. It
 
 - **I want to grade a spec from the command line** → [CLI Tool](cli/README.md)
 - **I want to use grading in my own code or tooling** → [Core Package](package/README.md)
-- **I want to grade specs from an AI assistant** → [MCP Server Quick Start](mcp/README.md)
+- **I want to grade specs from an AI assistant** → [MCP Server](mcp/README.md)
 - **I want grades to appear in my Backstage developer portal** → [Backstage Plugins](backstage-plugins/README.md)
 - **I'm not sure where to start** → [Getting Started](getting-started.md)
 
