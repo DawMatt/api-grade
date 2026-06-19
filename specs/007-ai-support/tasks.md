@@ -108,9 +108,9 @@
 
 ## Phase 6: User Story 5 — Configure Default Ruleset (Priority: P2)
 
-**Goal**: Expose `configure-ruleset` and `get-ruleset-config` tools; add config/auth modules; update all four grading tools to support the 5-level precedence chain, remote ruleset fetching, auth failure recovery, and the `recoveryOption` parameter.
+**Goal**: Expose `set-ruleset-config` and `get-ruleset-config` tools; add config/auth modules; update all four grading tools to support the 5-level precedence chain, remote ruleset fetching, auth failure recovery, and the `recoveryOption` parameter.
 
-**Independent Test**: Call `configure-ruleset` with `scope: "session"` and a local ruleset path → confirm `get-ruleset-config` reports the session default as effective. Restart the server; configure `scope: "workspace"` → confirm the workspace config file exists at `.api-grade/config.json` and subsequent `grade-api` calls use it. Call with a GitHub Enterprise URL + `auth: { type: "github-pat" }` → confirm `GITHUB_TOKEN` env var is used for the fetch. Call with an unreachable URL → confirm `AuthFailureRecoveryResponse` with four recovery options arrives within 10 seconds.
+**Independent Test**: Call `set-ruleset-config` with `scope: "session"` and a local ruleset path → confirm `get-ruleset-config` reports the session default as effective. Restart the server; configure `scope: "workspace"` → confirm the workspace config file exists at `.api-grade/config.json` and subsequent `grade-api` calls use it. Call with a GitHub Enterprise URL + `auth: { type: "github-pat" }` → confirm `GITHUB_TOKEN` env var is used for the fetch. Call with an unreachable URL → confirm `AuthFailureRecoveryResponse` with four recovery options arrives within 10 seconds.
 
 ### Tests for User Story 5
 
@@ -118,7 +118,7 @@
 
 - [X] T020 [P] [US5] Create `packages/api-grade-mcp/tests/unit/ruleset-config.test.ts` unit tests for `config/ruleset-config.ts`: load from non-existent file returns `null`; write then re-read at workspace path returns correct `RulesetConfig`; write then re-read at global path (`os.homedir()`) returns correct config; write error (unwritable path) throws `CONFIG_WRITE_ERROR`
 - [X] T021 [P] [US5] Create `packages/api-grade-mcp/tests/unit/resolve-ruleset.test.ts` unit tests for all 5-level precedence scenarios: per-request wins over all others; `sessionRulesetOverride: "builtin"` short-circuits to built-in immediately; session default wins over workspace and global; workspace wins over global; global wins over built-in; all null → built-in
-- [X] T022 [P] [US5] Create `packages/api-grade-mcp/tests/integration/configure-ruleset.test.ts` integration tests for `configure-ruleset`: `scope: "session"` stores in `SessionState.defaultRuleset`; `scope: "workspace"` writes `.api-grade/config.json`; `scope: "global"` writes `~/.api-grade/config.json`; `rulesetPath: null` clears the scope; `auth.type: "entra-id"` without `tenantId`/`clientId` → `INVALID_AUTH_CONFIG`; unwritable workspace path → `CONFIG_WRITE_ERROR`
+- [X] T022 [P] [US5] Create `packages/api-grade-mcp/tests/integration/set-ruleset-config.test.ts` integration tests for `set-ruleset-config`: `scope: "session"` stores in `SessionState.defaultRuleset`; `scope: "workspace"` writes `.api-grade/config.json`; `scope: "global"` writes `~/.api-grade/config.json`; `rulesetPath: null` clears the scope; `auth.type: "entra-id"` without `tenantId`/`clientId` → `INVALID_AUTH_CONFIG`; unwritable workspace path → `CONFIG_WRITE_ERROR`
 - [X] T023 [P] [US5] Create `packages/api-grade-mcp/tests/integration/get-ruleset-config.test.ts` integration tests for `get-ruleset-config`: no defaults configured → all scopes null, effective is built-in; session only → effective is session; workspace only → effective is workspace; session + workspace → effective is session (precedence); response never includes raw token values
 
 ### Implementation for User Story 5
@@ -127,10 +127,10 @@
 - [X] T025 [US5] Implement `packages/api-grade-mcp/src/config/resolve-ruleset.ts` exporting `resolveRuleset(perRequestPath, sessionState, workspaceConfig, globalConfig): RulesetResolution` implementing the 5-level precedence chain from FR-017; `sessionRulesetOverride: "builtin"` on `SessionState` short-circuits immediately to `{ scope: "built-in", rulesetPath: null, auth: null }`; first non-null source wins
 - [X] T026 [US5] Implement `packages/api-grade-mcp/src/auth/github.ts` exporting `fetchRulesetWithGithubPat(url, token, timeoutMs): Promise<string>` using native `fetch`, `AbortController`, `Authorization: Bearer` header; maps HTTP 401/403 → throws `RulesetAuthError("auth-failed")`; abort (`AbortError`) → throws `RulesetAuthError("network-unreachable")`; export `INITIAL_FETCH_TIMEOUT_MS = 5_000` and `RETRY_FETCH_TIMEOUT_MS = 30_000`
 - [X] T027 [US5] Implement `packages/api-grade-mcp/src/auth/entra.ts` exporting `acquireEntraToken(tenantId, clientId): Promise<string>` using `@azure/msal-node` `PublicClientApplication` with disk-persisted token cache at `~/.api-grade/entra-token-cache.json` via `cachePlugin` (`beforeCacheAccess`/`afterCacheAccess`); tries silent acquisition first; on cache miss throws `EntraAuthRequired(userCode, verificationUri, expiresIn)` via `deviceCodeCallback`; never opens browser directly
-- [X] T028 [US5] Implement `packages/api-grade-mcp/src/tools/configure-ruleset.ts` exporting `registerConfigureRulesetTool(server, sessionState)`: registers `configure-ruleset` with Zod schema (`scope` enum required, `rulesetPath` optional string/null, `auth` object optional); validates `entra-id` requires `tenantId` + `clientId`; for `session` scope updates `sessionState.defaultRuleset` and clears `sessionState.sessionRulesetOverride` when `rulesetPath` is non-null (per research.md clearing rule); for `workspace`/`global` calls appropriate `saveXxxConfig()`; returns confirmation with `configFile` path for persistent scopes
+- [X] T028 [US5] Implement `packages/api-grade-mcp/src/tools/set-ruleset-config.ts` exporting `registerSetRulesetConfigTool(server, sessionState)`: registers `set-ruleset-config` with Zod schema (`scope` enum required, `rulesetPath` optional string/null, `auth` object optional); validates `entra-id` requires `tenantId` + `clientId`; for `session` scope updates `sessionState.defaultRuleset` and clears `sessionState.sessionRulesetOverride` when `rulesetPath` is non-null (per research.md clearing rule); for `workspace`/`global` calls appropriate `saveXxxConfig()`; returns confirmation with `configFile` path for persistent scopes
 - [X] T029 [US5] Implement `packages/api-grade-mcp/src/tools/get-ruleset-config.ts` exporting `registerGetRulesetConfigTool(server, sessionState)`: registers `get-ruleset-config` (no required inputs); loads workspace and global configs; calls `resolveRuleset()` to determine effective scope; returns all scopes, effective scope, `precedenceOrder`, and `note` about per-request precedence; strips raw token values from `auth` fields (shows only `tokenSource: "config-file" | "env-var" | "none"`)
 - [X] T030 [US5] ⚠️ Update `packages/api-grade-mcp/src/tools/grade.ts`, `grade-detailed.ts`, and `assert-grade.ts` to accept `recoveryOption` optional parameter (enum `["retry","use-builtin-once","use-builtin-session","cancel"]`); call `resolveRuleset()` before each `GradeEngine.grade()` call; if resolved to a remote URL fetch it using the correct auth module with `INITIAL_FETCH_TIMEOUT_MS` (or `RETRY_FETCH_TIMEOUT_MS` when `recoveryOption: "retry"`); on fetch failure return `AuthFailureRecoveryResponse`; on `recoveryOption: "use-builtin-session"` set `sessionState.sessionRulesetOverride = "builtin"`; on `recoveryOption: "cancel"` return `REQUEST_CANCELLED` error — **highest-risk task; touches all grading tools**
-- [X] T031 [US5] Wire all US5 tools into `packages/api-grade-mcp/src/server.ts` `createServer()`: replace stubs with real `registerConfigureRulesetTool(server, sessionState)` and `registerGetRulesetConfigTool(server, sessionState)` calls; load workspace and global configs at server startup and pass to each grading tool registration
+- [X] T031 [US5] Wire all US5 tools into `packages/api-grade-mcp/src/server.ts` `createServer()`: replace stubs with real `registerSetRulesetConfigTool(server, sessionState)` and `registerGetRulesetConfigTool(server, sessionState)` calls; load workspace and global configs at server startup and pass to each grading tool registration
 
 **Checkpoint**: All six tools registered. Session, workspace, and global ruleset configuration works. Auth failure returns four recovery options. Run all unit and integration tests and confirm all pass.
 
@@ -170,7 +170,7 @@
 - [X] T041 [P] Update `docs/index.md` to add MCP Server rows (overview, configuration reference, troubleshooting, quick-start) alongside the existing CLI and Backstage integration rows
 - [X] T042 [P] Update `docs/getting-started.md` to extend the MCP section to mention default ruleset configuration capability and link to `docs/mcp/configuration.md`
 - [X] T043 [P] Update `docs/package/README.md` to add `@dawmatt/api-grade-mcp` to the monorepo packages table
-- [ ] T044 Verify all six MCP tools function correctly in all three required AI environments: (1) Claude Code — use `claude mcp add` and confirm `grade-api`, `assert-api-grade`, `grade-api-detailed`, `get-non-breaking-violations`, `configure-ruleset`, `get-ruleset-config` are discoverable and return correct results for an OpenAPI and AsyncAPI spec; (2) GitHub Copilot in VS Code Agent mode — configure `.vscode/mcp.json` and confirm all six tools work; (3) GitHub Copilot Studio — configure as custom MCP Action and confirm grading succeeds (FR-014, SC-002, SC-006) — **see [`checklists/t044-verification.md`](checklists/t044-verification.md) for step-by-step verification checklist per environment**
+- [ ] T044 Verify all six MCP tools function correctly in all three required AI environments: (1) Claude Code — use `claude mcp add` and confirm `grade-api`, `assert-api-grade`, `grade-api-detailed`, `get-non-breaking-violations`, `set-ruleset-config`, `get-ruleset-config` are discoverable and return correct results for an OpenAPI and AsyncAPI spec; (2) GitHub Copilot in VS Code Agent mode — configure `.vscode/mcp.json` and confirm all six tools work; (3) GitHub Copilot Studio — configure as custom MCP Action and confirm grading succeeds (FR-014, SC-002, SC-006) — **see [`checklists/t044-verification.md`](checklists/t044-verification.md) for step-by-step verification checklist per environment**
 
 ---
 
@@ -219,7 +219,7 @@
 # All four US5 test files can be written simultaneously:
 Task T020: tests/unit/ruleset-config.test.ts
 Task T021: tests/unit/resolve-ruleset.test.ts
-Task T022: tests/integration/configure-ruleset.test.ts
+Task T022: tests/integration/set-ruleset-config.test.ts
 Task T023: tests/integration/get-ruleset-config.test.ts
 ```
 
@@ -249,7 +249,7 @@ Task T027: src/auth/entra.ts
 2. US1 → `grade-api` working → MCP server usable for basic grading (MVP!)
 3. US2 → `assert-api-grade` working → grade assertion available to AI tools
 4. US3 → `grade-api-detailed` working → full diagnostics available
-5. US5 → `configure-ruleset` + `get-ruleset-config` + auth → enterprise adoption unlocked
+5. US5 → `set-ruleset-config` + `get-ruleset-config` + auth → enterprise adoption unlocked
 6. US4 → `get-non-breaking-violations` working → AI-assisted fixing unlocked
 7. Polish → documentation + three-environment verification → feature shippable
 
@@ -258,7 +258,7 @@ Task T027: src/auth/entra.ts
 After Foundational phase is complete:
 - **Developer A**: US1 (grade-api) → US4 (non-breaking, uses classifier)
 - **Developer B**: US2 (assert-api-grade) + US3 (grade-api-detailed)
-- **Developer C**: US5 (configure-ruleset, config/auth modules)
+- **Developer C**: US5 (set-ruleset-config, config/auth modules)
 - All converge for T030 (cross-cutting grading tool update) and Phase 8 (verification + docs)
 
 ---

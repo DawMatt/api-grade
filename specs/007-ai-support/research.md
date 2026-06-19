@@ -204,7 +204,7 @@ The `expectedImprovement` is derived from the rule message and the rule's known 
 
 ### Decision: Native `fetch` with `Authorization: Bearer` header; token from env var or session config
 
-**Rationale**: Node 20+ includes `fetch` natively, so no additional HTTP client is needed. GitHub Enterprise raw file URLs use standard Bearer token auth. Token precedence: `GITHUB_TOKEN` environment variable → `auth.githubToken` supplied transiently on `configure-ruleset scope: session`. The token is never persisted to workspace or global config files (FR-021), so the workspace config stores only `auth.type: "github-pat"` as a hint.
+**Rationale**: Node 20+ includes `fetch` natively, so no additional HTTP client is needed. GitHub Enterprise raw file URLs use standard Bearer token auth. Token precedence: `GITHUB_TOKEN` environment variable → `auth.githubToken` supplied transiently on `set-ruleset-config scope: session`. The token is never persisted to workspace or global config files (FR-021), so the workspace config stores only `auth.type: "github-pat"` as a hint.
 
 **Implementation pattern**:
 ```typescript
@@ -356,13 +356,13 @@ export function createServer(): McpServer {
   registerGradeDetailedTool(server, sessionState);
   registerAssertGradeTool(server, sessionState);
   registerNonBreakingTool(server, sessionState);
-  registerConfigureRulesetTool(server, sessionState);
+  registerSetRulesetConfigTool(server, sessionState);
   registerGetRulesetConfigTool(server, sessionState);
   return server;
 }
 ```
 
-**`sessionRulesetOverride` clearing rule** (clarified 2026-06-19): A `configure-ruleset scope: session` call with a non-null `rulesetPath` MUST set `sessionRulesetOverride` to `null` — the user is explicitly configuring a default, which supersedes the "use built-in" session override. Calling `configure-ruleset` with `rulesetPath: null` does NOT clear the override (it only clears `defaultRuleset`).
+**`sessionRulesetOverride` clearing rule** (clarified 2026-06-19): A `set-ruleset-config scope: session` call with a non-null `rulesetPath` MUST set `sessionRulesetOverride` to `null` — the user is explicitly configuring a default, which supersedes the "use built-in" session override. Calling `set-ruleset-config` with `rulesetPath: null` does NOT clear the override (it only clears `defaultRuleset`).
 
 **Alternatives considered**: Class-based server with state as instance fields — heavier abstraction with no benefit at this scale; rejected per YAGNI.
 

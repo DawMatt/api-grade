@@ -32,7 +32,7 @@ describe('get-ruleset-config tool', () => {
 
   it('session only → effective is session', async () => {
     const server = createServer();
-    await callTool(server, 'configure-ruleset', {
+    await callTool(server, 'set-ruleset-config', {
       scope: 'session',
       rulesetPath: 'https://session.example.com/ruleset.yaml',
     });
@@ -44,7 +44,7 @@ describe('get-ruleset-config tool', () => {
 
   it('workspace only → effective is workspace', async () => {
     const server = createServer();
-    await callTool(server, 'configure-ruleset', {
+    await callTool(server, 'set-ruleset-config', {
       scope: 'workspace',
       rulesetPath: 'https://workspace.example.com/ruleset.yaml',
     });
@@ -56,11 +56,11 @@ describe('get-ruleset-config tool', () => {
 
   it('session + workspace → effective is session (precedence)', async () => {
     const server = createServer();
-    await callTool(server, 'configure-ruleset', {
+    await callTool(server, 'set-ruleset-config', {
       scope: 'workspace',
       rulesetPath: 'https://workspace.example.com/ruleset.yaml',
     });
-    await callTool(server, 'configure-ruleset', {
+    await callTool(server, 'set-ruleset-config', {
       scope: 'session',
       rulesetPath: 'https://session.example.com/ruleset.yaml',
     });
@@ -71,7 +71,7 @@ describe('get-ruleset-config tool', () => {
 
   it('response never includes raw token values', async () => {
     const server = createServer();
-    await callTool(server, 'configure-ruleset', {
+    await callTool(server, 'set-ruleset-config', {
       scope: 'session',
       rulesetPath: 'https://example.com/ruleset.yaml',
       auth: { type: 'github-pat', githubToken: 'secret-token-123' },

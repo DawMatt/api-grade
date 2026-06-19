@@ -38,7 +38,7 @@ openapi.yaml
 
 **Cause**: The `rulesetPath` supplied in the request (or the configured default) points to a local file that doesn't exist.
 
-**Fix**: Verify the path is correct and the file exists. For configured defaults, use `get-ruleset-config` to see what path is active, then correct it with `configure-ruleset`.
+**Fix**: Verify the path is correct and the file exists. For configured defaults, use `get-ruleset-config` to see what path is active, then correct it with `set-ruleset-config`.
 
 ---
 
@@ -53,8 +53,8 @@ openapi.yaml
 **Fixes**:
 - **Token expired (`github-pat`)**: Rotate the `GITHUB_TOKEN` env var and restart the AI tool
 - **VPN disconnected**: Reconnect to VPN, then use the `retry` recovery option
-- **Wrong URL**: Use `configure-ruleset` to correct the `rulesetPath`
-- **Temporary bypass**: Use `configure-ruleset scope: session rulesetPath: null` to clear the session default and fall back to the built-in ruleset
+- **Wrong URL**: Use `set-ruleset-config` to correct the `rulesetPath`
+- **Temporary bypass**: Use `set-ruleset-config scope: session rulesetPath: null` to clear the session default and fall back to the built-in ruleset
 
 ---
 

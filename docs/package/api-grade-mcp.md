@@ -122,7 +122,7 @@ Return a classified, AI-actionable list of non-breaking violations — those who
 
 ---
 
-### `configure-ruleset`
+### `set-ruleset-config`
 
 Set the default Spectral ruleset at session, workspace, or global scope. The configured default applies to all subsequent grading requests without needing to supply `rulesetPath` each time.
 

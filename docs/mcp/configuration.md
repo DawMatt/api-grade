@@ -27,7 +27,7 @@ The first non-null value in this chain wins.
 Applies to all grading requests for the current MCP server session. Cleared when the server restarts.
 
 ```
-configure-ruleset
+set-ruleset-config
   scope: session
   rulesetPath: /workspace/rulesets/company-standards.yaml
 ```
@@ -176,7 +176,7 @@ Raw token values are never returned — the response shows only `tokenSource: "c
 To clear a scope's default:
 
 ```
-configure-ruleset
+set-ruleset-config
   scope: workspace
   rulesetPath: null
 ```

@@ -266,7 +266,7 @@
 
 ---
 
-## Tool 5: `configure-ruleset`
+## Tool 5: `set-ruleset-config`
 
 **Purpose**: Set the default ruleset used by this MCP server when no `rulesetPath` is supplied on a grading request. Supports three scopes: `session` (in-memory, resets on server restart), `workspace` (persisted to `.api-grade/config.json` in the workspace root), and `global` (persisted to `~/.api-grade/config.json`). Optionally configure authentication for rulesets hosted in secured locations.
 
@@ -361,7 +361,7 @@ Response confirms the scope was cleared and which scope will now take effect.
 
 ## Tool 6: `get-ruleset-config`
 
-**Purpose**: Return the active ruleset configuration at every scope (session, workspace, global), indicate which scope is currently in effect (the effective ruleset), and show the full resolution chain. Use this to diagnose why a particular ruleset is being applied or to confirm a `configure-ruleset` call took effect.
+**Purpose**: Return the active ruleset configuration at every scope (session, workspace, global), indicate which scope is currently in effect (the effective ruleset), and show the full resolution chain. Use this to diagnose why a particular ruleset is being applied or to confirm a `set-ruleset-config` call took effect.
 
 **Input Schema**:
 

@@ -68,7 +68,7 @@ tests/
 |---------|------|-------------|
 | `@dawmatt/api-grade` | `/` (root) | CLI tool (`api-grade` binary) |
 | `@dawmatt/api-grade-core` | `packages/api-grade-core/` | Standalone grading library used by all other packages |
-| `@dawmatt/api-grade-mcp` | `packages/api-grade-mcp/` | MCP server exposing six AI tools (`grade-api`, `grade-api-detailed`, `assert-api-grade`, `get-non-breaking-violations`, `configure-ruleset`, `get-ruleset-config`) |
+| `@dawmatt/api-grade-mcp` | `packages/api-grade-mcp/` | MCP server exposing six AI tools (`grade-api`, `grade-api-detailed`, `assert-api-grade`, `get-non-breaking-violations`, `set-ruleset-config`, `get-ruleset-config`) |
 | `@dawmatt/backstage-plugin-api-grade` | `packages/backstage-plugin-api-grade/` | Backstage frontend card plugin |
 | `@dawmatt/backstage-plugin-api-grade-backend` | `packages/backstage-plugin-api-grade-backend/` | Backstage backend grading plugin |
 

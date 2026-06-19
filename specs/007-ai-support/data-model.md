@@ -209,8 +209,8 @@ Grading operations remain stateless — no session, no cache. US5 introduces two
 
 | Field | Type | Description |
 |---|---|---|
-| `defaultRuleset` | `RulesetConfig \| null` | Session-level default set via `configure-ruleset scope: session`; `null` if not configured |
-| `sessionRulesetOverride` | `"builtin" \| null` | Set to `"builtin"` when the user selects `use-builtin-session`; takes precedence over `defaultRuleset` for all subsequent requests. Cleared implicitly when `configure-ruleset scope: session` is called with a non-null `rulesetPath`. |
+| `defaultRuleset` | `RulesetConfig \| null` | Session-level default set via `set-ruleset-config scope: session`; `null` if not configured |
+| `sessionRulesetOverride` | `"builtin" \| null` | Set to `"builtin"` when the user selects `use-builtin-session`; takes precedence over `defaultRuleset` for all subsequent requests. Cleared implicitly when `set-ruleset-config scope: session` is called with a non-null `rulesetPath`. |
 
 - Session-level Entra ID token cache (held by the MSAL `PublicClientApplication` instance)
 

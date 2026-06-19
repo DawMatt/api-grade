@@ -28,7 +28,7 @@ AI tool (Claude Code, Copilot, etc.)
 | `grade-api-detailed` | Full grade with all violations and diagnostics |
 | `assert-api-grade` | Pass/fail assertion for a minimum grade threshold |
 | `get-non-breaking-violations` | Classified list of fixable violations for AI-assisted correction |
-| `configure-ruleset` | Set the default Spectral ruleset at session, workspace, or global scope |
+| `set-ruleset-config` | Set the default Spectral ruleset at session, workspace, or global scope |
 | `get-ruleset-config` | Show the active ruleset configuration and which scope is effective |
 
 ---

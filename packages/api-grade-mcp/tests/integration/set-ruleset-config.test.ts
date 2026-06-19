@@ -20,10 +20,10 @@ afterEach(async () => {
   try { await rm(API_GRADE_DIR, { recursive: true, force: true }); } catch { /* ok */ }
 });
 
-describe('configure-ruleset tool', () => {
+describe('set-ruleset-config tool', () => {
   it('scope: "session" stores in SessionState (visible via get-ruleset-config)', async () => {
     const server = createServer();
-    const result = await callTool(server, 'configure-ruleset', {
+    const result = await callTool(server, 'set-ruleset-config', {
       scope: 'session',
       rulesetPath: 'https://example.com/ruleset.yaml',
     });
@@ -41,7 +41,7 @@ describe('configure-ruleset tool', () => {
 
   it('scope: "workspace" writes .api-grade/config.json', async () => {
     const server = createServer();
-    const result = await callTool(server, 'configure-ruleset', {
+    const result = await callTool(server, 'set-ruleset-config', {
       scope: 'workspace',
       rulesetPath: 'https://example.com/workspace-ruleset.yaml',
     });
@@ -53,11 +53,11 @@ describe('configure-ruleset tool', () => {
 
   it('rulesetPath: null clears the session scope', async () => {
     const server = createServer();
-    await callTool(server, 'configure-ruleset', {
+    await callTool(server, 'set-ruleset-config', {
       scope: 'session',
       rulesetPath: 'https://example.com/ruleset.yaml',
     });
-    const clearResult = await callTool(server, 'configure-ruleset', {
+    const clearResult = await callTool(server, 'set-ruleset-config', {
       scope: 'session',
       rulesetPath: null,
     });
@@ -70,7 +70,7 @@ describe('configure-ruleset tool', () => {
 
   it('auth.type: "entra-id" without tenantId/clientId → INVALID_AUTH_CONFIG', async () => {
     const server = createServer();
-    const result = await callTool(server, 'configure-ruleset', {
+    const result = await callTool(server, 'set-ruleset-config', {
       scope: 'global',
       rulesetPath: 'https://example.com/ruleset.yaml',
       auth: { type: 'entra-id' },
@@ -85,7 +85,7 @@ describe('configure-ruleset tool', () => {
     // Remove any pre-existing .api-grade dir/file, then create a file to block directory creation
     await rm(API_GRADE_DIR, { recursive: true, force: true }).catch(() => {});
     writeFileSync(API_GRADE_DIR, 'blocking', 'utf-8');
-    const result = await callTool(server, 'configure-ruleset', {
+    const result = await callTool(server, 'set-ruleset-config', {
       scope: 'workspace',
       rulesetPath: 'https://example.com/ruleset.yaml',
     });

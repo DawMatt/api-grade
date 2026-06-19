@@ -6,7 +6,7 @@ import { registerGradeTool } from './tools/grade.js';
 import { registerAssertGradeTool } from './tools/assert-grade.js';
 import { registerGradeDetailedTool } from './tools/grade-detailed.js';
 import { registerNonBreakingTool } from './tools/non-breaking.js';
-import { registerConfigureRulesetTool } from './tools/configure-ruleset.js';
+import { registerSetRulesetConfigTool } from './tools/set-ruleset-config.js';
 import { registerGetRulesetConfigTool } from './tools/get-ruleset-config.js';
 import type { SessionState } from './types.js';
 
@@ -28,7 +28,7 @@ export function createServer(): McpServer {
   registerAssertGradeTool(server, sessionState);
   registerGradeDetailedTool(server, sessionState);
   registerNonBreakingTool(server, sessionState);
-  registerConfigureRulesetTool(server, sessionState);
+  registerSetRulesetConfigTool(server, sessionState);
   registerGetRulesetConfigTool(server, sessionState);
   return server;
 }

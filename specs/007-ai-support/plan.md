@@ -69,7 +69,7 @@ Deliver a new npm package (`@dawmatt/api-grade-mcp`) that exposes api-grade capa
 | VI. Educational Excellence | ✅ Pass | Auth failure recovery messages explain the failure reason and guide the user; tool descriptions updated to reflect configuration capability |
 | CI/CD Integration | ✅ Pass | No changes to CI/CD-oriented CLI behaviour |
 | YAGNI | ✅ Pass | Auth limited to GitHub PAT and Entra ID (other SSO schemes out of scope per spec); no remote URL spec fetching; no SSE transport; no additional MCP surfaces |
-| AI Integration Requirements | ✅ Pass | `configure-ruleset` and `get-ruleset-config` are fully self-describing; all six tools discoverable without additional documentation |
+| AI Integration Requirements | ✅ Pass | `set-ruleset-config` and `get-ruleset-config` are fully self-describing; all six tools discoverable without additional documentation |
 | Development Workflow | ✅ Pass | All tasks follow the existing phase/branch/PR pattern; T039 (cross-cutting grading tool update) is the highest-risk task and is explicitly flagged in tasks.md notes |
 
 Tool contracts confirmed to align with `GradeResult` and `Diagnostic` types from `api-grade-core` without requiring changes to the core package. `RulesetConfig`, `AuthConfig`, `SessionState`, `RulesetResolution`, and `AuthFailureRecoveryResponse` are all MCP-layer types defined in `packages/api-grade-mcp/src/`.
@@ -96,7 +96,7 @@ docs/
 ├── getting-started.md         # UPDATE: extend MCP section to mention configuration capability
 ├── package/
 │   ├── README.md              # UPDATE: add @dawmatt/api-grade-mcp to monorepo packages table
-│   └── api-grade-mcp.md       # UPDATE: add configure-ruleset + get-ruleset-config tools; add configuration overview; link to docs/mcp/
+│   └── api-grade-mcp.md       # UPDATE: add set-ruleset-config + get-ruleset-config tools; add configuration overview; link to docs/mcp/
 └── mcp/                       # NEW directory — user-facing MCP documentation (FR-025)
     ├── quick-start.md         # NEW: polished install + host config guide for all 3 required environments
     ├── configuration.md       # NEW: ruleset configuration reference (3 scopes, config files, GitHub PAT, Entra ID, env vars)
@@ -115,7 +115,7 @@ packages/api-grade-mcp/
 │   │   ├── grade-detailed.ts  # grade-api-detailed tool
 │   │   ├── assert-grade.ts    # assert-api-grade tool
 │   │   ├── non-breaking.ts    # get-non-breaking-violations tool
-│   │   ├── configure-ruleset.ts  # configure-ruleset tool (US5)
+│   │   ├── set-ruleset-config.ts  # set-ruleset-config tool (US5)
 │   │   └── get-ruleset-config.ts # get-ruleset-config tool (US5)
 │   ├── config/
 │   │   ├── ruleset-config.ts  # Load/save RulesetConfig at session/workspace/global scope (US5)
@@ -136,7 +136,7 @@ packages/api-grade-mcp/
 │       ├── grade-detailed.test.ts
 │       ├── assert-grade.test.ts
 │       ├── non-breaking.test.ts
-│       ├── configure-ruleset.test.ts  # configure-ruleset tool tests (US5)
+│       ├── set-ruleset-config.test.ts  # set-ruleset-config tool tests (US5)
 │       └── get-ruleset-config.test.ts # get-ruleset-config tool tests (US5)
 ├── package.json               # @dawmatt/api-grade-mcp; bin: api-grade-mcp
 └── tsconfig.json
