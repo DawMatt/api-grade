@@ -186,6 +186,19 @@
 
 ---
 
+## Phase 10: Bug Fix — `rulesetSource: "custom"` Missing `rulesetPath` in Responses
+
+**Purpose**: Fix the issue logged in [`checklists/issues.md`](checklists/issues.md) (Run 2, 2026/06/19): `grade-api` and `grade-api-detailed` return `rulesetSource: "custom"` but omit `rulesetPath`, even though `@dawmatt/api-grade-core`'s `GradeResult.rulesetPath` (`packages/api-grade-core/src/grader.ts`) is populated correctly. Root cause: the response-projection object literals in `packages/api-grade-mcp/src/tools/grade.ts` (~line 131) and `packages/api-grade-mcp/src/tools/grade-detailed.ts` (~line 137) copy `result.rulesetSource` but never copy `result.rulesetPath`, so the field is silently dropped before serialisation — contradicting `data-model.md` (`GradeResult.rulesetPath?`) and the example outputs in `contracts/mcp-tools.md`.
+
+- [X] T048 [P] Extend `packages/api-grade-mcp/tests/integration/grade.test.ts` with a case: call `grade-api` with `rulesetPath` set to a real custom ruleset fixture (e.g. `tests/fixtures/rulesets/security/remotePAT.yaml`) and assert the response has `rulesetSource: "custom"` AND `rulesetPath` equal to the resolved absolute path; confirm this assertion fails before T050
+- [X] T049 [P] Extend `packages/api-grade-mcp/tests/integration/grade-detailed.test.ts` with the same case: custom ruleset → `rulesetSource: "custom"` AND `rulesetPath` present and correct; confirm this assertion fails before T050
+- [X] T050 Fix `packages/api-grade-mcp/src/tools/grade.ts` and `packages/api-grade-mcp/src/tools/grade-detailed.ts`: in each response object literal, add `...(result.rulesetPath ? { rulesetPath: result.rulesetPath } : {})` (matching the existing pattern in `packages/api-grade-core/src/formatter.ts` line 88) immediately after the `rulesetSource` field; confirm T048 and T049 now pass
+- [X] T051 Run the full `packages/api-grade-mcp` test suite (`yarn workspace api-grade-mcp run test:coverage`) and confirm no regressions; update `checklists/issues.md` to check off the Run 2 item and append a one-line resolution note (root cause + fix), matching the style of the Run 1 resolution note
+
+**Checkpoint**: `grade-api` and `grade-api-detailed` correctly echo `rulesetPath` whenever `rulesetSource: "custom"`; close out the open item in `checklists/issues.md`.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -199,6 +212,7 @@
 - **US4 (Phase 7)**: Depends on Phase 2; T033 depends on T006 (classifier)
 - **Polish (Phase 8)**: Depends on all story phases completing; T044 depends on all six tools being registered
 - **Bug Fix (Phase 9)**: Independent of all story phases (touches only `src/index.ts`); discovered during T044 verification — T045 (test) before T046 (fix) before T047 (end-to-end verification + issue close-out)
+- **Bug Fix (Phase 10)**: Independent of all other phases (touches only `src/tools/grade.ts` and `src/tools/grade-detailed.ts`); reported in `checklists/issues.md` Run 2 — T048/T049 (tests, parallel) before T050 (fix) before T051 (full suite + issue close-out)
 
 ### User Story Dependencies
 

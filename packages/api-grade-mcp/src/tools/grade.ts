@@ -136,6 +136,7 @@ export function registerGradeTool(server: McpServer, sessionState: SessionState)
           numericScore: result.numericScore,
           summary: result.summary,
           rulesetSource: result.rulesetSource,
+          ...(result.rulesetPath ? { rulesetPath: result.rulesetPath } : {}),
         };
 
         if (largeSpecWarning) {

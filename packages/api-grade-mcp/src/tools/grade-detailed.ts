@@ -143,6 +143,7 @@ export function registerGradeDetailedTool(server: McpServer, sessionState: Sessi
           summary: result.summary,
           diagnostics,
           rulesetSource: result.rulesetSource,
+          ...(result.rulesetPath ? { rulesetPath: result.rulesetPath } : {}),
           truncated,
         };
 

@@ -7,6 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = resolve(__dirname, '../../../../tests/fixtures');
 const OPENAPI_POOR = resolve(FIXTURES, 'openapi/poor-quality.yaml');
 const ASYNCAPI_FIXTURE = resolve(FIXTURES, 'asyncapi/poor-quality.yaml');
+const CUSTOM_RULESET = resolve(FIXTURES, 'rulesets/security/remotePAT.yaml');
 
 type ToolRegistry = Record<string, { handler: (args: Record<string, unknown>, extra: unknown) => Promise<unknown> }>;
 
@@ -57,6 +58,18 @@ describe('grade-api-detailed tool', () => {
     expect(result.isError).toBe(true);
     const body = JSON.parse(result.content[0].text);
     expect(body.error).toBe('SPEC_NOT_FOUND');
+  });
+
+  it('returns rulesetSource "custom" with rulesetPath when a custom ruleset is used', async () => {
+    const server = createServer();
+    const result = await callTool(server, 'grade-api-detailed', {
+      specPath: OPENAPI_POOR,
+      rulesetPath: CUSTOM_RULESET,
+    });
+    expect(result.isError).toBeFalsy();
+    const body = JSON.parse(result.content[0].text);
+    expect(body.rulesetSource).toBe('custom');
+    expect(body.rulesetPath).toBe(CUSTOM_RULESET);
   });
 
   it('grades AsyncAPI spec successfully', async () => {
