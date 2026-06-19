@@ -170,7 +170,7 @@
 - [X] T041 [P] Update `docs/index.md` to add MCP Server rows (overview, configuration reference, troubleshooting, quick-start) alongside the existing CLI and Backstage integration rows
 - [X] T042 [P] Update `docs/getting-started.md` to extend the MCP section to mention default ruleset configuration capability and link to `docs/mcp/configuration.md`
 - [X] T043 [P] Update `docs/package/README.md` to add `@dawmatt/api-grade-mcp` to the monorepo packages table
-- [ ] T044 Verify all six MCP tools function correctly in all three required AI environments: (1) Claude Code — use `claude mcp add` and confirm `grade-api`, `assert-api-grade`, `grade-api-detailed`, `get-non-breaking-violations`, `configure-ruleset`, `get-ruleset-config` are discoverable and return correct results for an OpenAPI and AsyncAPI spec; (2) GitHub Copilot in VS Code Agent mode — configure `.vscode/mcp.json` and confirm all six tools work; (3) GitHub Copilot Studio — configure as custom MCP Action and confirm grading succeeds (FR-014, SC-002, SC-006)
+- [ ] T044 Verify all six MCP tools function correctly in all three required AI environments: (1) Claude Code — use `claude mcp add` and confirm `grade-api`, `assert-api-grade`, `grade-api-detailed`, `get-non-breaking-violations`, `configure-ruleset`, `get-ruleset-config` are discoverable and return correct results for an OpenAPI and AsyncAPI spec; (2) GitHub Copilot in VS Code Agent mode — configure `.vscode/mcp.json` and confirm all six tools work; (3) GitHub Copilot Studio — configure as custom MCP Action and confirm grading succeeds (FR-014, SC-002, SC-006) — **see [`checklists/t044-verification.md`](checklists/t044-verification.md) for step-by-step verification checklist per environment**
 
 ---
 
