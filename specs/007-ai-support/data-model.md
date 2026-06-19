@@ -138,9 +138,9 @@ Returned when `type: "entra-id"` auth is needed but no cached token is available
 
 ---
 
-### NonBreakingViolation
+### QuickFix
 
-A single non-breaking violation, enriched with AI-actionable context (per FR-012).
+A single quick fix (a safe, non-breaking improvement), enriched with AI-actionable context (per FR-012).
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -157,17 +157,17 @@ A single non-breaking violation, enriched with AI-actionable context (per FR-012
 - `currentValue` is `null` when the field is absent (missing field violations), not when the value is empty string
 - `expectedImprovement` is derived by the classifier; never empty
 
-### NonBreakingViolationResult
+### QuickFixResult
 
-The top-level response shape for the `get-non-breaking-violations` tool.
+The top-level response shape for the `grade-api-quick-fixes-only` tool.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `specPath` | `string` | ✅ | Path of the analysed specification |
 | `format` | `ApiFormat` | ✅ | Detected specification format |
 | `totalViolations` | `number` | ✅ | Total violations found (all severities) |
-| `nonBreakingCount` | `number` | ✅ | Count of non-breaking violations in the result |
-| `nonBreakingViolations` | `NonBreakingViolation[]` | ✅ | Classified, AI-actionable list |
+| `quickFixCount` | `number` | ✅ | Count of quick fixes (safe, non-breaking improvements) in the result |
+| `quickFixes` | `QuickFix[]` | ✅ | Classified, AI-actionable list of quick fixes |
 | `largeSpecWarning?` | `string` | — | Present when spec exceeds 500KB threshold |
 
 ---

@@ -68,7 +68,7 @@ const SEVERITY_LABELS: Record<number, string> = {
   3: 'hint',
 };
 
-export interface NonBreakingViolation {
+export interface QuickFix {
   ruleId: string;
   message: string;
   severity: string;
@@ -78,10 +78,10 @@ export interface NonBreakingViolation {
   expectedImprovement: string;
 }
 
-export function buildNonBreakingViolation(
+export function buildQuickFix(
   diagnostic: Diagnostic,
   specContent: string
-): NonBreakingViolation {
+): QuickFix {
   const path = (diagnostic.path ?? []) as string[];
   const location = path.join('.');
 

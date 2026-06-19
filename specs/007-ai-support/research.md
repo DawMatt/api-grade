@@ -104,19 +104,19 @@ All four MCP tools use `grade(GradeRequest)` with a file path. `gradeContent` is
 | `grade-api` | `engine.grade({ specPath, rulesetPath })` | `{ specPath, format, letterGrade, gradeLabel, numericScore, summary }` — diagnostics array omitted |
 | `grade-api-detailed` | `engine.grade({ specPath, rulesetPath })` | Full `GradeResult` including `diagnostics[]` |
 | `assert-api-grade` | `engine.grade({ specPath, rulesetPath })` | `{ passed, actual, minimum, specPath }` |
-| `get-non-breaking-violations` | `engine.grade({ specPath, rulesetPath })` | `{ specPath, totalViolations, nonBreakingViolations[] }` |
+| `grade-api-quick-fixes-only` | `engine.grade({ specPath, rulesetPath })` | `{ specPath, totalViolations, quickFixCount, quickFixes[] }` |
 
 `grade-api` omits the `diagnostics` array to keep the response token-efficient for the common case (AI wants a summary, not full detail). `grade-api-detailed` returns the full result.
 
 ---
 
-## Non-Breaking Violation Classification
+## Quick Fix Classification (Non-Breaking Violation Detection)
 
 ### Decision: Path-based classification with rule ID override list
 
-**Rationale**: Spectral diagnostics include a `path` array (JSON pointer segments to the offending location) and a `ruleId` string. Classification uses the path first — if the path points to a documentation or metadata location, the violation is non-breaking. Rule ID overrides handle cases where path inspection alone is ambiguous.
+**Rationale**: Spectral diagnostics include a `path` array (JSON pointer segments to the offending location) and a `ruleId` string. Classification uses the path first — if the path points to a documentation or metadata location, the violation is non-breaking (i.e., a quick fix). Rule ID overrides handle cases where path inspection alone is ambiguous.
 
-**Non-breaking path patterns** (violation is non-breaking if path includes ANY of these at any level):
+**Non-breaking path patterns** (violation qualifies as a quick fix if path includes ANY of these at any level):
 
 | Path segment | Example location | Non-breaking because |
 |---|---|---|
@@ -146,7 +146,7 @@ All four MCP tools use `grade(GradeRequest)` with a file path. `gradeContent` is
 **Classification algorithm**:
 1. Check if any path segment matches a breaking pattern → `breaking`
 2. Else check if any path segment matches a non-breaking pattern → `nonBreaking`
-3. Else → `unknown` (not included in `get-non-breaking-violations` output; surfaced separately)
+3. Else → `unknown` (not included in `grade-api-quick-fixes-only` output; surfaced separately)
 
 **Rule ID overrides** (applied before path inspection):
 
@@ -160,9 +160,9 @@ All four MCP tools use `grade(GradeRequest)` with a file path. `gradeContent` is
 | `oas3-examples-*` | nonBreaking | Examples only |
 | `tag-description` | nonBreaking | Tag metadata |
 
-**FR-012 context fields** (returned per non-breaking violation):
+**FR-012 context fields** (returned per quick fix — a safe, non-breaking improvement):
 ```typescript
-interface NonBreakingViolation {
+interface QuickFix {
   ruleId: string;           // e.g. "operation-description"
   message: string;          // e.g. "Operation must have a description"
   severity: string;         // "error" | "warn" | "info" | "hint"
@@ -355,7 +355,7 @@ export function createServer(): McpServer {
   registerGradeTool(server, sessionState);
   registerGradeDetailedTool(server, sessionState);
   registerAssertGradeTool(server, sessionState);
-  registerNonBreakingTool(server, sessionState);
+  registerQuickFixesOnlyTool(server, sessionState);
   registerSetRulesetConfigTool(server, sessionState);
   registerGetRulesetConfigTool(server, sessionState);
   return server;

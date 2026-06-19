@@ -136,22 +136,22 @@
 
 ---
 
-## Phase 7: User Story 4 — AI-Assisted Resolution of Non-Breaking Issues (Priority: P3)
+## Phase 7: User Story 4 — AI-Assisted Quick Fixes (Priority: P3)
 
-**Goal**: Expose `get-non-breaking-violations` as an MCP tool so AI tools receive a classified, AI-actionable list of non-breaking violations with sufficient context (`currentValue`, `location`, `expectedImprovement`) to generate spec corrections.
+**Goal**: Expose `grade-api-quick-fixes-only` as an MCP tool so AI tools receive a classified, AI-actionable list of quick fixes (safe, non-breaking improvements) with sufficient context (`currentValue`, `location`, `expectedImprovement`) to generate spec corrections.
 
-**Independent Test**: Call `get-non-breaking-violations` with a spec containing known non-breaking violations (missing operation descriptions, missing info description) — confirm each returned `NonBreakingViolation` has `ruleId`, `severity`, `path`, `location`, `currentValue`, and `expectedImprovement` populated. Call with a spec where all violations are breaking — confirm `nonBreakingViolations: []` and `nonBreakingCount: 0`.
+**Independent Test**: Call `grade-api-quick-fixes-only` with a spec containing known quick-fix opportunities (missing operation descriptions, missing info description) — confirm each returned `QuickFix` has `ruleId`, `severity`, `path`, `location`, `currentValue`, and `expectedImprovement` populated. Call with a spec where all violations are breaking — confirm `quickFixes: []` and `quickFixCount: 0`.
 
 ### Tests for User Story 4
 
 > **Write these tests FIRST and confirm they fail before implementing T033.**
 
-- [X] T032 [P] [US4] Create `packages/api-grade-mcp/tests/integration/non-breaking.test.ts` integration tests for `get-non-breaking-violations`: spec with known non-breaking violations → `nonBreakingViolations[]` contains entries with all FR-012 fields (`ruleId`, `message`, `severity`, `path`, `location`, `currentValue`, `expectedImprovement`); spec with only breaking violations → `nonBreakingCount: 0`, `nonBreakingViolations: []`; spec > 500KB → `largeSpecWarning` present; `currentValue` is `null` for absent fields, not empty string
+- [X] T032 [P] [US4] Create `packages/api-grade-mcp/tests/integration/quick-fixes-only.test.ts` integration tests for `grade-api-quick-fixes-only`: spec with known quick-fix opportunities → `quickFixes[]` contains entries with all FR-012 fields (`ruleId`, `message`, `severity`, `path`, `location`, `currentValue`, `expectedImprovement`); spec with only breaking violations → `quickFixCount: 0`, `quickFixes: []`; spec > 500KB → `largeSpecWarning` present; `currentValue` is `null` for absent fields, not empty string
 
 ### Implementation for User Story 4
 
-- [X] T033 [US4] Implement `packages/api-grade-mcp/src/tools/non-breaking.ts` exporting `registerNonBreakingTool(server, sessionState)`: registers `get-non-breaking-violations` with same Zod schema as `grade-api` plus `recoveryOption`; calls `GradeEngine.grade()` with resolved ruleset; passes each `Diagnostic` through `classify()`; for non-breaking violations builds `NonBreakingViolation` shape with `location` (dot-joined path), `currentValue` (read from spec AST at path, or null if absent), `expectedImprovement` (derived from rule message per research.md logic); returns `NonBreakingViolationResult`; applies large spec warning
-- [X] T034 [US4] Replace the `get-non-breaking-violations` stub in `packages/api-grade-mcp/src/server.ts` `createServer()` with a real `registerNonBreakingTool(server, sessionState)` call imported from `./tools/non-breaking.ts`
+- [X] T033 [US4] Implement `packages/api-grade-mcp/src/tools/quick-fixes-only.ts` exporting `registerQuickFixesOnlyTool(server, sessionState)`: registers `grade-api-quick-fixes-only` with same Zod schema as `grade-api` plus `recoveryOption`; calls `GradeEngine.grade()` with resolved ruleset; passes each `Diagnostic` through `classifyViolation()`; for non-breaking violations builds `QuickFix` shape with `location` (dot-joined path), `currentValue` (read from spec AST at path, or null if absent), `expectedImprovement` (derived from rule message per research.md logic); returns `QuickFixResult`; applies large spec warning
+- [X] T034 [US4] Replace the `grade-api-quick-fixes-only` stub in `packages/api-grade-mcp/src/server.ts` `createServer()` with a real `registerQuickFixesOnlyTool(server, sessionState)` call imported from `./tools/quick-fixes-only.ts`
 
 **Checkpoint**: All four grading tools + two configuration tools are fully functional. Run the full test suite and confirm all pass.
 
@@ -170,7 +170,7 @@
 - [X] T041 [P] Update `docs/index.md` to add MCP Server rows (overview, configuration reference, troubleshooting, quick-start) alongside the existing CLI and Backstage integration rows
 - [X] T042 [P] Update `docs/getting-started.md` to extend the MCP section to mention default ruleset configuration capability and link to `docs/mcp/configuration.md`
 - [X] T043 [P] Update `docs/package/README.md` to add `@dawmatt/api-grade-mcp` to the monorepo packages table
-- [ ] T044 Verify all six MCP tools function correctly in all three required AI environments: (1) Claude Code — use `claude mcp add` and confirm `grade-api`, `assert-api-grade`, `grade-api-detailed`, `get-non-breaking-violations`, `set-ruleset-config`, `get-ruleset-config` are discoverable and return correct results for an OpenAPI and AsyncAPI spec; (2) GitHub Copilot in VS Code Agent mode — configure `.vscode/mcp.json` and confirm all six tools work; (3) GitHub Copilot Studio — configure as custom MCP Action and confirm grading succeeds (FR-014, SC-002, SC-006) — **see [`checklists/t044-verification.md`](checklists/t044-verification.md) for step-by-step verification checklist per environment**
+- [ ] T044 Verify all six MCP tools function correctly in all three required AI environments: (1) Claude Code — use `claude mcp add` and confirm `grade-api`, `assert-api-grade`, `grade-api-detailed`, `grade-api-quick-fixes-only`, `set-ruleset-config`, `get-ruleset-config` are discoverable and return correct results for an OpenAPI and AsyncAPI spec; (2) GitHub Copilot in VS Code Agent mode — configure `.vscode/mcp.json` and confirm all six tools work; (3) GitHub Copilot Studio — configure as custom MCP Action and confirm grading succeeds (FR-014, SC-002, SC-006) — **see [`checklists/t044-verification.md`](checklists/t044-verification.md) for step-by-step verification checklist per environment**
 
 ---
 
@@ -250,13 +250,13 @@ Task T027: src/auth/entra.ts
 3. US2 → `assert-api-grade` working → grade assertion available to AI tools
 4. US3 → `grade-api-detailed` working → full diagnostics available
 5. US5 → `set-ruleset-config` + `get-ruleset-config` + auth → enterprise adoption unlocked
-6. US4 → `get-non-breaking-violations` working → AI-assisted fixing unlocked
+6. US4 → `grade-api-quick-fixes-only` working → AI-assisted quick fixing unlocked
 7. Polish → documentation + three-environment verification → feature shippable
 
 ### Parallel Team Strategy
 
 After Foundational phase is complete:
-- **Developer A**: US1 (grade-api) → US4 (non-breaking, uses classifier)
+- **Developer A**: US1 (grade-api) → US4 (grade-api-quick-fixes-only, uses classifier)
 - **Developer B**: US2 (assert-api-grade) + US3 (grade-api-detailed)
 - **Developer C**: US5 (set-ruleset-config, config/auth modules)
 - All converge for T030 (cross-cutting grading tool update) and Phase 8 (verification + docs)

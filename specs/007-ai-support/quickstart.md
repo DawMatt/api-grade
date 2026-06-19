@@ -151,7 +151,7 @@ Once configured, the AI tool has access to six api-grade capabilities:
 | `grade-api` | Quick grade: letter grade, score, and summary |
 | `grade-api-detailed` | Full grade with all violations and recommendations |
 | `assert-api-grade` | Pass/fail assertion for a minimum grade threshold |
-| `get-non-breaking-violations` | Classified list of fixable violations for AI-assisted correction |
+| `grade-api-quick-fixes-only` | Classified list of fixable violations for AI-assisted correction |
 | `set-ruleset-config` | Set the default Spectral ruleset at session, workspace, or global scope |
 | `get-ruleset-config` | Show the active ruleset configuration at all scopes |
 
@@ -179,12 +179,12 @@ The AI calls `grade-api-detailed` and summarises the findings.
 
 The AI calls `assert-api-grade` with `minimumGrade: "B"` and reports pass or fail.
 
-### AI-assisted fix of non-breaking issues
+### AI-assisted quick fixes
 
-> Fix the non-breaking issues in `/workspace/my-api/openapi.yaml`
+> Apply quick fixes to `/workspace/my-api/openapi.yaml`
 
-The AI calls `get-non-breaking-violations`, receives the classified list, and generates
-corrections for the fixable issues — adding missing descriptions, summaries, and metadata
+The AI calls `grade-api-quick-fixes-only`, receives the classified list of quick fixes, and generates
+corrections — adding missing descriptions, summaries, and metadata
 without altering the API's interface contract (paths, methods, parameters, schemas).
 
 ---

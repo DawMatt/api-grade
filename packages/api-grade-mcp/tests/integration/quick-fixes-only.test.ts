@@ -17,24 +17,24 @@ async function callTool(server: ReturnType<typeof createServer>, toolName: strin
   return tool.handler(args, {}) as Promise<{ content: [{ type: string; text: string }]; isError?: boolean }>;
 }
 
-describe('get-non-breaking-violations tool', () => {
-  it('returns non-empty nonBreakingViolations for a spec with documentation gaps', async () => {
+describe('grade-api-quick-fixes-only tool', () => {
+  it('returns non-empty quickFixes for a spec with documentation gaps (quick fix opportunities)', async () => {
     const server = createServer();
-    const result = await callTool(server, 'get-non-breaking-violations', { specPath: OPENAPI_POOR });
+    const result = await callTool(server, 'grade-api-quick-fixes-only', { specPath: OPENAPI_POOR });
     expect(result.isError).toBeFalsy();
     const body = JSON.parse(result.content[0].text);
-    expect(body).toHaveProperty('nonBreakingViolations');
-    expect(body).toHaveProperty('nonBreakingCount');
+    expect(body).toHaveProperty('quickFixes');
+    expect(body).toHaveProperty('quickFixCount');
     expect(body).toHaveProperty('totalViolations');
   });
 
   it('each violation has all required fields', async () => {
     const server = createServer();
-    const result = await callTool(server, 'get-non-breaking-violations', { specPath: OPENAPI_POOR });
+    const result = await callTool(server, 'grade-api-quick-fixes-only', { specPath: OPENAPI_POOR });
     expect(result.isError).toBeFalsy();
     const body = JSON.parse(result.content[0].text);
-    if (body.nonBreakingViolations.length > 0) {
-      const v = body.nonBreakingViolations[0];
+    if (body.quickFixes.length > 0) {
+      const v = body.quickFixes[0];
       expect(v).toHaveProperty('ruleId');
       expect(v).toHaveProperty('message');
       expect(v).toHaveProperty('severity');
@@ -47,29 +47,29 @@ describe('get-non-breaking-violations tool', () => {
     }
   });
 
-  it('no violation in nonBreakingViolations is a breaking change', async () => {
+  it('no violation in quickFixes is a breaking change', async () => {
     const server = createServer();
-    const result = await callTool(server, 'get-non-breaking-violations', { specPath: OPENAPI_POOR });
+    const result = await callTool(server, 'grade-api-quick-fixes-only', { specPath: OPENAPI_POOR });
     expect(result.isError).toBeFalsy();
     const body = JSON.parse(result.content[0].text);
-    for (const v of body.nonBreakingViolations) {
+    for (const v of body.quickFixes) {
       expect(v.path).not.toContain('required');
       expect(v.path).not.toContain('type');
     }
   });
 
-  it('nonBreakingCount matches nonBreakingViolations length', async () => {
+  it('quickFixCount matches quickFixes length', async () => {
     const server = createServer();
-    const result = await callTool(server, 'get-non-breaking-violations', { specPath: OPENAPI_MUSEUM });
+    const result = await callTool(server, 'grade-api-quick-fixes-only', { specPath: OPENAPI_MUSEUM });
     expect(result.isError).toBeFalsy();
     const body = JSON.parse(result.content[0].text);
-    expect(typeof body.nonBreakingCount).toBe('number');
-    expect(body.nonBreakingCount).toBe(body.nonBreakingViolations.length);
+    expect(typeof body.quickFixCount).toBe('number');
+    expect(body.quickFixCount).toBe(body.quickFixes.length);
   });
 
   it('returns RULESET_NOT_FOUND for non-existent local ruleset', async () => {
     const server = createServer();
-    const result = await callTool(server, 'get-non-breaking-violations', {
+    const result = await callTool(server, 'grade-api-quick-fixes-only', {
       specPath: OPENAPI_POOR,
       rulesetPath: '/nonexistent/ruleset.yaml',
     });
@@ -80,7 +80,7 @@ describe('get-non-breaking-violations tool', () => {
 
   it('returns SPEC_NOT_FOUND for non-existent spec', async () => {
     const server = createServer();
-    const result = await callTool(server, 'get-non-breaking-violations', { specPath: '/no/such/file.yaml' });
+    const result = await callTool(server, 'grade-api-quick-fixes-only', { specPath: '/no/such/file.yaml' });
     expect(result.isError).toBe(true);
     const body = JSON.parse(result.content[0].text);
     expect(body.error).toBe('SPEC_NOT_FOUND');

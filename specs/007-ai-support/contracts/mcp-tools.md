@@ -188,9 +188,9 @@
 
 ---
 
-## Tool 4: `get-non-breaking-violations`
+## Tool 4: `grade-api-quick-fixes-only`
 
-**Purpose**: Return a classified, AI-actionable list of non-breaking violations in an API specification. Non-breaking violations are those whose fixes do not alter the API's interface contract (paths, methods, required parameters, schema types, or response structures). Use this tool to obtain the list of issues for the AI to resolve — the AI then generates the corrected specification content.
+**Purpose**: Return a classified, AI-actionable list of quick fixes for an API specification. Quick fixes are safe, non-breaking improvements — those that do not alter the API's interface contract (paths, methods, required parameters, schema types, or response structures). Use this tool (not `grade-api-detailed`) when the goal is for the AI to safely resolve violations — the AI then generates the corrected specification content.
 
 **Input Schema**:
 
@@ -218,8 +218,8 @@
   "specPath": "/path/to/petstore.yaml",
   "format": "openapi-3",
   "totalViolations": 17,
-  "nonBreakingCount": 11,
-  "nonBreakingViolations": [
+  "quickFixCount": 11,
+  "quickFixes": [
     {
       "ruleId": "operation-description",
       "message": "Operation must have a description",
@@ -242,15 +242,15 @@
 }
 ```
 
-**When no non-breaking violations exist**:
+**When no quick fixes are available**:
 
 ```json
 {
   "specPath": "/path/to/museum.yaml",
   "format": "openapi-3",
   "totalViolations": 2,
-  "nonBreakingCount": 0,
-  "nonBreakingViolations": []
+  "quickFixCount": 0,
+  "quickFixes": []
 }
 ```
 
@@ -260,7 +260,7 @@
 
 **Two-step workflow note** (for AI tool documentation):
 
-> This tool identifies and classifies non-breaking violations. After calling this tool, the AI model generates corrections to the specification content based on the returned list. The MCP server does not modify the specification file; the AI applies the changes.
+> This tool identifies and classifies quick fixes (safe, non-breaking improvements). After calling this tool, the AI model generates corrections to the specification content based on the returned list. The MCP server does not modify the specification file; the AI applies the changes.
 
 ---
 
@@ -416,7 +416,7 @@ Response confirms the scope was cleared and which scope will now take effect.
 
 ## Auth Failure Recovery Response
 
-When a grading tool (`grade-api`, `grade-api-detailed`, `assert-api-grade`, or `get-non-breaking-violations`) is invoked and the configured default ruleset cannot be fetched due to an authentication, authorisation, or network failure, the tool returns this structured response instead of an unhandled error:
+When a grading tool (`grade-api`, `grade-api-detailed`, `assert-api-grade`, or `grade-api-quick-fixes-only`) is invoked and the configured default ruleset cannot be fetched due to an authentication, authorisation, or network failure, the tool returns this structured response instead of an unhandled error. (`grade-api-quick-fixes-only` participates in the same auth failure recovery flow as the other grading tools.)
 
 ```json
 {
@@ -474,7 +474,7 @@ When a grading tool (`grade-api`, `grade-api-detailed`, `assert-api-grade`, or `
 }
 ```
 
-**Updated grading tool schemas**: `grade-api`, `grade-api-detailed`, `assert-api-grade`, and `get-non-breaking-violations` all accept one additional optional input field:
+**Updated grading tool schemas**: `grade-api`, `grade-api-detailed`, `assert-api-grade`, and `grade-api-quick-fixes-only` all accept one additional optional input field:
 
 ```json
 "recoveryOption": {

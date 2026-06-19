@@ -138,7 +138,7 @@ Reload Cursor after saving.
 | `grade-api` | Quick grade: letter grade, numeric score, and summary |
 | `grade-api-detailed` | Full grade with all violations, diagnostics, and recommendations |
 | `assert-api-grade` | Pass/fail assertion for a minimum grade threshold |
-| `get-non-breaking-violations` | Classified list of fixable violations for AI-assisted correction |
+| `grade-api-quick-fixes-only` | Classified list of quick fixes (safe, non-breaking improvements) for AI-assisted correction |
 | `set-ruleset-config` | Set the default Spectral ruleset at session, workspace, or global scope |
 | `get-ruleset-config` | Show the active ruleset configuration and which scope is effective |
 
@@ -158,7 +158,7 @@ Once configured, ask your AI tool naturally:
 > Check whether `/workspace/my-api/openapi.yaml` meets a minimum grade of B
 
 **AI-assisted fix:**
-> Fix the non-breaking issues in `/workspace/my-api/openapi.yaml`
+> Apply quick fixes to `/workspace/my-api/openapi.yaml`
 
 ---
 

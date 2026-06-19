@@ -13,8 +13,8 @@
 ### Session 2026-06-18
 
 - Q: What integration mechanism should be used to expose api-grade capabilities to AI tools? → A: MCP server (Model Context Protocol)
-- Q: What constitutes a "non-breaking" violation eligible for AI-assisted auto-fix? → A: Any violation that doesn't alter the API's interface contract (includes documentation, metadata, optional fields, examples, and extensions)
-- Q: What does the MCP tool return when an AI tool requests resolution of non-breaking issues? → A: A structured list of non-breaking issues for the AI to resolve (the AI model performs the content generation; the MCP tool identifies and classifies the violations)
+- Q: What constitutes a "quick fix" eligible for AI-assisted auto-fix? → A: Any violation that doesn't alter the API's interface contract (includes documentation, metadata, optional fields, examples, and extensions); these are returned by `grade-api-quick-fixes-only`
+- Q: What does `grade-api-quick-fixes-only` return? → A: A structured list of quick fixes (safe, non-breaking improvements) for the AI to apply (the AI model performs the content generation; the MCP tool identifies and classifies the violations)
 - Q: How should the MCP server handle very large API specifications? → A: Best-effort — grade and return results, but include a warning in the response when the spec exceeds a defined size threshold
 - Q: Should the MCP server support concurrent grading requests? → A: Yes — multiple simultaneous requests are supported, bounded only by available system resources
 
@@ -99,19 +99,19 @@ A developer using the api-grade MCP server wants to set a default ruleset that a
 
 ---
 
-### User Story 4 - AI-Assisted Resolution of Non-Breaking Issues (Priority: P3)
+### User Story 4 - AI-Assisted Quick Fixes (Priority: P3)
 
-A developer using an AI assistant not only wants to know which issues are affecting their API grade, but wants the AI to automatically resolve the non-breaking, fixable issues identified by the grading — improving the API specification without introducing breaking changes. The MCP server provides the classified list of fixable violations; the AI model generates the actual corrections.
+A developer using an AI assistant not only wants to know which issues are affecting their API grade, but wants the AI to automatically apply quick fixes — safe, non-breaking improvements identified by the grading — without introducing breaking changes. The MCP server provides the classified list of quick fixes; the AI model generates the actual corrections.
 
 **Why this priority**: This is the most advanced use of the feature and builds directly on User Stories 1 and 3. It requires grading and diagnostic information to be available first. Delivering this independently of the basic grading scenarios is possible but delivers less standalone value.
 
-**Independent Test**: Can be tested independently by providing an AI tool with an API specification containing known non-breaking issues (e.g., missing descriptions, incomplete metadata, absent examples), having it invoke the resolve capability, and confirming the output specification has those issues fixed while the API's interface contract (paths, methods, required parameters, schema types, response structures) is unchanged.
+**Independent Test**: Can be tested independently by providing an AI tool with an API specification containing known quick-fix opportunities (e.g., missing descriptions, incomplete metadata, absent examples), having it invoke the quick-fix capability, and confirming the output specification has those issues fixed while the API's interface contract (paths, methods, required parameters, schema types, response structures) is unchanged.
 
 **Acceptance Scenarios**:
 
-1. **Given** an API specification with non-breaking violations (e.g., missing operation descriptions, incomplete info block), **When** an AI tool invokes the resolve capability, **Then** the AI produces a corrected specification where those violations are addressed and no breaking changes are introduced.
-2. **Given** an API specification where all violations are breaking changes, **When** an AI tool invokes the resolve capability, **Then** the result indicates no automatic fixes were applied and the original specification is unchanged.
-3. **Given** an AI tool resolves non-breaking issues on a specification, **When** the corrected specification is re-graded, **Then** the grade is equal to or higher than the original grade.
+1. **Given** an API specification with quick-fix opportunities (e.g., missing operation descriptions, incomplete info block), **When** an AI tool invokes `grade-api-quick-fixes-only`, **Then** the AI produces a corrected specification where those violations are addressed and no breaking changes are introduced.
+2. **Given** an API specification where all violations are breaking changes, **When** an AI tool invokes `grade-api-quick-fixes-only`, **Then** the result indicates no quick fixes are available and `quickFixes: []`.
+3. **Given** an AI tool applies quick fixes to a specification, **When** the corrected specification is re-graded, **Then** the grade is equal to or higher than the original grade.
 
 ---
 
@@ -136,8 +136,8 @@ A developer using an AI assistant not only wants to know which issues are affect
 - **FR-004**: The system MUST support a grade assertion capability that accepts a minimum grade level and returns a structured pass/fail result with the actual grade.
 - **FR-005**: The system MUST provide detailed diagnostic output including per-category violation counts, individual violations with severity, and prioritised recommendations when requested by an AI tool.
 - **FR-006**: The system MUST allow AI tools to supply a custom spectral ruleset path as the basis for grading, consistent with the CLI's custom ruleset support.
-- **FR-007**: The system MUST provide a capability that returns a structured list of non-breaking violations in an API specification — classified, located, and described — so that an AI tool can use that information to generate and apply fixes. A non-breaking violation is any violation whose fix does not alter the API's interface contract (i.e., does not change paths, methods, required parameters, schema types, or response structures); eligible fixes include adding or improving descriptions, summaries, tags, info block fields, optional fields, examples, and extensions.
-- **FR-012**: For each non-breaking violation returned, the system MUST include sufficient context (violation rule, affected location, current value if present, expected improvement) for the AI to generate a correct fix without needing to re-parse the specification.
+- **FR-007**: The system MUST provide a `grade-api-quick-fixes-only` MCP tool that returns a structured list of quick fixes for an API specification — classified, located, and described — so that an AI tool can use that information to generate and apply safe improvements. A quick fix is any violation whose fix does not alter the API's interface contract (i.e., does not change paths, methods, required parameters, schema types, or response structures); eligible quick fixes include adding or improving descriptions, summaries, tags, info block fields, optional fields, examples, and extensions.
+- **FR-012**: For each quick fix returned by `grade-api-quick-fixes-only`, the system MUST include sufficient context (violation rule, affected location, current value if present, expected improvement) for the AI to generate a correct fix without needing to re-parse the specification.
 - **FR-008**: The system MUST return structured error responses (not unhandled exceptions) when invoked with invalid inputs such as missing files, invalid grade values, or inaccessible rulesets.
 - **FR-013**: When an API specification exceeds a defined size threshold, the system MUST still attempt grading and return a best-effort result with a warning field indicating the specification is large and that results may be incomplete.
 - **FR-015**: The system MUST provide a `set-ruleset-config` MCP tool that sets a default ruleset at a specified scope (`session`, `workspace`, or `global`). Session-level configuration is held in memory and resets when the MCP server process restarts. Workspace-level configuration is persisted to `.api-grade/config.json` relative to the MCP server's working directory (CWD), which MCP hosts set to the workspace root. Global configuration is persisted to `~/.api-grade/config.json`.
@@ -160,8 +160,8 @@ A developer using an AI assistant not only wants to know which issues are affect
 - **Grade Result**: The structured output of a grading operation, including grade letter, numeric percentage, label, tone, and diagnostic summary.
 - **Diagnostic Detail**: The full structured output including per-category breakdowns, individual violations, severities, and prioritised recommendations.
 - **Assertion Result**: A structured pass/fail outcome indicating whether an API meets a specified minimum grade, including the actual grade achieved.
-- **Non-Breaking Issue List**: The structured output of the resolve-assist capability — a classified, located list of non-breaking violations with sufficient context (rule, location, current value, expected improvement) for an AI model to generate corrections.
-- **Resolved Specification**: The corrected API specification produced by an AI model after it processes the Non-Breaking Issue List and applies fixes. Non-breaking fixes include improvements to descriptions, summaries, tags, info blocks, optional fields, examples, and extensions — any change that leaves the API's interface contract (paths, methods, required parameters, schema types, response structures) unaltered.
+- **Quick Fix List**: The structured output of the `grade-api-quick-fixes-only` tool — a classified, located list of safe improvements (non-breaking changes) with sufficient context (rule, location, current value, expected improvement) for an AI model to generate corrections.
+- **Resolved Specification**: The corrected API specification produced by an AI model after it processes the Quick Fix List and applies improvements. Quick fixes include adding or improving descriptions, summaries, tags, info blocks, optional fields, examples, and extensions — any change that leaves the API's interface contract (paths, methods, required parameters, schema types, response structures) unaltered.
 - **Custom Ruleset**: An optional spectral-compatible ruleset file path or URL provided by the AI tool to customise grading behaviour on a per-request basis.
 - **Default Ruleset Configuration**: A persisted or in-memory setting that designates the ruleset to use when no per-request `rulesetPath` is supplied. Exists at three scopes — session (in-memory), workspace (`.api-grade/config.json`), and global (`~/.api-grade/config.json`) — with session taking precedence over workspace, and workspace over global.
 - **Auth Configuration**: Optional credentials (GitHub PAT, Entra ID tenant/client IDs) associated with a Default Ruleset Configuration that allow the MCP server to fetch rulesets from secured locations. Stored separately from ruleset paths to support safe source-control practices.
@@ -175,7 +175,7 @@ A developer using an AI assistant not only wants to know which issues are affect
 - **SC-002**: All three grading functions (overall grade, detailed diagnostics, grade assertion) are accessible from Claude Code, GitHub Copilot (VS Code), and GitHub Copilot Studio without any additional configuration beyond supplying the API specification path.
 - **SC-003**: 100% of supported API specification formats (OpenAPI and AsyncAPI) can be graded successfully when invoked from an AI context.
 - **SC-004**: Grade assertion correctly identifies pass/fail for all valid grade levels (A through F) with 100% accuracy.
-- **SC-005**: An AI tool applying non-breaking fixes produces a corrected specification where all targeted violations are resolved and no breaking changes are introduced, as verified by re-grading.
+- **SC-005**: An AI tool applying quick fixes produces a corrected specification where all targeted violations are resolved and no breaking changes are introduced, as verified by re-grading.
 - **SC-006**: All MCP tool definitions are self-describing — a capable AI tool can discover and invoke all grading capabilities correctly using only the tool definitions, with no additional documentation required.
 - **SC-007**: A developer can configure a workspace-level default ruleset once via `set-ruleset-config`, restart the MCP server, and confirm that all subsequent grading requests in that workspace use the configured ruleset without re-supplying the path.
 - **SC-008**: When a configured default ruleset requires authentication and credentials are unavailable or invalid, 100% of grading requests return the four structured recovery options rather than an unhandled error or silent fallback to the built-in default.
@@ -186,7 +186,7 @@ A developer using an AI assistant not only wants to know which issues are affect
 - The AI integration is delivered as an MCP (Model Context Protocol) server. The three explicitly required and verified target environments are Claude Code, GitHub Copilot (VS Code Agent mode), and GitHub Copilot Studio. The server is expected to work with other MCP-compatible hosts, but only these three are required for acceptance.
 - Remote URL-based API specification fetching is treated as a stretch goal; the primary supported input is a local file path.
 - The AI tool is responsible for presenting the structured JSON output to its end user in a human-readable form; api-grade provides the data, not the final presentation.
-- The "resolve non-breaking issues" capability is a two-step workflow: the MCP server identifies, classifies, and returns non-breaking violations as a structured list; the calling AI model uses that list to generate the corrected specification content. The MCP server does not generate specification content.
+- The quick-fix capability is a two-step workflow: the `grade-api-quick-fixes-only` tool identifies, classifies, and returns quick fixes as a structured list; the calling AI model uses that list to generate the corrected specification content. The MCP server does not generate specification content.
 - Default ruleset configuration is specific to the MCP server; the CLI continues to accept `--ruleset` on each invocation without persistent configuration. Parity between CLI and MCP ruleset configuration is not a goal of this feature.
 - The MCP server's working directory (CWD) is treated as the workspace root for resolving `.api-grade/config.json`. All three required MCP hosts (Claude Code, VS Code Copilot, Copilot Studio) start server processes with the workspace root as CWD; no `--workspace-root` argument or per-call parameter is needed.
 - Supported authentication mechanisms for secured rulesets are GitHub Enterprise PAT (token-based) and Microsoft Entra ID (OAuth 2.0 device-code flow). Other SSO or authentication schemes (NTLM, Kerberos, custom OAuth providers) are out of scope.

@@ -114,7 +114,7 @@ packages/api-grade-mcp/
 │   │   ├── grade.ts           # grade-api tool
 │   │   ├── grade-detailed.ts  # grade-api-detailed tool
 │   │   ├── assert-grade.ts    # assert-api-grade tool
-│   │   ├── non-breaking.ts    # get-non-breaking-violations tool
+│   │   ├── quick-fixes-only.ts  # grade-api-quick-fixes-only tool
 │   │   ├── set-ruleset-config.ts  # set-ruleset-config tool (US5)
 │   │   └── get-ruleset-config.ts # get-ruleset-config tool (US5)
 │   ├── config/
@@ -135,7 +135,7 @@ packages/api-grade-mcp/
 │       ├── grade.test.ts
 │       ├── grade-detailed.test.ts
 │       ├── assert-grade.test.ts
-│       ├── non-breaking.test.ts
+│       ├── quick-fixes-only.test.ts
 │       ├── set-ruleset-config.test.ts  # set-ruleset-config tool tests (US5)
 │       └── get-ruleset-config.test.ts # get-ruleset-config tool tests (US5)
 ├── package.json               # @dawmatt/api-grade-mcp; bin: api-grade-mcp

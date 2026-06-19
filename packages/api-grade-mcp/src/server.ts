@@ -5,7 +5,7 @@ import { resolve, dirname } from 'node:path';
 import { registerGradeTool } from './tools/grade.js';
 import { registerAssertGradeTool } from './tools/assert-grade.js';
 import { registerGradeDetailedTool } from './tools/grade-detailed.js';
-import { registerNonBreakingTool } from './tools/non-breaking.js';
+import { registerQuickFixesOnlyTool } from './tools/quick-fixes-only.js';
 import { registerSetRulesetConfigTool } from './tools/set-ruleset-config.js';
 import { registerGetRulesetConfigTool } from './tools/get-ruleset-config.js';
 import type { SessionState } from './types.js';
@@ -27,7 +27,7 @@ export function createServer(): McpServer {
   registerGradeTool(server, sessionState);
   registerAssertGradeTool(server, sessionState);
   registerGradeDetailedTool(server, sessionState);
-  registerNonBreakingTool(server, sessionState);
+  registerQuickFixesOnlyTool(server, sessionState);
   registerSetRulesetConfigTool(server, sessionState);
   registerGetRulesetConfigTool(server, sessionState);
   return server;

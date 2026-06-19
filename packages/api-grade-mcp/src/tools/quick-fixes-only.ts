@@ -9,15 +9,15 @@ import { loadWorkspaceConfig, loadGlobalConfig } from '../config/ruleset-config.
 import { resolveRuleset } from '../config/resolve-ruleset.js';
 import { fetchRulesetContent, RulesetAuthError, INITIAL_FETCH_TIMEOUT_MS, RETRY_FETCH_TIMEOUT_MS } from '../auth/github.js';
 import { EntraAuthRequired, acquireEntraToken } from '../auth/entra.js';
-import { classifyViolation, buildNonBreakingViolation } from '../utils/classify.js';
+import { classifyViolation, buildQuickFix } from '../utils/classify.js';
 import type { SessionState } from '../types.js';
 
 const LARGE_SPEC_THRESHOLD_BYTES = 500_000;
 
-export function registerNonBreakingTool(server: McpServer, sessionState: SessionState): void {
+export function registerQuickFixesOnlyTool(server: McpServer, sessionState: SessionState): void {
   server.tool(
-    'get-non-breaking-violations',
-    'Return a classified, AI-actionable list of non-breaking violations in an API specification. Non-breaking violations are those whose fixes do not alter the API interface contract (paths, methods, required parameters, schema types, or response structures). Use this tool to obtain issues the AI can safely resolve — the AI generates the corrected specification content; the MCP server does not modify files.',
+    'grade-api-quick-fixes-only',
+    'Return a classified, AI-actionable list of quick fixes for an API specification. Quick fixes are improvements that can be made via non-breaking changes — those that do not alter the API interface contract (paths, methods, required parameters, schema types, or response structures). Use this tool (not grade-api-detailed) when the goal is for the AI to safely resolve violations; the AI generates the corrected specification content and the MCP server does not modify files.',
     {
       specPath: z
         .string()
@@ -129,16 +129,16 @@ export function registerNonBreakingTool(server: McpServer, sessionState: Session
         const engine = new GradeEngine();
         const result = await engine.grade({ specPath, rulesetPath: effectiveRulesetPath });
 
-        const nonBreakingViolations = result.diagnostics
+        const quickFixes = result.diagnostics
           .filter((d) => classifyViolation(d) === 'nonBreaking')
-          .map((d) => buildNonBreakingViolation(d, specContent));
+          .map((d) => buildQuickFix(d, specContent));
 
         const response: Record<string, unknown> = {
           specPath: result.specPath,
           format: result.format,
           totalViolations: result.diagnostics.length,
-          nonBreakingCount: nonBreakingViolations.length,
-          nonBreakingViolations,
+          quickFixCount: quickFixes.length,
+          quickFixes,
         };
 
         if (largeSpecWarning) {
