@@ -1,0 +1,62 @@
+{
+  "name": "@dawmatt/api-grade-mcp",
+  "version": "0.1.4",
+  "description": "MCP server exposing api-grade capabilities for LLMs and agentic AI tooling",
+  "keywords": [
+    "api",
+    "openapi",
+    "asyncapi",
+    "spectral",
+    "quality",
+    "grading",
+    "mcp",
+    "model-context-protocol",
+    "ai"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DawMatt/api-grade.git"
+  },
+  "homepage": "https://github.com/DawMatt/api-grade/tree/main/packages/api-grade-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/DawMatt/api-grade/issues"
+  },
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "api-grade-mcp": "./dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "docker:build": "docker build -f Dockerfile -t dawmatt/api-grade-mcp:local ../..",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^2.16.2",
+    "@dawmatt/api-grade-core": "*",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.0",
+    "@vitest/coverage-v8": "^1.6.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist"
+  ]
+}

@@ -1,0 +1,8 @@
+# Minimal local ruleset fixture for loader unit tests — no external URLs
+rules:
+  test-rule-pat:
+    message: "Test rule for remote PAT ruleset unit tests"
+    given: "$.info"
+    severity: warn
+    then:
+      function: falsy

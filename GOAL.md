@@ -57,12 +57,31 @@ Feature 6 - npmjs
 - Make sure the GitHub release description reflects the changes in the release. Gather this information from commit descriptions included in the release, ignoring any commit that only includes a release tag.
 - Update documentation to cover npmjs. Includes both the user oriented documentation and the contribution guide
 
-Feature 7 - AI support
+Feature 7 - Local AI support
 
-- Allow API grading to be performed directly from LLMs and agentic AI tooling
+- Allow API grading to be performed directly (locally) from LLMs and agentic AI tooling
 - Support all of the standard functions of the api-grade CLI, including: grading an API (both overall and detailed levels), and asserting whether an API is at or above a particular grade (e.g. >= C)
 - Use the api-grade's JSON format output so the AI is able to process and reformat the information in a way that suits its requirements
 - Leverage the AI support to not just grade the API, but also resolve the "non-breaking change" issues highlighted by the grading that are bringing down the result
+- Any local AI tooling support must explicitly include Claude Code and GitHub Copilot
+- Add support for rulesets hosted on GitHub private repos (via PAT) and Entra ID protected environments (e.g. SharePoint, OneDrive)
+- Support both direct installed and containerised execution of the functionality.
+
+Feature 8 - CLI GitHub PAT
+
+- Add CLI support for rulesets hosted on GitHub private repos (via PAT)
+
+Feature 9 - Remote AI support
+
+- Allow API grading to be performed directly (remotely) from LLMs and agentic AI tooling
+- Update AI support to include remote access via streamable/HTTP transport
+- Any remote AI tooling support must explicitly include Claude Code, GitHub Copilot and Copilot Studio
+- Support both direct installed and containerised execution of the functionality.
+
+Feature 10 - Entra and CLI
+
+- Confirm Entra ID ruleset functionality in MCP is operational, for Entra ID protected environments (e.g. SharePoint, OneDrive)
+- Add Entra ID functionality to CLI as well
 
 ## Constitution
 

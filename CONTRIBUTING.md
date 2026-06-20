@@ -47,6 +47,12 @@ src/
   rulesets/
     loader.ts                 # Loads the default ruleset or a custom one
 
+packages/
+  api-grade-core/             # @dawmatt/api-grade-core — standalone grading library
+  api-grade-mcp/              # @dawmatt/api-grade-mcp — MCP server exposing six AI tools
+  backstage-plugin-api-grade/ # Backstage frontend card plugin
+  backstage-plugin-api-grade-backend/ # Backstage backend grading plugin
+
 tests/
   unit/                       # Unit tests for individual modules
   integration/                # End-to-end grading tests against fixture specs
@@ -56,14 +62,25 @@ tests/
     rulesets/                 # Test rulesets: custom-ruleset.yaml, missingfunction.yaml, unreachable.yaml
 ```
 
+## Monorepo packages
+
+| Package | Path | Description |
+|---------|------|-------------|
+| `@dawmatt/api-grade` | `/` (root) | CLI tool (`api-grade` binary) |
+| `@dawmatt/api-grade-core` | `packages/api-grade-core/` | Standalone grading library used by all other packages |
+| `@dawmatt/api-grade-mcp` | `packages/api-grade-mcp/` | MCP server exposing six AI tools (`grade-api`, `grade-api-detailed`, `assert-api-grade`, `grade-api-quick-fixes-only`, `set-ruleset-config`, `get-ruleset-config`) |
+| `@dawmatt/backstage-plugin-api-grade` | `packages/backstage-plugin-api-grade/` | Backstage frontend card plugin |
+| `@dawmatt/backstage-plugin-api-grade-backend` | `packages/backstage-plugin-api-grade-backend/` | Backstage backend grading plugin |
+
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run build` | Compile TypeScript to `dist/` |
+| `npm run build` | Compile TypeScript to `dist/` (root CLI and all packages) |
 | `npm test` | Run all tests once |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:coverage` | Run tests and generate a coverage report |
+| `npm run -w packages/api-grade-mcp test` | Run MCP server tests only |
 
 ## Development process — Specification-Driven Development (SDD)
 

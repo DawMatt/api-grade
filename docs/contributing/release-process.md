@@ -28,7 +28,9 @@ When in doubt, use `minor` — it signals new functionality without breaking exi
 
 ### When to assign the version
 
-Version assignment happens **in the feature branch**, before the PR is opened. This makes the version bump part of the reviewed change, keeps the main branch clean of direct commits, and ensures the release pipeline only triggers after the change has been reviewed and approved.
+Version assignment happens **in the feature branch**, before the PR is opened. This makes the version bump part of the reviewed change and keeps it visible in the PR diff.
+
+> **Important — squash merges**: GitHub squash-merges a PR into a single new commit on `main`. The version bump commit from the feature branch is **not** the commit that lands on `main`; the squash commit is. The release tag must point to the squash commit (a `main` commit), not the original feature branch commit. Step 5 below handles this.
 
 ### Prerequisites
 
@@ -43,7 +45,7 @@ Version assignment happens **in the feature branch**, before the PR is opened. T
    node scripts/version.mjs patch   # or minor, or major
    ```
 
-   This updates `version` in all four `package.json` files, creates a git commit (`chore: release v<N>`), and creates a local `v<N>` tag. The tag stays local — do not push it yet.
+   This updates `version` in all four `package.json` files and creates a git commit (`chore: release v<N>`). A local `v<N>` tag is also created — you will re-create it after the squash merge in step 5.
 
 2. **Push only the branch** (not the tag):
 
@@ -55,7 +57,7 @@ Version assignment happens **in the feature branch**, before the PR is opened. T
 
 3. **Open a pull request** targeting `main`. The PR must pass the quality gate CI and receive at least one maintainer approval before it can be merged (enforced by branch protection).
 
-4. **After the PR is merged**, fetch and switch to main:
+4. **After the PR is squash-merged**, fetch and switch to main:
 
    ```bash
    git fetch origin main
@@ -63,21 +65,28 @@ Version assignment happens **in the feature branch**, before the PR is opened. T
    git pull origin main
    ```
 
-5. **Push the tag** to trigger the release pipeline:
+5. **Re-create the tag** pointing to the squash merge commit (the current `HEAD` of `main`):
+
+   ```bash
+   git tag -d v<N>              # delete the local tag that points to the feature branch commit
+   git tag v<N>                 # create a fresh tag at the squash merge commit (current HEAD)
+   ```
+
+6. **Push the tag** to trigger the release pipeline:
 
    ```bash
    git push origin v<N>
    ```
 
-   Pushing the tag triggers `.github/workflows/release.yml`. The pipeline first verifies that the tagged commit is on `main`; it will fail immediately if it is not.
+   Pushing the tag triggers `.github/workflows/release.yml`. The pipeline first verifies that the tagged commit is reachable from `main`; it will fail immediately if it is not.
 
-6. **Approve the deployment** in GitHub Actions:
+7. **Approve the deployment** in GitHub Actions:
    - Go to **Actions → Release** → the running workflow.
    - Under **Environments**, click **Review deployments** → **Approve**.
 
-7. **Monitor the pipeline** — the workflow runs six quality gate stages (audit, lint, typecheck, coverage × 4, build), then publishes all four packages in dependency order, then creates a GitHub Release with notes generated from commit messages.
+8. **Monitor the pipeline** — the workflow runs six quality gate stages (audit, lint, typecheck, coverage × 4, build), then publishes all four packages in dependency order, then creates a GitHub Release with notes generated from commit messages.
 
-8. **Verify** the packages appear on npmjs.com under the `@dawmatt` scope and the GitHub Release description lists the changes.
+9. **Verify** the packages appear on npmjs.com under the `@dawmatt` scope and the GitHub Release description lists the changes.
 
 ---
 
@@ -92,6 +101,18 @@ Version assignment happens **in the feature branch**, before the PR is opened. T
 
 ## Recovery from a Failed Release
 
+### Tag not on main (failed main-branch verification)
+
+The pipeline failed at "Verify tag is on main branch". This happens when the tag points to a feature branch commit that was not included in the squash merge. Delete the tag and re-create it at the squash merge commit:
+
+```bash
+git tag -d v<N>                        # delete local tag (points to wrong commit)
+git push origin --delete v<N>          # delete remote tag
+git checkout main && git pull origin main
+git tag v<N>                           # create fresh tag at squash merge commit
+git push origin v<N>                   # push to trigger release
+```
+
 ### Pipeline failed before any packages published
 
 The quality gate caught a problem. No packages were published. Delete the tag, fix the issue in a new or updated branch, and re-release:
@@ -104,6 +125,7 @@ node scripts/version.mjs patch         # re-bump on the branch
 git push origin <branch-name>          # push branch (not tag)
 # after PR is reviewed, approved, and merged:
 git checkout main && git pull origin main
+git tag -d v<N> 2>/dev/null; git tag v<N>   # re-create tag at squash merge commit
 git push origin v<N>                   # push tag to trigger release
 ```
 

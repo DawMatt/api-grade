@@ -1,0 +1,8 @@
+# Minimal local ruleset fixture for loader unit tests — no external URLs
+rules:
+  test-rule-entra:
+    message: "Test rule for remote Entra ruleset unit tests"
+    given: "$.info"
+    severity: warn
+    then:
+      function: falsy

@@ -114,11 +114,12 @@ function buildCommentary(
   if (warnCount > 0) {
     const n = warnCount;
     const plural = n === 1 ? 'warning' : 'warnings';
+    const verb = n === 1 ? 'is' : 'are';
     let verbPhrase: string;
     if (n > 20) verbPhrase = 'causing significant damage to the quality';
     else if (n > 10) verbPhrase = 'impacting the quality';
     else verbPhrase = 'affecting the quality';
-    parts.push(`${n} ${plural} are ${verbPhrase}.`);
+    parts.push(`${n} ${plural} ${verb} ${verbPhrase}.`);
   }
 
   // Category insight: up to 3 worst categories ranked by error count then total

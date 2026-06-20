@@ -55,6 +55,7 @@ This repository is an npm workspaces monorepo:
 |---------|------|---------|
 | `@dawmatt/api-grade` | `/` (root) | CLI tool (`api-grade` binary) |
 | `@dawmatt/api-grade-core` | `packages/api-grade-core/` | Standalone grading library |
+| `@dawmatt/api-grade-mcp` | `packages/api-grade-mcp/` | MCP server exposing six AI tools |
 | `@dawmatt/backstage-plugin-api-grade` | `packages/backstage-plugin-api-grade/` | Backstage frontend card plugin |
 | `@dawmatt/backstage-plugin-api-grade-backend` | `packages/backstage-plugin-api-grade-backend/` | Backstage backend grading plugin |
 

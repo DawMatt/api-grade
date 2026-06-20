@@ -127,6 +127,18 @@ describe('Stage 4 — volume-aware warning language', () => {
     expect(commentary).toContain('affecting the quality');
   });
 
+  it('1 warning uses singular verb "is"', () => {
+    const { commentary } = generateSummary([makeDiag('warn', 'rule-a')], 99, 'openapi');
+    expect(commentary).toContain('1 warning is affecting the quality');
+    expect(commentary).not.toContain('1 warning are');
+  });
+
+  it('2 warnings use plural verb "are"', () => {
+    const diags = [makeDiag('warn', 'rule-a'), makeDiag('warn', 'rule-b')];
+    const { commentary } = generateSummary(diags, 89, 'openapi');
+    expect(commentary).toContain('2 warnings are affecting the quality');
+  });
+
   it('11 warnings → "impacting the quality"', () => {
     const diags = Array.from({ length: 11 }, () => makeDiag('warn', 'rule-a'));
     const { commentary } = generateSummary(diags, 89, 'openapi');

@@ -1,28 +1,24 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.2.0 → 1.3.0
+Version change: 1.3.0 → 1.4.0
 
 Principles modified: none
 
 Sections added:
-  - Development Workflow: one new mandatory constraint added:
-      The quality-gate constraint from v1.2.0 is now enforced by a mandatory
-      after_implement hook (speckit.quality-gate in .specify/extensions.yml).
-      A failing gate blocks the git-commit hook and the Completion Report.
-      /speckit-implement MUST fix all failures and re-run before completing.
+  - AI Integration Requirements: new top-level section (parallel to CI/CD Integration
+    Requirements) that requires any AI tooling integration to explicitly verify
+    compatibility with Claude Code and GitHub Copilot (VS Code Agent mode).
+    Single-host implementations do not satisfy this requirement.
 
 Sections removed: none
 
 Templates reviewed:
-  - .specify/templates/plan-template.md ✅ — No update needed; plan's Quality Gate
-    Requirement section already documents the gate commands.
+  - .specify/templates/plan-template.md ✅ — No update needed; Constitution Check
+    table in plans will capture the new AI Integration gate when relevant.
   - .specify/templates/spec-template.md ✅ — No alignment changes required.
   - .specify/templates/tasks-template.md ✅ — Task categories unaffected.
-  - .specify/templates/commands/ ⚠ — Directory not present; skipped.
-  - .specify/extensions.yml ✅ — Hook registered as mandatory after_implement entry.
-  - .claude/skills/speckit-quality-gate/SKILL.md ✅ — Skill created; defines gate
-    stages and blocking behaviour on failure.
+  - .specify/extensions.yml ✅ — No hook changes required.
 
 Deferred TODOs: none
 -->
@@ -117,6 +113,17 @@ Diagnostic output MUST explain *why* a finding matters, not just *what* was foun
 **Rationale**: A tool that only scores an API without explaining the reasoning does not
 help developers improve their practice.
 
+## AI Integration Requirements
+
+The following constraints apply to any feature that delivers AI tooling integration:
+
+- Any AI integration capability MUST be explicitly verified to function with **Claude Code** and **GitHub Copilot (VS Code Agent mode)** as the two primary supported targets.
+- An implementation that functions in only one of these environments does not satisfy this requirement.
+- MCP tool definitions MUST be self-describing: any capable MCP host MUST be able to discover and invoke all tools using only the tool definitions, with no additional documentation or configuration required beyond registering the server.
+- All prerequisites for AI integration MUST have zero monetary cost, consistent with Principle V.
+
+**Rationale**: AI tooling is rapidly diversifying across agentic IDEs, coding assistants, and enterprise agent platforms. Anchoring verification to a concrete set of three tools (covering CLI/agentic, IDE, and enterprise Copilot scenarios) prevents narrow implementations that work only in the tool the author happened to test against.
+
 ## CI/CD Integration Requirements
 
 The CLI MUST be usable in CI/CD pipelines. The following constraints apply to any
@@ -168,4 +175,4 @@ All pull requests and code reviews MUST verify compliance with the principles ab
 Complexity violations MUST be recorded in the plan's Complexity Tracking table with
 explicit justification.
 
-**Version**: 1.3.0 | **Ratified**: 2026-06-12 | **Last Amended**: 2026-06-18
+**Version**: 1.4.0 | **Ratified**: 2026-06-12 | **Last Amended**: 2026-06-18
