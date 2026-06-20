@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { buildAuthFailureResponse, ERROR_CODES } from '../../src/utils/errors.js';
+import { buildRulesetFetchFailureResponse, ERROR_CODES } from '../../src/utils/errors.js';
 
-describe('buildAuthFailureResponse', () => {
-  it('returns isError:true with RULESET_AUTH_FAILED and four recovery options', () => {
-    const result = buildAuthFailureResponse(
+describe('buildRulesetFetchFailureResponse', () => {
+  it('returns isError:true with RULESET_AUTH_FAILED and four recovery options for auth-failed', () => {
+    const result = buildRulesetFetchFailureResponse(
       'auth-failed',
       'https://example.com/ruleset.yaml',
       'workspace',
@@ -25,8 +25,44 @@ describe('buildAuthFailureResponse', () => {
     expect(ids).toContain('cancel');
   });
 
+  it('returns RULESET_NOT_FOUND when failureReason is "not-found"', () => {
+    const result = buildRulesetFetchFailureResponse(
+      'not-found',
+      'https://example.com/ruleset.yaml',
+      'workspace',
+      'Could not fetch ruleset'
+    );
+    const body = JSON.parse(result.content[0].text);
+    expect(body.error).toBe(ERROR_CODES.RULESET_NOT_FOUND);
+    expect(body.failureReason).toBe('not-found');
+  });
+
+  it('returns RULESET_INVALID_HOST when failureReason is "network-unreachable"', () => {
+    const result = buildRulesetFetchFailureResponse(
+      'network-unreachable',
+      'https://example.com/ruleset.yaml',
+      'workspace',
+      'Could not fetch ruleset'
+    );
+    const body = JSON.parse(result.content[0].text);
+    expect(body.error).toBe(ERROR_CODES.RULESET_INVALID_HOST);
+    expect(body.failureReason).toBe('network-unreachable');
+  });
+
+  it('returns RULESET_BAD_CONFIG when failureReason is "config-invalid"', () => {
+    const result = buildRulesetFetchFailureResponse(
+      'config-invalid',
+      'https://example.com/ruleset.yaml',
+      'workspace',
+      'Could not fetch ruleset'
+    );
+    const body = JSON.parse(result.content[0].text);
+    expect(body.error).toBe(ERROR_CODES.RULESET_BAD_CONFIG);
+    expect(body.failureReason).toBe('config-invalid');
+  });
+
   it('includes an instructions field telling the AI to present options and wait', () => {
-    const result = buildAuthFailureResponse(
+    const result = buildRulesetFetchFailureResponse(
       'not-found',
       'https://example.com/ruleset.yaml',
       'workspace',

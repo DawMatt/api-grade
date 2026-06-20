@@ -4,6 +4,8 @@
 
 > Detailed reference for all exported functions, classes, and types.
 
+> **Scope**: this page documents the `@dawmatt/api-grade-core` programmatic library API only. For the MCP server's tools (including the `recoveryOption` parameter), see [MCP Server Tool Reference](api-grade-mcp.md).
+
 ---
 
 ## `GradeEngine`
@@ -213,4 +215,5 @@ interface RuleMetadata {
 
 - [Usage Guide](usage-guide.md) — common patterns and worked examples
 - [Package Overview](README.md) — installation and minimal usage
+- [MCP Server Tool Reference](api-grade-mcp.md) — all six MCP tools including `recoveryOption`
 - [Documentation Index](../index.md) — full navigation across all docs

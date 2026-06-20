@@ -5,6 +5,8 @@ export const ERROR_CODES = {
   INVALID_GRADE: 'INVALID_GRADE',
   GRADE_ENGINE_ERROR: 'GRADE_ENGINE_ERROR',
   RULESET_AUTH_FAILED: 'RULESET_AUTH_FAILED',
+  RULESET_INVALID_HOST: 'RULESET_INVALID_HOST',
+  RULESET_BAD_CONFIG: 'RULESET_BAD_CONFIG',
   ENTRA_AUTH_REQUIRED: 'ENTRA_AUTH_REQUIRED',
   INVALID_AUTH_CONFIG: 'INVALID_AUTH_CONFIG',
   CONFIG_WRITE_ERROR: 'CONFIG_WRITE_ERROR',
@@ -58,20 +60,34 @@ const FAILURE_REASON_DESCRIPTIONS: Record<string, string> = {
   'auth-failed': 'the credentials were rejected (401/403)',
   'not-found': 'the ruleset path was not found — if this is a private repository, your token may also lack access; GitHub returns the same 404 response for both cases',
   'network-unreachable': 'the host could not be reached (DNS resolution or connection failure)',
+  'config-invalid': 'the stored auth configuration is malformed or missing required fields',
 };
 
 export function describeFetchFailureReason(reason: string): string {
   return FAILURE_REASON_DESCRIPTIONS[reason] ?? reason.replace('-', ' ');
 }
 
-export function buildAuthFailureResponse(
+export function errorCodeForFailureReason(reason: string): ErrorCode {
+  switch (reason) {
+    case 'not-found':
+      return ERROR_CODES.RULESET_NOT_FOUND;
+    case 'network-unreachable':
+      return ERROR_CODES.RULESET_INVALID_HOST;
+    case 'config-invalid':
+      return ERROR_CODES.RULESET_BAD_CONFIG;
+    default:
+      return ERROR_CODES.RULESET_AUTH_FAILED;
+  }
+}
+
+export function buildRulesetFetchFailureResponse(
   failureReason: string,
   rulesetUrl: string,
   scope: string,
   message: string
 ): { content: [{ type: 'text'; text: string }]; isError: true } {
   const body = {
-    error: ERROR_CODES.RULESET_AUTH_FAILED,
+    error: errorCodeForFailureReason(failureReason),
     failureReason,
     rulesetUrl,
     scope,

@@ -36,25 +36,49 @@ openapi.yaml
 
 ## `RULESET_NOT_FOUND` Error
 
-**Cause**: The `rulesetPath` supplied in the request (or the configured default) points to a local file that doesn't exist.
+**Cause**: Either of two distinct cases produces this same error code:
+- The `rulesetPath` supplied in the request (or the configured default) points to a **local file** that doesn't exist.
+- A configured **remote ruleset URL** returned HTTP 404. For GitHub-hosted rulesets, a 404 also covers "the path exists but your token lacks access to a private repo" — GitHub returns the same status for both to avoid leaking repo existence, so the two cannot be distinguished from the response alone.
 
-**Fix**: Verify the path is correct and the file exists. For configured defaults, use `get-ruleset-config` to see what path is active, then correct it with `set-ruleset-config`.
+**Fix**: Verify the path is correct and the file (or remote path) exists. For configured defaults, use `get-ruleset-config` to see what path is active, then correct it with `set-ruleset-config`. If the remote path is correct but the repo is private, also check that your token has access.
 
 ---
 
-## `RULESET_AUTH_FAILED` on Every Request
+## `RULESET_INVALID_HOST` Error
 
-**Cause**: The configured default ruleset is unreachable — network unavailable, token expired, or wrong credentials.
+**Cause**: DNS resolution or the TCP connection to the configured ruleset host failed — the host is unreachable, regardless of authorisation. This is distinct from `RULESET_AUTH_FAILED`: no credentials were rejected, the host simply could not be reached (wrong hostname, VPN disconnected, corporate firewall, internal-only host resolved from outside the network).
 
 **Diagnosis**:
 1. Run `get-ruleset-config` to see what ruleset URL is configured.
 2. Test whether the URL is reachable from the terminal: `curl -I <ruleset-url>`
 
 **Fixes**:
-- **Token expired (`github-pat`)**: Rotate the `GITHUB_TOKEN` env var and restart the AI tool
 - **VPN disconnected**: Reconnect to VPN, then use the `retry` recovery option
-- **Wrong URL**: Use `set-ruleset-config` to correct the `rulesetPath`
+- **Wrong hostname**: Use `set-ruleset-config` to correct the `rulesetPath`
 - **Temporary bypass**: Use `set-ruleset-config scope: session rulesetPath: null` to clear the session default and fall back to the built-in ruleset
+
+---
+
+## `RULESET_AUTH_FAILED` on Every Request
+
+**Cause**: The configured default ruleset's host was reached, but the request was rejected on credentials — wrong, missing, or expired token (401/403), or Entra ID re-authentication is needed.
+
+**Diagnosis**:
+1. Run `get-ruleset-config` to see what ruleset URL is configured.
+2. Test whether the URL is reachable from the terminal with your token: `curl -I -H "Authorization: Bearer $GITHUB_TOKEN" <ruleset-url>`
+
+**Fixes**:
+- **Token expired (`github-pat`)**: Rotate the `GITHUB_TOKEN` env var and restart the AI tool
+- **Wrong or insufficient token**: Confirm the token has read access to the repository containing the ruleset
+- **Temporary bypass**: Use `set-ruleset-config scope: session rulesetPath: null` to clear the session default and fall back to the built-in ruleset
+
+---
+
+## `RULESET_BAD_CONFIG` Error
+
+**Cause**: The stored auth configuration for the configured default ruleset (in `.api-grade/config.json` or `~/.api-grade/config.json`) is malformed or missing required fields — this is distinct from `RULESET_AUTH_FAILED`, since no credentials were even sent to the host; the configuration itself failed validation before a request could be made.
+
+**Fix**: Run `get-ruleset-config` to inspect the stored `auth` block for the affected scope, then use `set-ruleset-config` to supply a complete, valid `auth` configuration (e.g. `tenantId` and `clientId` for `entra-id`, or `type: "github-pat"` with `GITHUB_TOKEN` set in the environment for GitHub).
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "@dawmatt/api-grade-mcp",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "MCP server exposing api-grade capabilities for LLMs and agentic AI tooling",
   "keywords": [
     "api",

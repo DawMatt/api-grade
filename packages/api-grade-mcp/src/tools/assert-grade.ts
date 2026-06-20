@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { GradeEngine, gradeToNumber, LETTER_GRADE_ORDER } from '@dawmatt/api-grade-core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { mcpError, buildAuthFailureResponse, describeFetchFailureReason, ERROR_CODES } from '../utils/errors.js';
+import { mcpError, buildRulesetFetchFailureResponse, describeFetchFailureReason, ERROR_CODES } from '../utils/errors.js';
 import { loadWorkspaceConfig, loadGlobalConfig } from '../config/ruleset-config.js';
 import { resolveRuleset } from '../config/resolve-ruleset.js';
 import { fetchRulesetContent, RulesetAuthError, INITIAL_FETCH_TIMEOUT_MS, RETRY_FETCH_TIMEOUT_MS } from '../auth/github.js';
@@ -97,7 +97,7 @@ export function registerAssertGradeTool(server: McpServer, sessionState: Session
               };
             }
             const reason = err instanceof RulesetAuthError ? err.reason : 'network-unreachable';
-            return buildAuthFailureResponse(
+            return buildRulesetFetchFailureResponse(
               reason,
               resolved.rulesetPath,
               resolved.scope,

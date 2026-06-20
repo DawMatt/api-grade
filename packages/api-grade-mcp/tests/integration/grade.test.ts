@@ -80,7 +80,7 @@ describe('grade-api tool', () => {
     expect(body.rulesetPath).toBe(CUSTOM_RULESET);
   });
 
-  it('returns failureReason "not-found" (not "network-unreachable") when the remote ruleset 404s', async () => {
+  it('returns error "RULESET_NOT_FOUND" and failureReason "not-found" when the remote ruleset 404s', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: false, status: 404 }));
     const server = createServer();
     const result = await callTool(server, 'grade-api', {
@@ -89,9 +89,39 @@ describe('grade-api tool', () => {
     });
     expect(result.isError).toBe(true);
     const body = JSON.parse(result.content[0].text);
-    expect(body.error).toBe('RULESET_AUTH_FAILED');
+    expect(body.error).toBe('RULESET_NOT_FOUND');
     expect(body.failureReason).toBe('not-found');
     expect(body.message).not.toContain('network');
+  });
+
+  it('returns error "RULESET_INVALID_HOST" when the remote ruleset host is unreachable', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new Error('ECONNREFUSED')));
+    const server = createServer();
+    const result = await callTool(server, 'grade-api', {
+      specPath: OPENAPI_FIXTURE,
+      rulesetPath: 'https://internal.example.invalid/ruleset.yaml',
+    });
+    expect(result.isError).toBe(true);
+    const body = JSON.parse(result.content[0].text);
+    expect(body.error).toBe('RULESET_INVALID_HOST');
+    expect(body.failureReason).toBe('network-unreachable');
+  });
+
+  it('returns the configured remote ruleset URL as rulesetPath, not the temp file used to fetch it', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve('rules: {}'),
+    }));
+    const server = createServer();
+    const result = await callTool(server, 'grade-api', {
+      specPath: OPENAPI_FIXTURE,
+      rulesetPath: 'https://raw.githubusercontent.com/example/repo/main/ruleset.yaml',
+    });
+    expect(result.isError).toBeFalsy();
+    const body = JSON.parse(result.content[0].text);
+    expect(body.rulesetPath).toBe('https://raw.githubusercontent.com/example/repo/main/ruleset.yaml');
+    expect(body.rulesetPath).not.toContain('api-grade-ruleset-');
   });
 
   it('returns largeSpecWarning for spec over 500KB', async () => {

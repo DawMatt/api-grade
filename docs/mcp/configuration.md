@@ -142,9 +142,9 @@ Cached tokens are reused on subsequent requests, including after restarting the 
 
 ---
 
-## Auth Failure Recovery
+## Ruleset Fetch Failure Recovery
 
-When the configured default ruleset cannot be fetched (network unavailable, token expired, VPN disconnected), the grading tool returns an `RULESET_AUTH_FAILED` response with four recovery options:
+When the configured default ruleset cannot be fetched, the grading tool returns a structured ruleset-fetch-failure response — `RULESET_AUTH_FAILED`, `RULESET_NOT_FOUND`, `RULESET_INVALID_HOST`, or `RULESET_BAD_CONFIG` depending on the cause (rejected credentials, a missing path/404, an unreachable host, or a malformed stored auth configuration respectively) — with four recovery options:
 
 | Option | Description |
 |--------|-------------|

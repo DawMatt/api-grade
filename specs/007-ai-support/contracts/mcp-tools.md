@@ -414,13 +414,13 @@ Response confirms the scope was cleared and which scope will now take effect.
 
 ---
 
-## Auth Failure Recovery Response
+## Ruleset Fetch Failure Response
 
-When a grading tool (`grade-api`, `grade-api-detailed`, `assert-api-grade`, or `grade-api-quick-fixes-only`) is invoked and the configured default ruleset cannot be fetched due to an authentication, authorisation, or network failure, the tool returns this structured response instead of an unhandled error. (`grade-api-quick-fixes-only` participates in the same auth failure recovery flow as the other grading tools.)
+When a grading tool (`grade-api`, `grade-api-detailed`, `assert-api-grade`, or `grade-api-quick-fixes-only`) is invoked and the configured default ruleset cannot be fetched — for any reason, not only an authentication or authorisation failure — the tool returns this structured response instead of an unhandled error. (`grade-api-quick-fixes-only` participates in the same recovery flow as the other grading tools.) The top-level `error` field varies by `failureReason` (see the values table below): `not-found` → `RULESET_NOT_FOUND`, `network-unreachable` → `RULESET_INVALID_HOST`, `config-invalid` → `RULESET_BAD_CONFIG`, everything else → `RULESET_AUTH_FAILED`. This example shows the `network-unreachable` case:
 
 ```json
 {
-  "error": "RULESET_AUTH_FAILED",
+  "error": "RULESET_INVALID_HOST",
   "failureReason": "network-unreachable",
   "rulesetUrl": "https://sharepoint.example.com/sites/api-standards/ruleset.yaml",
   "scope": "workspace",
@@ -452,16 +452,16 @@ When a grading tool (`grade-api`, `grade-api-detailed`, `assert-api-grade`, or `
 
 **Fetch timeout behaviour**: The initial fetch attempt uses a **5-second timeout**. If the user selects `retry`, the retry uses a **30-second timeout**. All other recovery options bypass the fetch.
 
-**`failureReason` values**:
+**`failureReason` values** (each maps to a top-level `error` code as noted):
 
-| Value | Meaning |
-|---|---|
-| `auth-failed` | Credentials present but rejected (401/403 response) |
-| `not-found` | HTTP 404 — the ruleset path does not exist, or, for a private repo, the configured token lacks access. GitHub returns 404 for both cases to avoid leaking repo existence, so this reason cannot distinguish between them |
-| `token-expired` | Token recognised but expired (GitHub PAT or Entra ID token) |
-| `network-unreachable` | DNS resolution or TCP connection failed (VPN/network issue) |
-| `entra-auth-required` | Entra ID authentication required but no cached token; device-code flow needed |
-| `config-invalid` | Stored auth config is malformed or missing required fields |
+| Value | Meaning | `error` code |
+|---|---|---|
+| `auth-failed` | Credentials present but rejected (401/403 response) | `RULESET_AUTH_FAILED` |
+| `not-found` | HTTP 404 — the ruleset path does not exist, or, for a private repo, the configured token lacks access. GitHub returns 404 for both cases to avoid leaking repo existence, so this reason cannot distinguish between them | `RULESET_NOT_FOUND` |
+| `token-expired` | Token recognised but expired (GitHub PAT or Entra ID token) | `RULESET_AUTH_FAILED` |
+| `network-unreachable` | DNS resolution or TCP connection failed (VPN/network issue, unresolvable host) | `RULESET_INVALID_HOST` |
+| `entra-auth-required` | Entra ID authentication required but no cached token; device-code flow needed | `RULESET_AUTH_FAILED` |
+| `config-invalid` | Stored auth config is malformed or missing required fields | `RULESET_BAD_CONFIG` |
 
 **Acting on a recovery option**: The AI presents the options to the user, then re-calls the original grading tool with an additional `recoveryOption` parameter set to the chosen `id`. The grading tool honours the choice and proceeds accordingly.
 
@@ -481,7 +481,7 @@ When a grading tool (`grade-api`, `grade-api-detailed`, `assert-api-grade`, or `
 "recoveryOption": {
   "type": "string",
   "enum": ["retry", "use-builtin-once", "use-builtin-session", "cancel"],
-  "description": "Recovery action to take when the configured default ruleset is inaccessible. Only supply this field in response to a RULESET_AUTH_FAILED response — do not set it on initial requests."
+  "description": "Recovery action to take when the configured default ruleset is inaccessible. Only supply this field in response to a ruleset fetch failure response (RULESET_AUTH_FAILED, RULESET_NOT_FOUND, RULESET_INVALID_HOST, or RULESET_BAD_CONFIG) — do not set it on initial requests."
 }
 ```
 

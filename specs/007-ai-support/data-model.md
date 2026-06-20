@@ -103,13 +103,13 @@ The result of the precedence chain lookup, produced by `resolve-ruleset.ts` befo
 | `scope` | `"per-request" \| "session" \| "workspace" \| "global" \| "built-in"` | Which scope provided the resolved value |
 | `auth` | `AuthConfig \| null` | Auth config to apply when fetching, or `null` |
 
-### AuthFailureRecoveryResponse
+### RulesetFetchFailureResponse
 
-Returned by any grading tool when the configured default ruleset cannot be fetched.
+Returned by any grading tool when the configured default ruleset cannot be fetched, for any reason — not only authorisation failures. The `error` field is chosen per `failureReason` so it never claims a cause that didn't occur.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `error` | `"RULESET_AUTH_FAILED"` | ✅ | Fixed error code |
+| `error` | `"RULESET_AUTH_FAILED" \| "RULESET_NOT_FOUND" \| "RULESET_INVALID_HOST" \| "RULESET_BAD_CONFIG"` | ✅ | Error code selected by `failureReason`: `not-found` → `RULESET_NOT_FOUND`, `network-unreachable` → `RULESET_INVALID_HOST`, `config-invalid` → `RULESET_BAD_CONFIG`, everything else (`auth-failed`, `token-expired`, `entra-auth-required`) → `RULESET_AUTH_FAILED` |
 | `failureReason` | `string` | ✅ | Machine-readable reason: `auth-failed`, `not-found`, `token-expired`, `network-unreachable`, `entra-auth-required`, `config-invalid` |
 | `rulesetUrl` | `string` | ✅ | URL that could not be fetched |
 | `scope` | `string` | ✅ | Scope where the failing default was configured |
@@ -223,7 +223,7 @@ Each grading tool invocation:
 1. Receives input via MCP stdio
 2. Calls `resolveRuleset(input.rulesetPath, sessionState, workspaceConfig, globalConfig)` to determine the effective ruleset. Precedence: per-request → `sessionRulesetOverride: "builtin"` (short-circuits to built-in immediately) → `session.defaultRuleset` → workspace → global → built-in
 3. If the resolved ruleset is a remote URL, fetches it using the associated `AuthConfig` (PAT header or cached Entra token)
-4. If fetch fails with an auth/network error, returns `AuthFailureRecoveryResponse` immediately
+4. If fetch fails, returns `RulesetFetchFailureResponse` immediately, with `error` selected per `failureReason` (see Error Shapes below)
 5. Constructs a `GradeRequest` and calls `GradeEngine`
 6. Returns a projected JSON response
 
@@ -245,10 +245,12 @@ Structured errors are returned as MCP tool errors (not thrown exceptions). All e
 |---|---|
 | `SPEC_NOT_FOUND` | `specPath` does not exist on the filesystem |
 | `SPEC_PARSE_ERROR` | Specification is syntactically invalid (unparseable) |
-| `RULESET_NOT_FOUND` | `rulesetPath` was provided but does not exist |
+| `RULESET_NOT_FOUND` | `rulesetPath` was provided but does not exist on the local filesystem, or a remote ruleset URL returned HTTP 404 |
 | `INVALID_GRADE` | `minimumGrade` is not one of A/B/C/D/F |
 | `GRADE_ENGINE_ERROR` | Unexpected error from GradeEngine (wrapped with details) |
-| `RULESET_AUTH_FAILED` | Configured default ruleset could not be fetched (auth/network failure) — see `AuthFailureRecoveryResponse` |
+| `RULESET_AUTH_FAILED` | Configured default ruleset could not be fetched due to rejected credentials (401/403) — see `RulesetFetchFailureResponse` |
+| `RULESET_INVALID_HOST` | DNS resolution or TCP connection to the configured ruleset host failed — see `RulesetFetchFailureResponse` |
+| `RULESET_BAD_CONFIG` | The stored auth configuration for the configured default ruleset is malformed or missing required fields, discovered at fetch time — see `RulesetFetchFailureResponse` |
 | `ENTRA_AUTH_REQUIRED` | Entra ID device-code flow must be completed before the secured ruleset can be fetched |
 | `INVALID_AUTH_CONFIG` | Auth configuration is malformed or missing required fields |
 | `CONFIG_WRITE_ERROR` | Workspace or global config file could not be written (permission denied or invalid path) |

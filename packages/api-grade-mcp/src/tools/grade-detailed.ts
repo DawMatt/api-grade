@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { GradeEngine } from '@dawmatt/api-grade-core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { mcpError, buildAuthFailureResponse, describeFetchFailureReason, ERROR_CODES } from '../utils/errors.js';
+import { mcpError, buildRulesetFetchFailureResponse, describeFetchFailureReason, ERROR_CODES } from '../utils/errors.js';
 import { loadWorkspaceConfig, loadGlobalConfig } from '../config/ruleset-config.js';
 import { resolveRuleset } from '../config/resolve-ruleset.js';
 import { fetchRulesetContent, RulesetAuthError, INITIAL_FETCH_TIMEOUT_MS, RETRY_FETCH_TIMEOUT_MS } from '../auth/github.js';
@@ -47,6 +47,7 @@ export function registerGradeDetailedTool(server: McpServer, sessionState: Sessi
       const workspaceConfig = await loadWorkspaceConfig();
       const globalConfig = await loadGlobalConfig();
       const resolved = resolveRuleset(rulesetPath, sessionState, workspaceConfig, globalConfig);
+      const configuredRulesetPath = resolved.rulesetPath ?? undefined;
 
       let effectiveRulesetPath: string | undefined = resolved.rulesetPath ?? undefined;
       let tempRulesetFile: string | undefined;
@@ -87,7 +88,7 @@ export function registerGradeDetailedTool(server: McpServer, sessionState: Sessi
               };
             }
             const reason = err instanceof RulesetAuthError ? err.reason : 'network-unreachable';
-            return buildAuthFailureResponse(
+            return buildRulesetFetchFailureResponse(
               reason,
               resolved.rulesetPath,
               resolved.scope,
@@ -143,7 +144,9 @@ export function registerGradeDetailedTool(server: McpServer, sessionState: Sessi
           summary: result.summary,
           diagnostics,
           rulesetSource: result.rulesetSource,
-          ...(result.rulesetPath ? { rulesetPath: result.rulesetPath } : {}),
+          ...((configuredRulesetPath ?? result.rulesetPath)
+            ? { rulesetPath: configuredRulesetPath ?? result.rulesetPath }
+            : {}),
           truncated,
         };
 
