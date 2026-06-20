@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { GradeEngine } from '@dawmatt/api-grade-core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { mcpError, buildAuthFailureResponse, ERROR_CODES } from '../utils/errors.js';
+import { mcpError, buildAuthFailureResponse, describeFetchFailureReason, ERROR_CODES } from '../utils/errors.js';
 import { loadWorkspaceConfig, loadGlobalConfig } from '../config/ruleset-config.js';
 import { resolveRuleset } from '../config/resolve-ruleset.js';
 import { fetchRulesetContent, RulesetAuthError, INITIAL_FETCH_TIMEOUT_MS, RETRY_FETCH_TIMEOUT_MS } from '../auth/github.js';
@@ -32,7 +32,7 @@ export function registerGradeDetailedTool(server: McpServer, sessionState: Sessi
         .enum(['retry', 'use-builtin-once', 'use-builtin-session', 'cancel'])
         .optional()
         .describe(
-          'Recovery action when the configured default ruleset is inaccessible. Only supply in response to a RULESET_AUTH_FAILED response.'
+          'Recovery action when the configured default ruleset is inaccessible. Only supply in response to a RULESET_AUTH_FAILED response. On receiving that response, present its recoveryOptions to the user verbatim and wait for their explicit choice before setting this field — do not select use-builtin-once or use-builtin-session on the user’s behalf.'
         ),
     },
     async ({ specPath, rulesetPath, recoveryOption }) => {
@@ -91,7 +91,7 @@ export function registerGradeDetailedTool(server: McpServer, sessionState: Sessi
               reason,
               resolved.rulesetPath,
               resolved.scope,
-              `Could not fetch ruleset from '${resolved.rulesetPath}' (${resolved.scope} default): ${reason.replace('-', ' ')}.`
+              `Could not fetch ruleset from '${resolved.rulesetPath}' (${resolved.scope} default): ${describeFetchFailureReason(reason)}.`
             );
           }
         }

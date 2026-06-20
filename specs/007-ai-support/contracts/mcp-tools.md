@@ -457,6 +457,7 @@ When a grading tool (`grade-api`, `grade-api-detailed`, `assert-api-grade`, or `
 | Value | Meaning |
 |---|---|
 | `auth-failed` | Credentials present but rejected (401/403 response) |
+| `not-found` | HTTP 404 — the ruleset path does not exist, or, for a private repo, the configured token lacks access. GitHub returns 404 for both cases to avoid leaking repo existence, so this reason cannot distinguish between them |
 | `token-expired` | Token recognised but expired (GitHub PAT or Entra ID token) |
 | `network-unreachable` | DNS resolution or TCP connection failed (VPN/network issue) |
 | `entra-auth-required` | Entra ID authentication required but no cached token; device-code flow needed |

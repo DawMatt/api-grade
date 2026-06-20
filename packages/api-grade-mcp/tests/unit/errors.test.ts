@@ -24,4 +24,17 @@ describe('buildAuthFailureResponse', () => {
     expect(ids).toContain('use-builtin-session');
     expect(ids).toContain('cancel');
   });
+
+  it('includes an instructions field telling the AI to present options and wait', () => {
+    const result = buildAuthFailureResponse(
+      'not-found',
+      'https://example.com/ruleset.yaml',
+      'workspace',
+      'Could not fetch ruleset'
+    );
+    const body = JSON.parse(result.content[0].text);
+    expect(typeof body.instructions).toBe('string');
+    expect(body.instructions.toLowerCase()).toContain('present');
+    expect(body.instructions.toLowerCase()).toContain('wait');
+  });
 });

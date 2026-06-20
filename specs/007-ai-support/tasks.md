@@ -199,6 +199,48 @@
 
 ---
 
+## Phase 11: Bug Fix — Singular/Plural Grammar in Quality Assessment Commentary
+
+**Purpose**: Fix the issue logged in [`checklists/issues.md`](checklists/issues.md) (Run 3, 2026/06/10): the commentary text reads "1 warning **are** affecting the quality" instead of "1 warning **is** affecting the quality". Root cause: `packages/api-grade-core/src/summariser.ts` `buildCommentary()` (~line 121) hardcodes the verb `are` regardless of `warnCount`, even though the adjacent pluralisation logic (`plural`) already branches on `n === 1`.
+
+- [X] T052 [P] Extend `packages/api-grade-core/tests/unit/summariser.test.ts` with cases asserting the warning-count sentence reads "1 warning is affecting the quality" when `warnCount === 1`, and "N warnings are affecting the quality" when `warnCount > 1`; confirm the singular case fails before T053
+- [X] T053 Fix `packages/api-grade-core/src/summariser.ts` `buildCommentary()`: introduce `const verb = n === 1 ? 'is' : 'are';` alongside the existing `plural` ternary and use it in the warning sentence (`${n} ${plural} ${verb} ${verbPhrase}.`); confirm T052 now passes
+- [X] T054 Run `yarn workspace api-grade-core run test:coverage` and `yarn workspace api-grade-mcp run test:coverage` to confirm no regressions in tests that snapshot commentary text (e.g. `formatter.test.ts`); update `checklists/issues.md` to check off the Run 3 grammar item and append a one-line resolution note (root cause + fix), matching the style of the Run 1/Run 2 resolution notes
+
+**Checkpoint**: Quality assessment commentary uses correct singular/plural verb agreement for both errors and warnings; close out the open item in `checklists/issues.md`.
+
+---
+
+## Phase 12: Bug Fix — Ruleset Fetch Failures Misclassified as "network-unreachable"
+
+**Purpose**: Fix two related issues logged in [`checklists/issues.md`](checklists/issues.md) (Run 3, 2026/06/10): (a) a valid host with an invalid URL *path* (404) is reported with `failureReason: "network-unreachable"` instead of a not-found reason; (b) an unresolvable domain with **no auth configured** still returns the fixed `RULESET_AUTH_FAILED` error code and a message that reads as an authorisation problem, which is misleading when authorisation was never in play. Root cause: `packages/api-grade-mcp/src/auth/github.ts` `fetchRulesetContent()` only special-cases `401`/`403` as `'auth-failed'`; every other non-OK HTTP status (including `404`) and every thrown exception (DNS failure, TCP failure, timeout) collapse into the same generic `'network-unreachable'` reason and the same generically-worded message in `grade.ts`/`grade-detailed.ts`/`assert-grade.ts`/`quick-fixes-only.ts` (`` `... ${reason.replace('-', ' ')}.` ``).
+
+**Known limitation to document, not fix**: GitHub's raw-content endpoints intentionally return `404` for both "path does not exist" and "valid path but token lacks access to a private repo" (to avoid leaking repo existence) — these two cases cannot be distinguished from the HTTP response alone. The fix should name this ambiguity explicitly rather than guessing.
+
+- [X] T055 [P] Add unit tests to `packages/api-grade-mcp/tests/unit/github.test.ts`: `fetchRulesetContent()` rejects with reason `'not-found'` on a `404` response, distinct from the existing `'network-unreachable'` case (keep the existing `500 → 'network-unreachable'` test as-is); confirm the new `404` assertion fails before T057
+- [X] T056 [P] Add an integration test to `packages/api-grade-mcp/tests/integration/grade.test.ts` mocking a `404` ruleset fetch (configured custom remote ruleset) and asserting the structured failure response has `failureReason: "not-found"` and a `message` that does not contain the word "network"; confirm it fails before T057
+- [X] T057 Update `packages/api-grade-mcp/src/auth/github.ts`: extend `RulesetAuthError`'s `reason` union to `'auth-failed' | 'not-found' | 'network-unreachable'`; in `fetchRulesetContent()`, add a branch `if (res.status === 404) throw new RulesetAuthError('not-found', url);` before the generic `!res.ok` fallback; confirm T055 passes
+- [X] T058 Update the failure-message construction in `packages/api-grade-mcp/src/tools/grade.ts`, `grade-detailed.ts`, `assert-grade.ts`, and `quick-fixes-only.ts`: replace the generic `` `${reason.replace('-', ' ')}.` `` interpolation with a reason-specific message map, where `'not-found'` renders "the ruleset path was not found — if this is a private repository, your token may also lack access; GitHub returns the same 404 response for both cases", `'auth-failed'` keeps the existing 401/403 wording, and `'network-unreachable'` keeps the existing DNS/connectivity wording; confirm T056 passes
+- [X] T059 [P] Update `specs/007-ai-support/contracts/mcp-tools.md` and `specs/007-ai-support/data-model.md` `failureReason` value tables to add `not-found` (`HTTP 404 — path does not exist, or, for a private repo, the token lacks access; GitHub returns 404 for both`); update `specs/007-ai-support/checklists/t030-auth-verification.md` Part B step 5 to expect `failureReason: "not-found"` (not `"auth-failed"`) for a revoked PAT against a private-repo path, with a note explaining the GitHub 404-ambiguity limitation, and add a Part E case for "valid host, wrong path, no private-repo ambiguity" expecting `not-found`
+- [X] T060 Run the full `packages/api-grade-mcp` test suite (`yarn workspace api-grade-mcp run test:coverage`) and confirm no regressions; update `checklists/issues.md` to check off the Run 3 "valid website, invalid path" and "unresolvable domain" items with a combined resolution note (root cause + fix + reference to the documented GitHub 404-ambiguity limitation)
+
+**Checkpoint**: Ruleset fetch failures are classified by actual cause (`auth-failed` / `not-found` / `network-unreachable`) with reason-specific messages; close out the two open items in `checklists/issues.md`.
+
+---
+
+## Phase 13: Enhancement — Ensure AI Clients Present Recovery Options Instead of Silently Falling Back
+
+**Purpose**: Address the issue logged in [`checklists/issues.md`](checklists/issues.md) (Run 3, 2026/06/10): when a configured ruleset could not be fetched, the response correctly included `recoveryOptions` (per T030), but the calling AI silently chose to grade against the built-in ruleset itself instead of presenting the options to the user, then disclosed this after the fact ("Note: I used the built-in ruleset..."). This is not a server defect — the structured response already exists — it is a missing instruction telling the calling AI what it must do with that response.
+
+- [X] T061 Update the `recoveryOption` parameter description and the tool descriptions in `packages/api-grade-mcp/src/tools/grade.ts`, `grade-detailed.ts`, `assert-grade.ts`, and `quick-fixes-only.ts`: state explicitly that on a `RULESET_AUTH_FAILED` response, the calling AI must present the `recoveryOptions` to the user verbatim and wait for an explicit choice before re-calling the tool with `recoveryOption` — it must not unilaterally select `use-builtin-once` or `use-builtin-session` on the user's behalf
+- [X] T062 [P] Add an `instructions` field to the response body built by `buildAuthFailureResponse()` in `packages/api-grade-mcp/src/utils/errors.ts` (e.g. `"Present these recoveryOptions to the user and wait for their explicit choice before proceeding. Do not select an option automatically."`) so the instruction travels with the failure payload itself, independent of host-specific tool-description handling; add/update a unit test in `packages/api-grade-mcp/tests/unit/errors.test.ts` asserting the field is present
+- [X] T063 [P] Update `docs/mcp/troubleshooting.md` with a note describing the expected behaviour (AI presents recovery options and waits) and what a user should say if an AI client ignores it and falls back silently (e.g. "use the secured ruleset, don't fall back to the built-in one without asking me")
+- [X] T064 Update `specs/007-ai-support/checklists/t030-auth-verification.md` Part B to add an explicit check that the recovery options are presented to the user in the conversation (not auto-resolved) before any recovery action is taken; update `checklists/issues.md` to check off the Run 3 "no error choices were offered" item with a resolution note referencing the new `instructions` field and updated tool descriptions
+
+**Checkpoint**: Failure responses carry an explicit instruction not to auto-select a recovery option; documentation tells users how to course-correct an AI client that ignores it; close out the open item in `checklists/issues.md`.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -213,6 +255,9 @@
 - **Polish (Phase 8)**: Depends on all story phases completing; T044 depends on all six tools being registered
 - **Bug Fix (Phase 9)**: Independent of all story phases (touches only `src/index.ts`); discovered during T044 verification — T045 (test) before T046 (fix) before T047 (end-to-end verification + issue close-out)
 - **Bug Fix (Phase 10)**: Independent of all other phases (touches only `src/tools/grade.ts` and `src/tools/grade-detailed.ts`); reported in `checklists/issues.md` Run 2 — T048/T049 (tests, parallel) before T050 (fix) before T051 (full suite + issue close-out)
+- **Bug Fix (Phase 11)**: Independent of all other phases (touches only `packages/api-grade-core/src/summariser.ts`); reported in `checklists/issues.md` Run 3 — T052 (test) before T053 (fix) before T054 (full suite + issue close-out)
+- **Bug Fix (Phase 12)**: Independent of all other phases (touches `packages/api-grade-mcp/src/auth/github.ts` and the four grading tool files); reported in `checklists/issues.md` Run 3 — T055/T056 (tests, parallel) before T057 (classifier fix) before T058 (message fix) before T059 (docs/contract updates) before T060 (full suite + issue close-out)
+- **Enhancement (Phase 13)**: Independent of all other phases (touches `src/utils/errors.ts`, tool descriptions, and docs); reported in `checklists/issues.md` Run 3 — depends on Phase 12 only in that T061/T062 reference the same failure-response shape; T061 before T062/T063 (parallel) before T064 (checklist + issue close-out)
 
 ### User Story Dependencies
 
@@ -237,6 +282,8 @@
 - T020, T021, T022, T023 (US5 tests) can all run in parallel — different files
 - T026 (GitHub auth), T027 (Entra auth), T024 (config), T025 (resolve) can run in parallel after US5 tests pass
 - T035–T038, T041–T043 (documentation) can all run in parallel
+- T055, T056 (Phase 12 tests) can run in parallel — different files
+- T062, T063 (Phase 13) can run in parallel — different files
 
 ---
 
@@ -301,3 +348,5 @@ After Foundational phase is complete:
 - `auth.githubToken` is never persisted to workspace or global config files (only held in `SessionState` for the session); workspace config stores only `auth.type: "github-pat"` as a hint so the runtime reads `GITHUB_TOKEN` env var (FR-021).
 - `entra-token-cache.json` is written only to `~/.api-grade/` (user home), never to the workspace (FR-019).
 - Verify T044 manually in each of the three required environments before the feature is considered done (FR-014).
+- **GitHub 404 ambiguity (Phase 12)**: a `404` from `raw.githubusercontent.com` means either "path does not exist" or "valid path, but the token lacks access to a private repo" — GitHub returns the same status for both to avoid leaking repo existence. T057's `'not-found'` reason and T058's message wording must not claim a definitive cause; T059 documents this limitation rather than attempting to resolve it heuristically.
+- The duplicate "ruleset details ... `rulesetPath?` ... wasn't [set]" item logged again in `checklists/issues.md` Run 3 is the same defect already fixed by T048–T051 (Phase 10) and covered by regression assertions in `tests/integration/grade.test.ts` / `grade-detailed.test.ts`; no new task is needed — close it out by adding a one-line note in `checklists/issues.md` pointing back to the Run 2 resolution.

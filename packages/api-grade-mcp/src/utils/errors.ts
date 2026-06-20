@@ -54,6 +54,16 @@ const RECOVERY_OPTIONS = [
   },
 ] as const;
 
+const FAILURE_REASON_DESCRIPTIONS: Record<string, string> = {
+  'auth-failed': 'the credentials were rejected (401/403)',
+  'not-found': 'the ruleset path was not found — if this is a private repository, your token may also lack access; GitHub returns the same 404 response for both cases',
+  'network-unreachable': 'the host could not be reached (DNS resolution or connection failure)',
+};
+
+export function describeFetchFailureReason(reason: string): string {
+  return FAILURE_REASON_DESCRIPTIONS[reason] ?? reason.replace('-', ' ');
+}
+
 export function buildAuthFailureResponse(
   failureReason: string,
   rulesetUrl: string,
@@ -67,6 +77,7 @@ export function buildAuthFailureResponse(
     scope,
     message,
     recoveryOptions: RECOVERY_OPTIONS,
+    instructions: 'Present these recoveryOptions to the user and wait for their explicit choice before proceeding. Do not automatically select an option (such as falling back to the built-in ruleset) on the user\'s behalf.',
   };
   return {
     content: [{ type: 'text', text: JSON.stringify(body) }],

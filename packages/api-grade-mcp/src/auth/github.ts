@@ -3,7 +3,7 @@ export const RETRY_FETCH_TIMEOUT_MS = 30_000;
 
 export class RulesetAuthError extends Error {
   constructor(
-    public readonly reason: 'auth-failed' | 'network-unreachable',
+    public readonly reason: 'auth-failed' | 'not-found' | 'network-unreachable',
     public readonly url: string
   ) {
     super(`Failed to fetch ruleset from ${url}: ${reason}`);
@@ -23,6 +23,9 @@ export async function fetchRulesetContent(
     const res = await fetch(url, { headers, signal: controller.signal });
     if (res.status === 401 || res.status === 403) {
       throw new RulesetAuthError('auth-failed', url);
+    }
+    if (res.status === 404) {
+      throw new RulesetAuthError('not-found', url);
     }
     if (!res.ok) {
       throw new RulesetAuthError('network-unreachable', url);

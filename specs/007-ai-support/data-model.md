@@ -110,7 +110,7 @@ Returned by any grading tool when the configured default ruleset cannot be fetch
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `error` | `"RULESET_AUTH_FAILED"` | ✅ | Fixed error code |
-| `failureReason` | `string` | ✅ | Machine-readable reason: `auth-failed`, `token-expired`, `network-unreachable`, `entra-auth-required`, `config-invalid` |
+| `failureReason` | `string` | ✅ | Machine-readable reason: `auth-failed`, `not-found`, `token-expired`, `network-unreachable`, `entra-auth-required`, `config-invalid` |
 | `rulesetUrl` | `string` | ✅ | URL that could not be fetched |
 | `scope` | `string` | ✅ | Scope where the failing default was configured |
 | `message` | `string` | ✅ | Human-readable explanation for the AI to relay |

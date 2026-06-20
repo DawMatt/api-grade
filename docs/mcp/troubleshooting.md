@@ -69,6 +69,8 @@ When the default ruleset fetch fails, the grading tool returns four recovery opt
 | use built-in for this session | Skips the configured default for all remaining requests |
 | cancel | Cancels the request |
 
+**Expected AI behaviour**: the failure response includes an `instructions` field telling the AI to present these four options to you and wait for your explicit choice — it should not silently pick one (e.g. falling back to the built-in ruleset) on your behalf and disclose that after the fact. If an AI client ignores this and falls back silently anyway, tell it explicitly, e.g. *"Don't fall back to the built-in ruleset without asking me — show me the recovery options from the error response."*
+
 ---
 
 ## Entra ID Device Code Not Completing

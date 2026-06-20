@@ -63,10 +63,16 @@ describe('fetchRulesetContent', () => {
       .rejects.toMatchObject({ reason: 'auth-failed' });
   });
 
-  it('throws RulesetAuthError("network-unreachable") on non-401/403 failure', async () => {
+  it('throws RulesetAuthError("network-unreachable") on non-401/403/404 failure', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: false, status: 500 }));
     await expect(fetchRulesetContent('https://example.com/r.yaml', undefined, 5000))
       .rejects.toMatchObject({ reason: 'network-unreachable' });
+  });
+
+  it('throws RulesetAuthError("not-found") on 404', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: false, status: 404 }));
+    await expect(fetchRulesetContent('https://example.com/r.yaml', undefined, 5000))
+      .rejects.toMatchObject({ reason: 'not-found' });
   });
 
   it('throws RulesetAuthError("network-unreachable") on AbortError (timeout)', async () => {

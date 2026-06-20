@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { writeFileSync, unlinkSync } from 'node:fs';
@@ -21,6 +21,11 @@ async function callTool(server: ReturnType<typeof createServer>, toolName: strin
 }
 
 describe('grade-api tool', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+
   it('grades a valid OpenAPI spec and returns correct shape', async () => {
     const server = createServer();
     const result = await callTool(server, 'grade-api', { specPath: OPENAPI_FIXTURE });
@@ -73,6 +78,20 @@ describe('grade-api tool', () => {
     const body = JSON.parse(result.content[0].text);
     expect(body.rulesetSource).toBe('custom');
     expect(body.rulesetPath).toBe(CUSTOM_RULESET);
+  });
+
+  it('returns failureReason "not-found" (not "network-unreachable") when the remote ruleset 404s', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: false, status: 404 }));
+    const server = createServer();
+    const result = await callTool(server, 'grade-api', {
+      specPath: OPENAPI_FIXTURE,
+      rulesetPath: 'https://example.com/missing-ruleset.yaml',
+    });
+    expect(result.isError).toBe(true);
+    const body = JSON.parse(result.content[0].text);
+    expect(body.error).toBe('RULESET_AUTH_FAILED');
+    expect(body.failureReason).toBe('not-found');
+    expect(body.message).not.toContain('network');
   });
 
   it('returns largeSpecWarning for spec over 500KB', async () => {
