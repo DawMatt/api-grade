@@ -41,6 +41,7 @@ const packageFiles = [
   'packages/api-grade-core/package.json',
   'packages/backstage-plugin-api-grade/package.json',
   'packages/backstage-plugin-api-grade-backend/package.json',
+  'packages/api-grade-mcp/package.json',
 ];
 
 // Read current version from root

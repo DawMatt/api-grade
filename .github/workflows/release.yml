@@ -99,6 +99,10 @@ jobs:
         run: npm run test:coverage
         working-directory: packages/backstage-plugin-api-grade-backend
 
+      - name: Test (api-grade-mcp) with coverage
+        run: npm run test:coverage
+        working-directory: packages/api-grade-mcp
+
       - name: Build
         run: npm run build
 
@@ -127,6 +131,10 @@ jobs:
       - name: Publish @dawmatt/backstage-plugin-api-grade-backend
         run: npm publish --access public --provenance
         working-directory: packages/backstage-plugin-api-grade-backend
+
+      - name: Publish @dawmatt/api-grade-mcp
+        run: npm publish --access public --provenance
+        working-directory: packages/api-grade-mcp
 
       - name: Publish @dawmatt/api-grade (CLI)
         run: npm publish --access public --provenance
@@ -168,4 +176,5 @@ jobs:
           - \`@dawmatt/api-grade-core@${VERSION#v}\`
           - \`@dawmatt/backstage-plugin-api-grade@${VERSION#v}\`
           - \`@dawmatt/backstage-plugin-api-grade-backend@${VERSION#v}\`
+          - \`@dawmatt/api-grade-mcp@${VERSION#v}\`
           - \`@dawmatt/api-grade@${VERSION#v}\`"

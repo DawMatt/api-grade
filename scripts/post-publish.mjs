@@ -19,6 +19,7 @@ const root = resolve(__dirname, '..');
 const workspaces = [
   'packages/backstage-plugin-api-grade/package.json',
   'packages/backstage-plugin-api-grade-backend/package.json',
+  'packages/api-grade-mcp/package.json',
   'package.json',
 ];
 

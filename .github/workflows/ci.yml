@@ -70,6 +70,10 @@ jobs:
         run: npm run test:coverage
         working-directory: packages/backstage-plugin-api-grade-backend
 
+      - name: Test (api-grade-mcp) with coverage
+        run: npm run test:coverage
+        working-directory: packages/api-grade-mcp
+
       # Stage 5: Build
       - name: Build
         run: npm run build

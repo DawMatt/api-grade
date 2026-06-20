@@ -22,6 +22,7 @@ const version = rootPkg.version;
 const workspaces = [
   'packages/backstage-plugin-api-grade/package.json',
   'packages/backstage-plugin-api-grade-backend/package.json',
+  'packages/api-grade-mcp/package.json',
   // Root CLI package.json — also needs the dep rewrite AND private flag removal
   'package.json',
 ];
