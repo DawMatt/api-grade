@@ -26,6 +26,11 @@
 - Q: What timeout applies when fetching a remote ruleset? → A: 5 seconds on the initial attempt (ensuring the auth-failure recovery response arrives well within SC-001's 10-second budget); 30 seconds when the user explicitly selects the `retry` recovery option (acknowledging they are willing to wait).
 - Q: How is the `use-builtin-session` recovery choice represented in session state without conflating it with "no default configured"? → A: A separate `sessionRulesetOverride: "builtin" | null` field on `SessionState`. When set to `"builtin"`, all grading tools bypass configured defaults for the remainder of the session. A subsequent `set-ruleset-config scope: session` call with a non-null `rulesetPath` clears the override implicitly; `set-ruleset-config` with `rulesetPath: null` does not clear the override.
 
+### Session 2026-06-20
+
+- Q: Some enterprise environments restrict direct `node`/`npx` execution on developer machines (e.g. locked-down package managers, no global Node install) but do allow running approved container images. How should the MCP server be made runnable in that environment? → A: Publish an official Docker image so the server can be started with `docker run` in addition to `node`/`npx`. Both invocation mechanisms expose the identical set of MCP tools over stdio; the container is purely an alternative packaging/distribution mechanism, not an alternative protocol or transport.
+- Q: Does the Docker-based invocation change any tool behaviour, schema, or response shape? → A: No. The six MCP tools, their input schemas, and their response shapes are identical regardless of whether the server process was started via `node`, `npx`, or `docker run`. Only the startup command differs.
+
 ---
 
 ## User Scenarios & Testing *(mandatory)*
@@ -44,6 +49,7 @@ A developer using Claude Code or GitHub Copilot (VS Code) asks their AI tool to 
 2. **Given** an AI assistant has access to the api-grade capability, **When** it requests a grade for a valid AsyncAPI specification, **Then** it receives equivalent structured results demonstrating multi-format support.
 3. **Given** an AI assistant requests a grade for a file path that does not exist, **When** the capability is invoked, **Then** it returns a clear, structured error message the AI can relay to the user.
 4. **Given** the MCP server is configured in Claude Code or GitHub Copilot (VS Code Agent mode), **When** an API specification grade is requested in each tool, **Then** the grading capability is successfully invoked and returns a structured result in both environments.
+5. **Given** a developer's environment permits running approved Docker images but restricts direct `node`/`npx` execution, **When** the developer configures their AI tool to start the api-grade MCP server via `docker run` instead of `npx`, **Then** the server starts successfully and returns identical structured grading results to the `npx`-based invocation.
 
 ---
 
@@ -125,6 +131,7 @@ A developer using an AI assistant not only wants to know which issues are affect
 - What happens when a default ruleset is configured at multiple levels (session + workspace + global) simultaneously? → The most specific scope wins: session overrides workspace, workspace overrides global.
 - What happens when the user is on their corporate network initially, sets a workspace default pointing to an enterprise SharePoint ruleset, then disconnects from the VPN mid-session? → The next grading request that tries to use the configured default will fail to fetch the ruleset; the structured recovery options are returned so the user can choose how to proceed.
 - What happens when a GitHub Enterprise PAT stored in a workspace config file has expired or been revoked? → Authentication fails; structured recovery options are returned with guidance to check the token.
+- What happens when the MCP server is started via Docker and needs to grade a spec file or load a workspace config from the host filesystem? → The host's project directory (and, for workspace-scoped ruleset defaults, the `.api-grade/` directory) must be bind-mounted into the container; the documentation MUST show the required `docker run -v` mount so file paths supplied by the AI tool resolve inside the container the same way they would on a direct `node`/`npx` invocation.
 
 ## Requirements *(mandatory)*
 
@@ -153,6 +160,9 @@ A developer using an AI assistant not only wants to know which issues are affect
 - **FR-010**: All MCP tool definitions MUST include complete descriptions, parameter documentation, and example invocations so that AI tools can discover and correctly invoke them without additional configuration.
 - **FR-011**: The MCP server MUST operate entirely locally (no outbound network calls required for the MCP protocol layer itself) to satisfy the zero-cost prerequisite constraint.
 - **FR-014**: The MCP server MUST be explicitly verified to function correctly with Claude Code and GitHub Copilot (VS Code Agent mode) as primary supported AI tool targets. An implementation that functions in only one of these environments does not satisfy this requirement.
+- **FR-026**: The MCP server MUST be runnable via two equivalent invocation mechanisms, selectable by the user: (1) direct execution on the host via `node`/`npx` (existing behaviour), and (2) execution inside a Docker container via `docker run`. Both mechanisms MUST expose the identical set of MCP tools, input schemas, and response shapes over stdio; the choice of invocation mechanism MUST NOT alter grading behaviour or results.
+- **FR-027**: The system MUST publish an official Docker image for `@dawmatt/api-grade-mcp` (built from a `Dockerfile` in the package) so that AI tool hosts can be configured to start the server with `docker run -i <image>` (stdio passed through with `-i`) instead of `npx`.
+- **FR-028**: The Docker-based invocation documentation MUST describe how to bind-mount the host's workspace directory into the container so that file paths supplied by the AI tool (spec paths, custom ruleset paths, `.api-grade/config.json`) resolve correctly inside the container, consistent with FR-015's workspace-config resolution behaviour.
 
 ### Key Entities
 
@@ -166,6 +176,7 @@ A developer using an AI assistant not only wants to know which issues are affect
 - **Default Ruleset Configuration**: A persisted or in-memory setting that designates the ruleset to use when no per-request `rulesetPath` is supplied. Exists at three scopes — session (in-memory), workspace (`.api-grade/config.json`), and global (`~/.api-grade/config.json`) — with session taking precedence over workspace, and workspace over global.
 - **Auth Configuration**: Optional credentials (GitHub PAT, Entra ID tenant/client IDs) associated with a Default Ruleset Configuration that allow the MCP server to fetch rulesets from secured locations. Stored separately from ruleset paths to support safe source-control practices.
 - **Auth Failure Recovery**: The structured response returned when a configured default ruleset cannot be fetched due to an authentication, authorisation, or network failure. Contains the failure reason and four recovery options: retry, use built-in default for this request, use built-in default for this session, or cancel.
+- **Container Image**: The official Docker image distribution of `@dawmatt/api-grade-mcp`, built from a `Dockerfile` and published alongside the npm package. Provides a second, equivalent invocation mechanism (`docker run`) to `node`/`npx`, with identical tool behaviour.
 
 ## Success Criteria *(mandatory)*
 
@@ -180,6 +191,7 @@ A developer using an AI assistant not only wants to know which issues are affect
 - **SC-007**: A developer can configure a workspace-level default ruleset once via `set-ruleset-config`, restart the MCP server, and confirm that all subsequent grading requests in that workspace use the configured ruleset without re-supplying the path.
 - **SC-008**: When a configured default ruleset requires authentication and credentials are unavailable or invalid, 100% of grading requests return the four structured recovery options rather than an unhandled error or silent fallback to the built-in default.
 - **SC-009**: A developer unfamiliar with the MCP server can configure a workspace-level default ruleset with Entra ID authentication using only the published documentation under `docs/mcp/`, without consulting source code or design artefacts in `specs/`.
+- **SC-010**: A developer can start the MCP server via `docker run` instead of `npx`, using only the published Docker invocation documentation, and confirm that a `grade-api` request returns a structured result identical in shape to the `npx`-based invocation for the same input file.
 
 ## Assumptions
 
@@ -194,3 +206,5 @@ A developer using an AI assistant not only wants to know which issues are affect
 - All prerequisites for AI integration (e.g., tool registration, model access) have zero monetary cost, consistent with the project's cross-platform zero-cost prerequisite principle.
 - The MCP server supports concurrent requests; multiple grading operations may run simultaneously, bounded only by available system resources. The core grading logic is stateless with respect to individual requests.
 - The feature builds on the existing api-grade-core package and does not require changes to the core grading algorithm.
+- Docker is an alternative invocation/packaging mechanism only. It does not introduce a new transport (still stdio, piped through `docker run -i`), does not change tool schemas or responses, and does not relax the zero-cost prerequisite (Docker Engine/Desktop is free for the relevant use cases; users who cannot or do not want to install Docker continue to use `node`/`npx` with no loss of functionality).
+- Publishing the Docker image to a public registry (e.g. Docker Hub, GHCR) is in scope for documentation purposes (the quick-start guide shows `docker run` against a published image), but operating or maintaining the registry account/CI publish pipeline is an infrastructure concern tracked outside this spec.

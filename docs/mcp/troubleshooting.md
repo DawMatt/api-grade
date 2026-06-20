@@ -148,6 +148,34 @@ This is expected behaviour. The server is meant to be started by the AI tool's M
 
 ---
 
+## Docker Invocation
+
+These issues are specific to running the server via `docker run` instead of `npx`/`node` (see [Quick Start](quick-start.md#run-via-docker)).
+
+**Spec or ruleset file not found (`SPEC_NOT_FOUND` / `RULESET_NOT_FOUND`)**
+
+**Cause**: Missing or incorrect `-v` bind mount. Inside the container, only the mounted directory is visible — paths must be given relative to `/workspace` (or whatever path you mounted to), not the path on your host machine.
+
+**Fix**: Confirm the bind mount covers the directory containing your spec/ruleset files, and that the path you pass to the tool matches the path *inside* the container:
+```sh
+docker run -i --rm -v "$PWD:/workspace" -w /workspace dawmatt/api-grade-mcp
+```
+If your spec lives at `./api/openapi.yaml` on the host and you mounted `$PWD:/workspace`, pass `/workspace/api/openapi.yaml` (or the relative path `api/openapi.yaml`, since `-w /workspace` sets the working directory) — not the host's absolute path.
+
+**Workspace ruleset config not picked up**
+
+**Cause**: `set-ruleset-config` with `scope: "workspace"` writes `.api-grade/config.json` relative to the container's working directory. If that directory isn't inside the bind-mounted volume, the file is written inside the container's ephemeral filesystem and disappears when the container exits (`--rm`).
+
+**Fix**: Ensure `.api-grade/config.json` ends up inside the mounted directory by setting `-w` to the mounted path (as in the example above), so the config persists on the host across container runs.
+
+**Permission denied writing config**
+
+**Cause**: The container runs as the non-root `node` user (UID 1000). If the host-mounted directory isn't writable by that UID, writes to `.api-grade/config.json` fail.
+
+**Fix**: Ensure the mounted host directory is writable by UID 1000, e.g. `chmod -R u+w,g+w <dir>` or adjust ownership with `chown`.
+
+---
+
 ## Further Reading
 
 - [Quick Start](quick-start.md) — initial setup and configuration

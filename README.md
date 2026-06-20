@@ -52,6 +52,8 @@ npm install @dawmatt/api-grade-core
 claude mcp add api-grade -- npx -y @dawmatt/api-grade-mcp
 ```
 
+Can also be run via the published Docker image instead of `npx`/`node` — see [Docker invocation](docs/mcp/quick-start.md#run-via-docker).
+
 ---
 
 ## Documentation

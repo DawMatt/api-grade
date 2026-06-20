@@ -28,6 +28,17 @@ Or install globally if you prefer a local binary:
 npm install -g @dawmatt/api-grade-mcp
 ```
 
+### Run via Docker
+
+If your environment restricts direct `node`/`npx` execution but allows approved container images, run the server as a Docker container instead. Tool behaviour is identical to the `npx`/`node` invocation.
+
+```sh
+docker pull dawmatt/api-grade-mcp
+docker run -i --rm -v "$PWD:/workspace" -w /workspace dawmatt/api-grade-mcp
+```
+
+The `-v "$PWD:/workspace"` bind mount is required — spec and ruleset file paths must resolve inside the container, so mount the directory containing the files you want to grade. The `-i` flag keeps stdin open for the stdio transport (no `-t` needed; this is not an interactive terminal session).
+
 ---
 
 ## Configure Your AI Tool
@@ -55,6 +66,19 @@ Or add it to `.claude/settings.json` manually:
 
 The tools are available immediately in your Claude Code session.
 
+**Via Docker:**
+
+```json
+{
+  "mcpServers": {
+    "api-grade": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-v", "${PWD}:/workspace", "-w", "/workspace", "dawmatt/api-grade-mcp"]
+    }
+  }
+}
+```
+
 ### Claude Desktop
 
 1. Open the configuration file:
@@ -75,6 +99,19 @@ The tools are available immediately in your Claude Code session.
 ```
 
 3. Restart Claude Desktop. The six api-grade tools will appear in the tools panel.
+
+**Via Docker:**
+
+```json
+{
+  "mcpServers": {
+    "api-grade": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-v", "/path/to/your/workspace:/workspace", "-w", "/workspace", "dawmatt/api-grade-mcp"]
+    }
+  }
+}
+```
 
 ### GitHub Copilot (VS Code Agent mode)
 
@@ -97,6 +134,20 @@ Requires VS Code 1.99 or later with the GitHub Copilot extension.
 2. Open the Copilot Chat panel and switch to **Agent mode**.
 
 3. The api-grade tools are now available to Copilot in agent mode.
+
+**Via Docker:**
+
+```json
+{
+  "servers": {
+    "api-grade": {
+      "type": "stdio",
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-v", "${workspaceFolder}:/workspace", "-w", "/workspace", "dawmatt/api-grade-mcp"]
+    }
+  }
+}
+```
 
 ### Cursor
 

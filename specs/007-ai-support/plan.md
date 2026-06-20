@@ -24,11 +24,15 @@ Deliver a new npm package (`@dawmatt/api-grade-mcp`) that exposes api-grade capa
 - Node.js built-in `fetch` (Node 20+) — HTTP requests for remote ruleset fetching; no additional HTTP client library required
 - Node.js built-in `fs/promises` — reading and writing `.api-grade/config.json` workspace and global config files
 
+**Additional Dependencies (Docker Invocation Support)**:
+- `node:20-alpine` base image — consistent with the existing root `Dockerfile` (CLI) build pattern; multi-stage build (builder + runtime) to keep the published image small
+- No new runtime npm dependencies; the container runs the same compiled `dist/index.js` entry point used by the `npx`/`node` invocation
+
 **Storage**: Primarily stateless per-request. US5 introduces two config file locations: `.api-grade/config.json` in the workspace root (workspace-level default ruleset), and `~/.api-grade/config.json` (global default ruleset). Session-level default is held in memory on the `McpServer` instance. Auth credentials (GitHub PAT, Entra ID tokens) are stored separately from ruleset paths per FR-021.
 
 **Testing**: Vitest + `@vitest/coverage-v8` (consistent with existing packages)
 
-**Target Platform**: Node.js 20+ local execution (started by MCP host via `npx` or direct binary)
+**Target Platform**: Node.js 20+ local execution (started by MCP host via `npx` or direct binary), OR a Docker container built from `packages/api-grade-mcp/Dockerfile` (started via `docker run -i <image>`, stdio passed through with `-i`). Both invocation mechanisms are equivalent and expose identical tool behaviour (FR-026–FR-028).
 
 **Project Type**: MCP server — new fourth package in the monorepo, published to npmjs as `@dawmatt/api-grade-mcp`
 
@@ -74,6 +78,15 @@ Deliver a new npm package (`@dawmatt/api-grade-mcp`) that exposes api-grade capa
 
 Tool contracts confirmed to align with `GradeResult` and `Diagnostic` types from `api-grade-core` without requiring changes to the core package. `RulesetConfig`, `AuthConfig`, `SessionState`, `RulesetResolution`, and `AuthFailureRecoveryResponse` are all MCP-layer types defined in `packages/api-grade-mcp/src/`.
 
+**Post-Docker-support re-check** (Docker invocation is purely a packaging/distribution concern):
+
+| Principle | Status | Notes |
+|-----------|--------|-------|
+| II. Core-First Architecture | ✅ Pass | Container runs the identical compiled `dist/index.js`; no logic forked between invocation mechanisms |
+| V. Cross-Platform & Zero-Cost Prerequisites | ✅ Pass | Docker Desktop/Engine is free; `node`/`npx` remains fully supported with no loss of functionality for users who don't use Docker |
+| YAGNI | ✅ Pass | No new transport, no Docker Compose, no separate Docker-specific tool surface — same six MCP tools over stdio |
+| AI Integration Requirements | ✅ Pass | Docker is an additional, optional invocation mechanism; FR-014's required verification still targets Claude Code and GitHub Copilot, configured to start the server via either mechanism |
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -98,7 +111,7 @@ docs/
 │   ├── README.md              # UPDATE: add @dawmatt/api-grade-mcp to monorepo packages table
 │   └── api-grade-mcp.md       # UPDATE: add set-ruleset-config + get-ruleset-config tools; add configuration overview; link to docs/mcp/
 └── mcp/                       # NEW directory — user-facing MCP documentation (FR-025)
-    ├── quick-start.md         # NEW: polished install + host config guide for all 3 required environments
+    ├── quick-start.md         # NEW: polished install + host config guide for all 3 required environments; UPDATE: add Docker invocation alongside npx/node
     ├── configuration.md       # NEW: ruleset configuration reference (3 scopes, config files, GitHub PAT, Entra ID, env vars)
     └── troubleshooting.md     # NEW: auth failure recovery, recovery options walkthrough, token expiry, common setup issues
 ```
@@ -139,6 +152,8 @@ packages/api-grade-mcp/
 │       ├── set-ruleset-config.test.ts  # set-ruleset-config tool tests (US5)
 │       └── get-ruleset-config.test.ts # get-ruleset-config tool tests (US5)
 ├── package.json               # @dawmatt/api-grade-mcp; bin: api-grade-mcp
+├── Dockerfile                 # NEW: multi-stage build producing the Docker image invocation mechanism (FR-027)
+├── .dockerignore               # NEW: excludes node_modules, tests, src from the build context
 └── tsconfig.json
 ```
 

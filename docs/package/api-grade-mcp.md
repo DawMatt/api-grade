@@ -20,6 +20,8 @@ Or install globally:
 npm install -g @dawmatt/api-grade-mcp
 ```
 
+Alternatively, the server can be run via the published Docker image — see [Docker invocation](../mcp/quick-start.md#run-via-docker) for `docker run` commands and equivalent host configs.
+
 ---
 
 ## MCP Host Configuration

@@ -34,6 +34,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "docker:build": "docker build -f Dockerfile -t dawmatt/api-grade-mcp:local ../..",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
