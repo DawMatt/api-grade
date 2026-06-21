@@ -113,12 +113,64 @@ api-grade openapi.yaml \
 
 ---
 
+## Two Configuration Mechanisms
+
+There are **two separate, independent configuration files**, with different scope and
+purpose. They are easy to confuse because both can set a default `ruleset`, but only
+one of them is shared with the MCP server, and only one of them covers options other
+than the ruleset.
+
+| | [`.apigrade.json`](#configuration-file-apigradejson) | [`.api-grade/config.json`](#persistent-ruleset-configuration-config-subcommand) |
+|---|---|---|
+| **Purpose** | General CLI run defaults (grading thresholds, output shape) | Persisted *default ruleset* + auth, shareable across tools |
+| **Consumed by** | CLI only | CLI (`config` subcommand) **and** the `api-grade-mcp` server |
+| **Location** | One file, in the current working directory | Two possible files: workspace (`./.api-grade/config.json`) or global (`~/.api-grade/config.json`) |
+| **How it's written** | Hand-edited JSON file | Written via `api-grade config set-ruleset` or the MCP `set-ruleset-config` tool — never hand-edited |
+| **Keys supported** | `minGrade`, `ruleset`, `format`, `top`, `verbose` | `ruleset` (path/URL) and `auth` (`type` + token) only |
+
+If you only need a default ruleset for local CLI runs, `.apigrade.json` is usually
+enough. Reach for `api-grade config set-ruleset` instead when the same ruleset/auth
+needs to be visible to **both** the CLI and an MCP client (e.g. an editor or agent
+using `api-grade-mcp`), since that's the one config surface both sides read.
+
+### Precedence when the same setting is supplied in multiple places
+
+For `--ruleset` specifically, every source funnels into one resolution order
+(highest priority first):
+
+1. `--ruleset` CLI flag
+2. `ruleset` key in `.apigrade.json`
+3. Workspace `.api-grade/config.json` (`api-grade config set-ruleset --scope workspace`)
+4. Global `~/.api-grade/config.json` (`api-grade config set-ruleset --scope global`)
+5. Built-in default ruleset
+
+The first source in this list that specifies a ruleset wins outright — sources
+are **not merged**; e.g. if the workspace config sets `auth`, but a higher-priority
+source (CLI flag or `.apigrade.json`) sets `ruleset` without auth, the workspace
+config's `auth` is *not* picked up, since the whole resolution (ruleset path + auth)
+comes from a single source.
+
+`--auth-type` / `--token` (and the `GITHUB_TOKEN` environment variable) are **only**
+ever supplied via CLI flags/env — `.apigrade.json` has no equivalent keys. They apply
+on top of whichever ruleset source won above: if that source is `.api-grade/config.json`
+and it has persisted `auth`, `--auth-type`/`--token` override that persisted auth;
+otherwise they're the only source of auth.
+
+All other `.apigrade.json` keys (`minGrade`, `format`, `top`, `verbose`) have no
+equivalent in `.api-grade/config.json`, so there's no cross-file precedence question
+for them — only "CLI flag overrides `.apigrade.json`" applies.
+
+---
+
 ## Persistent Ruleset Configuration (`config` subcommand)
 
 `api-grade config set-ruleset` / `api-grade config get-ruleset` let you configure a
 default ruleset (and optional GitHub PAT auth) once, at workspace or global scope,
 so every subsequent invocation in that workspace — including CI runs — uses it
-automatically without repeating `--ruleset`/`--auth-type`/`--token` on every command.
+automatically without repeating `--ruleset`/`--auth-type`/`--token` on every command,
+and so the same default is visible to MCP clients. See
+[Two Configuration Mechanisms](#two-configuration-mechanisms) for how this relates to
+`.apigrade.json` and which one wins when both set a ruleset.
 
 | Flag (`config set-ruleset`) | Required | Description |
 |---|---|---|
@@ -136,7 +188,9 @@ api-grade config set-ruleset \
   --token ghp_xxxxxxxxxxxxxxxxxxxx
 ```
 
-Every subsequent invocation in this workspace uses it automatically:
+Every subsequent invocation in this workspace uses it automatically, **as long as
+neither `--ruleset` nor a `.apigrade.json` `ruleset` key is also present** — both
+take precedence over this persisted config (see precedence order above):
 
 ```bash
 api-grade openapi.yaml --min-grade B --format json
@@ -149,10 +203,12 @@ Check what's configured (never prints the token value — only `(token configure
 api-grade config get-ruleset
 ```
 
-Workspace-scoped config always takes precedence over global config. Both surfaces
-read/write the exact same file format as the `api-grade-mcp` server's
-`set-ruleset-config`/`get-ruleset-config` tools — a workspace configured via one is
-immediately usable by the other.
+Workspace-scoped config always takes precedence over global config (within this
+config surface — `.apigrade.json` and `--ruleset` still take precedence over both,
+per the order above). Both `config set-ruleset`/`get-ruleset` and the
+`api-grade-mcp` server's `set-ruleset-config`/`get-ruleset-config` tools read/write
+the exact same file — a workspace configured via one is immediately usable by the
+other.
 
 > **Note:** Microsoft Entra ID authentication (used by the MCP server) is not
 > supported by the CLI. If a shared config file specifies `auth.type: "entra-id"`,
@@ -160,9 +216,15 @@ immediately usable by the other.
 
 ---
 
-## Configuration File
+## Configuration File (`.apigrade.json`)
 
-You can persist options in a `.apigrade.json` file in your working directory. CLI flags always take precedence over config file values.
+You can persist CLI run defaults in a `.apigrade.json` file in your working directory.
+This file is **CLI-only** — it is not read by the `api-grade-mcp` server, and it is
+hand-edited rather than written by a command. CLI flags always take precedence over
+`.apigrade.json` values. See
+[Two Configuration Mechanisms](#two-configuration-mechanisms) if you also use
+`api-grade config set-ruleset` / `.api-grade/config.json` — the two can both specify a
+default `ruleset`, and `.apigrade.json` wins.
 
 ```json
 {
@@ -183,6 +245,10 @@ All keys are optional. Supported keys:
 | `format` | `"human"` or `"json"` | `--format` |
 | `top` | number | `--top` |
 | `verbose` | boolean | `--verbose` |
+
+There is no `authType`/`token` key — authorisation for a remote ruleset is supplied
+only via `--auth-type`/`--token`/`GITHUB_TOKEN`, or persisted via
+`api-grade config set-ruleset` (see above).
 
 ---
 
