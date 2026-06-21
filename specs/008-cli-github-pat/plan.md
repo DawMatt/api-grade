@@ -10,15 +10,21 @@
 
 Extract the GitHub PAT (and Entra ID) ruleset-fetch authentication, fetch-failure
 classification, and multi-level configuration-resolution logic currently living in
-`api-grade-mcp` into `api-grade-core`, with zero behavioral change to the MCP server.
-Refactor `api-grade-mcp` to consume the extracted modules. Then extend the CLI
-(`src/cli`) to consume the same core modules, adding a `--token` option, `GITHUB_TOKEN`
-env var support, and new `config` subcommands (`config set-ruleset` / `config
-get-ruleset`) for workspace/global persistent ruleset+auth defaults — mirroring the
-MCP's `set-ruleset-config`/`get-ruleset-config` tools but using CLI-appropriate
+`api-grade-mcp` into `api-grade-core`, with zero behavioral change to the MCP server
+and zero behavioral or import-surface change for the `backstage-plugin-api-grade` /
+`backstage-plugin-api-grade-backend` packages, which also depend on `api-grade-core`
+(FR-022/FR-023). Refactor `api-grade-mcp` to consume the extracted modules. Then
+extend the CLI (`src/cli`) to consume the same core modules, adding a new
+`--auth-type <none|github-pat>` option that gates a `--token` option / `GITHUB_TOKEN`
+env var / persisted-config token resolution (FR-017/FR-018), and new `config`
+subcommands (`config set-ruleset` / `config get-ruleset`) for workspace/global
+persistent ruleset+auth defaults — mirroring the MCP's
+`set-ruleset-config`/`get-ruleset-config` tools but using CLI-appropriate
 input/output (no session scope, no recovery-options payload). The CLI explicitly
-rejects `entra-id` auth configurations with a clear error rather than attempting or
-silently ignoring them.
+rejects `entra-id` auth configurations (including via `--auth-type entra-id`) with a
+clear error rather than attempting or silently ignoring them, and prints a
+non-fatal warning for any authorisation-related option supplied but rendered moot by
+a `none` auth type or a local ruleset source (FR-020/FR-021).
 
 ## Technical Context
 
@@ -36,9 +42,12 @@ file is untouched.
 
 **Testing**: Vitest (`vitest run`), consistent with all existing packages. New unit
 tests for the extracted core modules; existing MCP unit/integration tests must pass
-unmodified (assertion-for-assertion) post-refactor; new CLI integration tests for
-`--token`, `GITHUB_TOKEN`, `config set-ruleset`/`config get-ruleset`, precedence, and
-Entra ID rejection.
+unmodified (assertion-for-assertion) post-refactor; existing
+`backstage-plugin-api-grade`/`backstage-plugin-api-grade-backend` build and test
+suites must also pass unmodified (FR-023/SC-010); new CLI integration tests for
+`--auth-type`, `--token`, `GITHUB_TOKEN`, `config set-ruleset`/`config get-ruleset`,
+auth-type/token precedence, ignored-option warnings (FR-020/FR-021), and Entra ID
+rejection.
 
 **Target Platform**: Cross-platform Node.js CLI (Windows/macOS minimum, per
 Constitution V), local and containerised (Docker) execution.
@@ -66,6 +75,11 @@ concurrency or multi-tenancy concerns.
   AsyncAPI (FR-011). No format-specific branching introduced.
 - **Principle II (Core-First Architecture)**: PASS — this is the entire point of the
   feature (FR-001, FR-002, SC-006: exactly one implementation, shared by CLI and MCP).
+  Extended by FR-022/FR-023: the same core package is also consumed directly by
+  `backstage-plugin-api-grade-backend` (and transitively by `backstage-plugin-api-grade`),
+  so "core-first" here additionally means the refactor must not break a third,
+  pre-existing consumer — verified by those packages' existing test suites passing
+  unmodified (SC-010).
 - **Principle III (Spectral-Ruleset Based Grading)**: PASS. Custom ruleset supply via
   secured location is exactly what this feature adds for the CLI; grading algorithm
   itself is unchanged.
@@ -138,14 +152,17 @@ packages/api-grade-mcp/src/
                                # No change to tool schemas, logic, or output shape.
 
 src/cli/
-├── index.ts                  # UPDATED: add --token option, GITHUB_TOKEN env
-│                              # fallback, resolve-ruleset call, fetch-failure
-│                              # error reporting (human + JSON), Entra ID rejection,
+├── index.ts                  # UPDATED: add --auth-type option (gates token
+│                              # resolution per FR-018), --token option, GITHUB_TOKEN
+│                              # env fallback, resolve-ruleset call, ignored-option
+│                              # warnings (FR-020/FR-021), fetch-failure error
+│                              # reporting (human + JSON), Entra ID rejection,
 │                              # 'config' subcommand registration
 ├── config-loader.ts           # UNCHANGED (.apigrade.json general options; separate
 │                              # from ruleset/auth config)
 └── ruleset-config-cli.ts      # NEW: 'config set-ruleset' / 'config get-ruleset'
-                               # subcommands, thin CLI adapter over core's
+                               # subcommands (--scope, --ruleset, --auth-type,
+                               # --token), thin CLI adapter over core's
                                # ruleset-config.ts + resolve-ruleset.ts
 
 tests/
@@ -159,6 +176,12 @@ packages/api-grade-core/tests/
 
 packages/api-grade-mcp/tests/
 └── (existing unit/integration tests UNCHANGED — must pass with no edits, per FR-002/SC-003)
+
+packages/backstage-plugin-api-grade/
+packages/backstage-plugin-api-grade-backend/
+└── (NO source changes; existing build + test suites UNCHANGED — must pass with no
+    edits, per FR-022/FR-023/SC-010. These packages are not touched by this feature;
+    they are listed here solely as a verification target for the core refactor.)
 ```
 
 **Structure Decision**: Existing monorepo layout (`packages/*` + root `src/cli`) is
@@ -167,7 +190,11 @@ set in the repo: shared logic lives in `packages/api-grade-core/src`, consumed b
 `packages/api-grade-mcp/src` and root `src/cli`. Module paths are preserved 1:1
 (`auth/github.ts`, `auth/entra.ts`, `config/ruleset-config.ts`,
 `config/resolve-ruleset.ts`) to keep the diff a near-mechanical move plus import-path
-fixups in the MCP package, minimizing risk of behavioral drift (FR-002).
+fixups in the MCP package, minimizing risk of behavioral drift (FR-002). The
+`backstage-plugin-api-grade`/`backstage-plugin-api-grade-backend` packages require no
+source changes at all — they import only symbols that remain in place under FR-022's
+compatibility guarantee — so they appear in the structure above only as a
+verification target (run their existing suites), not an implementation target.
 
 ## Complexity Tracking
 

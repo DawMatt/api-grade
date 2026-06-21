@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Add CLI support for rulesets hosted on GitHub private repos (via PAT)." Refined: the GitHub PAT ruleset-fetching and multi-level persistent ruleset configuration capability already exists in `api-grade-mcp`, is well tested, and must be extracted into `api-grade-core` so both the CLI and the MCP server consume one shared implementation. The MCP server's behavior (including its error handling, response shapes, and messages) must remain unchanged. The CLI gains new command-line options and persistent configuration capabilities to use the shared implementation. The existing Microsoft Entra ID authentication capability is extracted into core alongside GitHub PAT (same no-regression requirement for the MCP server), but is deliberately kept inaccessible and undocumented at the CLI surface in this feature — laying groundwork for a planned future CLI feature rather than shipping Entra ID support to CLI users now.
+**Input**: User description: "Add CLI support for rulesets hosted on GitHub private repos (via PAT)." Refined: the GitHub PAT ruleset-fetching and multi-level persistent ruleset configuration capability already exists in `api-grade-mcp`, is well tested, and must be extracted into `api-grade-core` so both the CLI and the MCP server consume one shared implementation. The MCP server's behavior (including its error handling, response shapes, and messages) must remain unchanged. The CLI gains new command-line options and persistent configuration capabilities to use the shared implementation. The existing Microsoft Entra ID authentication capability is extracted into core alongside GitHub PAT (same no-regression requirement for the MCP server), but is deliberately kept inaccessible and undocumented at the CLI surface in this feature — laying groundwork for a planned future CLI feature rather than shipping Entra ID support to CLI users now. The `backstage-plugin-api-grade` and `backstage-plugin-api-grade-backend` packages, which also depend on `api-grade-core` (the backend plugin imports it directly), must continue to function exactly as before: this feature changes `api-grade-core`'s internal structure and adds new exports, but introduces no functionality change for existing Backstage plugin consumers.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -34,17 +34,29 @@ confirming grading succeeds using that ruleset's rules.
 
 1. **Given** a private GitHub repository containing a valid Spectral ruleset and a
    PAT with read access to that repository, **When** the user runs the CLI with the
-   ruleset's URL and the token supplied, **Then** the CLI fetches the ruleset
-   successfully and grades the API specification using its rules.
+   ruleset's URL, `--auth-type github-pat`, and the token supplied, **Then** the CLI
+   fetches the ruleset successfully and grades the API specification using its
+   rules.
 2. **Given** the same private repository and ruleset, **When** the user runs the CLI
-   with the ruleset's URL but no token (or an invalid token), **Then** the CLI fails
-   the request, exits non-zero, and prints a clear error indicating that
-   authentication is required or failed — without leaking the token value in any
-   logged output.
+   with the ruleset's URL, `--auth-type github-pat`, but no token (or an invalid
+   token), **Then** the CLI fails the request, exits non-zero, and prints a clear
+   error indicating that authentication is required or failed — without leaking the
+   token value in any logged output.
 3. **Given** a token supplied via the `GITHUB_TOKEN` environment variable, **When**
-   the user runs the CLI with a private ruleset URL and no token-related
-   command-line option, **Then** the CLI uses the environment variable token
-   automatically.
+   the user runs the CLI with a private ruleset URL and `--auth-type github-pat` but
+   no token-related command-line option, **Then** the CLI uses the environment
+   variable token automatically.
+4. **Given** no `--auth-type` option is supplied and no auth type is configured at
+   any persisted scope, **When** the user runs the CLI with a private ruleset URL and
+   a `--token`, **Then** the resolved authorisation type is `none` (the default), the
+   CLI does not attempt to use the supplied token, prints a warning that `--token` is
+   being ignored because the authorisation type is `none`, and the subsequent fetch
+   fails as an unauthenticated request to a private repository.
+5. **Given** a ruleset is supplied as a local file path rather than a URL, **When**
+   the user runs the CLI with `--auth-type github-pat` and/or `--token` supplied,
+   **Then** the CLI ignores both options for the purposes of reading the local file,
+   prints a warning for each ignored option explaining that authorisation does not
+   apply to local rulesets, and proceeds to grade using the local file.
 
 ---
 
@@ -85,8 +97,16 @@ confirming a global-scope default is used when no workspace default is configure
    value takes precedence over any configured default.
 5. **Given** `GITHUB_TOKEN` is set in the environment, **When** the CLI is invoked
    against a private ruleset URL (supplied directly or via configured default) with
-   no token-related command-line option or stored auth config, **Then** the CLI
-   uses the environment variable token automatically.
+   an explicit or resolved authorisation type of `github-pat` and no token-related
+   command-line option or stored auth config, **Then** the CLI uses the environment
+   variable token automatically.
+6. **Given** a workspace or global default ruleset configuration persists
+   `auth.type: "github-pat"` with a stored token, **When** the CLI is run without
+   `--auth-type` or `--token`, **Then** the CLI uses the persisted authorisation type
+   and token, exactly as if `--auth-type github-pat` had been supplied explicitly.
+7. **Given** a workspace or global default ruleset configuration has no `auth` field
+   (or omits `auth.type`), **When** the CLI is run without `--auth-type`, **Then**
+   the resolved authorisation type is `none`, identical to the CLI's own default.
 
 ---
 
@@ -124,7 +144,50 @@ any change to expected inputs, outputs, or messages.
    invoked post-refactor with the same inputs used before the refactor, **Then**
    they return identical outputs.
 
-### User Story 4 - CLI rejects Entra ID authentication explicitly (Priority: P3)
+### User Story 4 - Backstage plugin packages are unaffected by the refactor (Priority: P1)
+
+The `backstage-plugin-api-grade-backend` package imports `api-grade-core` directly
+(e.g. to grade APIs server-side within a Backstage instance), and
+`backstage-plugin-api-grade` depends on the same core package transitively through
+the backend's API contract. As `api-grade-core`'s internal module layout changes
+(new `auth/` and `config/` modules, extended `types.ts`, extended `index.ts`
+exports) to support the CLI and MCP refactor, every existing import, type, and
+function the Backstage plugins currently rely on from `api-grade-core` must
+continue to resolve and behave exactly as before.
+
+**Why this priority**: The Backstage plugins are an existing, shipped integration
+with their own consumers (Backstage instance operators). A core-package refactor
+done for the CLI/MCP's benefit must not silently break an unrelated consumer that
+happens to share the same dependency — this is as critical as the MCP
+no-regression requirement (User Story 3), since both are pre-existing consumers of
+`api-grade-core` that must not regress.
+
+**Independent Test**: Can be tested independently by running the existing
+`backstage-plugin-api-grade` and `backstage-plugin-api-grade-backend` build and test
+suites, unmodified in their assertions, against the post-refactor `api-grade-core`
+and confirming both packages build successfully and 100% of existing tests pass
+without any change to expected behavior.
+
+**Acceptance Scenarios**:
+
+1. **Given** the `backstage-plugin-api-grade-backend` package's existing imports
+   from `api-grade-core`, **When** the core package is refactored to extract
+   GitHub PAT/Entra ID auth and configuration logic, **Then** every import used by
+   the backend plugin continues to resolve to the same exported symbol with the
+   same type and behavior as before the refactor.
+2. **Given** the `backstage-plugin-api-grade` and `backstage-plugin-api-grade-backend`
+   packages' existing automated test suites, **When** the suites are run after the
+   core-package refactor, **Then** every test passes without modification to its
+   assertions.
+3. **Given** a Backstage instance running the existing plugins, **When** an API is
+   graded through the plugin's existing (non-PAT, non-Entra-ID) flow post-refactor,
+   **Then** the grading result is identical to pre-refactor behavior — this feature
+   introduces no new functionality, configuration, or behavior for Backstage plugin
+   consumers.
+
+---
+
+### User Story 5 - CLI rejects Entra ID authentication explicitly (Priority: P3)
 
 A user tries to configure or invoke the CLI using a Microsoft Entra ID auth
 configuration — for example, by setting `auth.type: "entra-id"` in a persisted
@@ -153,10 +216,11 @@ attempting an Entra ID flow or falling back silently.
    the default ruleset's auth configuration, **When** the CLI is run without an
    explicit `--ruleset` override, **Then** the CLI exits non-zero with an error
    stating that Entra ID authentication is not supported by the CLI.
-2. **Given** a command-line option intended to select Entra ID authentication (if
-   exposed in argument parsing at all), **When** the CLI is run with that option,
-   **Then** the CLI exits non-zero with the same unsupported-authentication-type
-   error rather than attempting any Entra ID device-code or token flow.
+2. **Given** the `--auth-type` command-line option is supplied with the value
+   `entra-id` (an accepted-but-undocumented value, recognised only so it can be
+   rejected), **When** the CLI is run with that option, **Then** the CLI exits
+   non-zero with the same unsupported-authentication-type error rather than
+   attempting any Entra ID device-code or token flow.
 3. **Given** an unsupported-auth-type rejection has occurred, **When** the error is
    reported, **Then** it does not attempt to fetch the ruleset, does not fall back
    to the built-in default ruleset silently, and does not partially apply any other
@@ -196,6 +260,24 @@ attempting an Entra ID flow or falling back silently.
   with an error naming the failure category, distinct from (and reported before) a
   grade-threshold failure, since grading cannot meaningfully occur without the
   ruleset.
+- What happens when the resolved authorisation type is `none` (explicitly via
+  `--auth-type none`, or by default when the option is omitted and nothing is
+  persisted) but a `GITHUB_TOKEN` environment variable is set, or a token is
+  otherwise configured? The CLI MUST NOT use that token for a remote ruleset fetch —
+  `none` means no authorisation is attempted regardless of what credentials are
+  ambiently available. This avoids surprising behaviour where an unrelated
+  environment variable silently changes how a request is authenticated.
+- What happens when an authorisation-related command-line option (e.g. `--token`,
+  or `--auth-type` set to a value other than the resolved default) is supplied
+  together with `--auth-type none` (explicit or default)? The CLI MUST print a
+  warning for each such ignored option, explaining that it is being ignored because
+  the authorisation type is `none`, and MUST continue the invocation rather than
+  erroring — since this is an ambiguous-but-recoverable input, not a fatal one.
+- What happens when an authorisation-related command-line option (e.g. `--token`,
+  `--auth-type`) is supplied together with a ruleset that resolves to a local file
+  path rather than a URL? The CLI MUST print a warning for each such ignored option,
+  explaining that authorisation does not apply to local rulesets, and MUST continue
+  grading using the local file rather than erroring.
 
 ## Requirements *(mandatory)*
 
@@ -217,7 +299,8 @@ attempting an Entra ID flow or falling back silently.
   to a file within a private GitHub repository, using the existing `--ruleset`
   option already used for local paths and public URLs.
 - **FR-004**: The CLI MUST support supplying a GitHub PAT to authenticate a private
-  ruleset fetch, via (in order of precedence): (1) a command-line token option, (2)
+  ruleset fetch, used only when the resolved authorisation type (FR-017) is
+  `github-pat`, via (in order of precedence): (1) a command-line token option, (2)
   the `GITHUB_TOKEN` environment variable, (3) auth configuration persisted at
   workspace or global scope. The first configured source in this order is used.
 - **FR-005**: The CLI MUST gain persistent ruleset configuration commands/options
@@ -263,6 +346,44 @@ attempting an Entra ID flow or falling back silently.
   unsupported-authentication-type error, MUST NOT attempt the Entra ID
   authentication flow, and MUST NOT silently fall back to the built-in default
   ruleset.
+- **FR-017**: The CLI MUST expose an optional `--auth-type <type>` command-line
+  option, equivalent to the `auth.type` field of persisted ruleset configuration,
+  for selecting the authorisation type used to resolve and fetch a ruleset. The only
+  documented accepted value besides the default is `github-pat`; `none` is also
+  accepted and is the default behaviour when the option is omitted and no auth type
+  is resolved from persisted configuration — equivalent to `auth.type` being absent
+  from the configuration file. (`entra-id` is also recognised, but solely so it can
+  be rejected per FR-016/FR-015; it is not a documented value.)
+- **FR-018**: The resolved authorisation type — from `--auth-type`, from persisted
+  workspace/global configuration, or defaulted to `none` — MUST strictly govern CLI
+  behaviour when fetching a remote ruleset (one supplied as a URL), regardless of
+  source. In particular, when the resolved type is `none`, the CLI MUST NOT attempt
+  any authentication step for that fetch, MUST NOT consult the `GITHUB_TOKEN`
+  environment variable or any stored token, even if one is present, and MUST treat
+  the request as unauthenticated.
+- **FR-019**: The resolved authorisation type MUST be ignored entirely when the
+  ruleset source is local (a file path rather than a URL); local ruleset reads MUST
+  NOT be gated by, or altered by, any authorisation type.
+- **FR-020**: When the resolved authorisation type is `none` (explicitly supplied or
+  defaulted) and one or more authorisation-related command-line options (e.g.
+  `--token`) are also supplied, the CLI MUST print a warning for each such option
+  stating that it is being ignored and explaining that no authorisation is performed
+  when the type is `none`, then continue the invocation rather than exiting with an
+  error.
+- **FR-021**: When the resolved ruleset source is local and one or more
+  authorisation-related command-line options (e.g. `--token`, `--auth-type`) are
+  supplied, the CLI MUST print a warning for each such option stating that it is
+  being ignored and explaining that authorisation does not apply to local rulesets,
+  then continue the invocation rather than exiting with an error.
+- **FR-022**: The `api-grade-core` refactor (FR-001) MUST NOT change the signature,
+  behavior, or removal status of any symbol currently exported from
+  `api-grade-core` and imported by `backstage-plugin-api-grade-backend` or
+  `backstage-plugin-api-grade`; new exports MAY be added, but existing ones MUST
+  remain source- and behavior-compatible.
+- **FR-023**: The `backstage-plugin-api-grade` and `backstage-plugin-api-grade-backend`
+  packages' existing automated test suites MUST pass unmodified (assertion-for-
+  assertion) after the core-package refactor, mirroring the no-regression
+  requirement already placed on the MCP server (FR-002).
 
 ### Key Entities
 
@@ -281,6 +402,11 @@ attempting an Entra ID flow or falling back silently.
   network-unreachable, or config-invalid — the shared, core-defined categorisation
   of why a ruleset fetch did not succeed, consumed identically by CLI error
   reporting and MCP error responses.
+- **Authorisation Type**: The resolved value of `auth.type` (`none`, `github-pat`,
+  or `entra-id`) governing whether and how a *remote* ruleset fetch is
+  authenticated, resolvable from (in order) the `--auth-type` command-line option,
+  persisted workspace/global configuration, or the `none` default. Always ignored
+  for local (file-path) ruleset sources.
 
 ## Success Criteria *(mandatory)*
 
@@ -311,6 +437,19 @@ attempting an Entra ID flow or falling back silently.
   configuration (via config file or command-line input) exit non-zero with an
   unsupported-authentication-type error, verified across the CLI's automated test
   suite, with no Entra ID flow attempted and no silent fallback.
+- **SC-008**: 100% of CLI invocations where the resolved authorisation type is
+  `none` never send `GITHUB_TOKEN` or any other resolved token as a credential
+  during a remote ruleset fetch, verified across the CLI's automated test suite,
+  even when `GITHUB_TOKEN` is set in the environment.
+- **SC-009**: 100% of CLI invocations supplying an authorisation-related option
+  that does not apply — either because the resolved authorisation type is `none` or
+  because the ruleset source is local — print an explanatory warning for each such
+  option and still complete the invocation (no non-zero exit caused solely by the
+  ignored option), verified across the CLI's automated test suite.
+- **SC-010**: 100% of the existing `backstage-plugin-api-grade` and
+  `backstage-plugin-api-grade-backend` automated tests pass unmodified, and both
+  packages build successfully, after the core-package refactor — confirming zero
+  functionality change for existing Backstage plugin consumers.
 
 ## Assumptions
 
@@ -337,3 +476,13 @@ attempting an Entra ID flow or falling back silently.
   test suite; any test gaps in that suite are out of scope to backfill as part of
   this feature, though new shared-core tests are expected to cover the extracted
   logic.
+- `--auth-type` is a CLI-only command-line option (mirroring the persisted
+  `auth.type` field) and is not itself a new field added to `api-grade-core`'s
+  `AuthConfig` type, which already has a `type` discriminator (FR-001/data-model);
+  the CLI option simply lets a user set/override that discriminator's value
+  per-invocation, the same way `--ruleset` overrides a persisted `rulesetPath`.
+- This feature introduces no new functionality, configuration option, or behavior
+  for the `backstage-plugin-api-grade` / `backstage-plugin-api-grade-backend`
+  packages; "no behavioral change" for those packages is verified the same way as
+  for the MCP server — via their existing automated test suites passing unmodified
+  — and any test gaps in those suites are likewise out of scope to backfill here.
