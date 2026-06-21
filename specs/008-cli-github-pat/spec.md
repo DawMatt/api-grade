@@ -8,6 +8,13 @@
 
 **Input**: User description: "Add CLI support for rulesets hosted on GitHub private repos (via PAT)." Refined: the GitHub PAT ruleset-fetching and multi-level persistent ruleset configuration capability already exists in `api-grade-mcp`, is well tested, and must be extracted into `api-grade-core` so both the CLI and the MCP server consume one shared implementation. The MCP server's behavior (including its error handling, response shapes, and messages) must remain unchanged. The CLI gains new command-line options and persistent configuration capabilities to use the shared implementation. The existing Microsoft Entra ID authentication capability is extracted into core alongside GitHub PAT (same no-regression requirement for the MCP server), but is deliberately kept inaccessible and undocumented at the CLI surface in this feature — laying groundwork for a planned future CLI feature rather than shipping Entra ID support to CLI users now. The `backstage-plugin-api-grade` and `backstage-plugin-api-grade-backend` packages, which also depend on `api-grade-core` (the backend plugin imports it directly), must continue to function exactly as before: this feature changes `api-grade-core`'s internal structure and adds new exports, but introduces no functionality change for existing Backstage plugin consumers.
 
+## Clarifications
+
+### Session 2026-06-21
+
+- Q: `config set-ruleset --token <pat>` without an explicit `--auth-type` — should it implicitly persist `auth.type: "github-pat"`, or follow the grade command's own `none`-default rule (token rejected/ignored with a warning, not silently stored)? → A: Same as grade command — `--token` alone never implies `github-pat`; without `--auth-type github-pat` the token is not persisted, and a warning is printed explaining it was ignored.
+- Q: What happens when `--auth-type` is supplied with a value other than `none`, `github-pat`, or `entra-id` (e.g. a typo)? → A: Treated as a `config-invalid` failure — the CLI exits non-zero with an error naming the invalid value, reusing the existing `config-invalid` failure classification (FR-008).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Grade using a private-repo ruleset from the CLI (Priority: P1)
@@ -225,6 +232,11 @@ attempting an Entra ID flow or falling back silently.
    reported, **Then** it does not attempt to fetch the ruleset, does not fall back
    to the built-in default ruleset silently, and does not partially apply any other
    configured options.
+4. **Given** a workspace or global config file with `auth.type: "entra-id"` set as
+   the default ruleset's auth configuration, **When** the CLI is run with `--ruleset`
+   pointing to a local file path, **Then** the CLI does NOT reject the invocation for
+   the unsupported auth type; it prints an ignored-option warning (per FR-021) and
+   proceeds to grade the local file normally.
 
 ### Edge Cases
 
@@ -250,11 +262,16 @@ attempting an Entra ID flow or falling back silently.
   extracted into core (same as GitHub PAT) so the MCP server keeps working
   unchanged, but it is not wired up to any CLI command-line option or made part of
   CLI documentation. If a config file or command-line input nonetheless specifies
-  Entra ID as the auth type for a CLI invocation, the CLI MUST reject it with an
-  explicit "unsupported authentication type" error and exit non-zero, rather than
-  attempting the flow or ignoring the field. This groundwork is intended to make a
-  planned future CLI feature (full Entra ID support, Feature 10) easier to deliver
-  without another core refactor.
+  Entra ID as the auth type for a CLI invocation **against a remote (URL) ruleset**,
+  the CLI MUST reject it with an explicit "unsupported authentication type" error and
+  exit non-zero, rather than attempting the flow or ignoring the field. **If the
+  resolved ruleset source is local (a file path), FR-019's local-source rule takes
+  precedence: the CLI MUST NOT reject the invocation for an `entra-id` auth type in
+  this case — it MUST instead print an FR-021 ignored-option warning (as it would for
+  any other auth type) and proceed to grade the local file**, since authorisation
+  never applies to local reads regardless of which type is configured. This groundwork
+  is intended to make a planned future CLI feature (full Entra ID support, Feature 10)
+  easier to deliver without another core refactor.
 - How does the CLI behave when a configured default ruleset cannot be fetched
   (auth, access, or network failure)? The CLI MUST fail the invocation non-zero
   with an error naming the failure category, distinct from (and reported before) a
@@ -278,6 +295,11 @@ attempting an Entra ID flow or falling back silently.
   path rather than a URL? The CLI MUST print a warning for each such ignored option,
   explaining that authorisation does not apply to local rulesets, and MUST continue
   grading using the local file rather than erroring.
+- What happens when `--auth-type` is supplied with a value other than `none`,
+  `github-pat`, or `entra-id` (e.g. a typo such as `github_pat`)? The CLI MUST treat
+  this as a `config-invalid` failure and exit non-zero with an error naming the
+  invalid value, rather than silently defaulting to `none` or attempting to use the
+  value as-is.
 
 ## Requirements *(mandatory)*
 
@@ -308,7 +330,12 @@ attempting an Entra ID flow or falling back silently.
   scope and at global scope, with workspace taking precedence over global, and an
   explicit per-invocation `--ruleset` taking precedence over both — consistent with
   the precedence rules already implemented for the MCP server's session, workspace,
-  and global scopes.
+  and global scopes. When the persistent-configuration command is given `--token`
+  without an explicit `--auth-type github-pat`, it MUST NOT implicitly persist
+  `auth.type: "github-pat"` — it follows the same `none`-default rule as the grade
+  command (FR-017/FR-020): the token is not persisted, and a warning is printed
+  explaining that `--token` was ignored because no `--auth-type github-pat` was
+  supplied.
 - **FR-006**: The CLI MUST send the resolved token as a Bearer token in the
   `Authorization` HTTP header when fetching a ruleset from a GitHub host, using the
   shared core implementation rather than a separate CLI-specific mechanism.
@@ -345,7 +372,9 @@ attempting an Entra ID flow or falling back silently.
   configuration, the CLI MUST exit non-zero with an explicit
   unsupported-authentication-type error, MUST NOT attempt the Entra ID
   authentication flow, and MUST NOT silently fall back to the built-in default
-  ruleset.
+  ruleset. This rejection applies only when the resolved ruleset source is remote (a
+  URL); per FR-019, a local ruleset source suppresses this rejection in favor of the
+  FR-021 ignored-option warning.
 - **FR-017**: The CLI MUST expose an optional `--auth-type <type>` command-line
   option, equivalent to the `auth.type` field of persisted ruleset configuration,
   for selecting the authorisation type used to resolve and fetch a ruleset. The only
@@ -353,7 +382,11 @@ attempting an Entra ID flow or falling back silently.
   accepted and is the default behaviour when the option is omitted and no auth type
   is resolved from persisted configuration — equivalent to `auth.type` being absent
   from the configuration file. (`entra-id` is also recognised, but solely so it can
-  be rejected per FR-016/FR-015; it is not a documented value.)
+  be rejected per FR-016/FR-015; it is not a documented value.) Any other value
+  supplied to `--auth-type` MUST be treated as a `config-invalid` failure: the CLI
+  exits non-zero with an error naming the invalid value, using the same
+  `config-invalid` classification as other malformed-auth-configuration cases
+  (FR-008).
 - **FR-018**: The resolved authorisation type — from `--auth-type`, from persisted
   workspace/global configuration, or defaulted to `none` — MUST strictly govern CLI
   behaviour when fetching a remote ruleset (one supplied as a URL), regardless of

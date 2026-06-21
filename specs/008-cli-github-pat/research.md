@@ -66,12 +66,16 @@
 - **Decision**: Add a `config` subcommand to the existing `commander` program in
   `src/cli/index.ts`, with two further subcommands: `config set-ruleset` and `config
   get-ruleset`, implemented in a new `src/cli/ruleset-config-cli.ts`. `set-ruleset`
-  accepts `--scope <workspace|global>`, `--ruleset <path-or-url>`, and `--token
-  <pat>`; it writes via core's `saveWorkspaceConfig`/`saveGlobalConfig` using the same
-  `RulesetConfig`/`AuthConfig` JSON shape the MCP server already persists and reads.
-  `get-ruleset` prints the effective resolution plus per-scope values, with secrets
-  redacted (mirroring MCP's `sanitizeAuth` pattern — show `tokenSource`, never the
-  token itself).
+  accepts `--scope <workspace|global>`, `--ruleset <path-or-url>`, `--auth-type
+  <none|github-pat>`, and `--token <pat>`; it writes via core's
+  `saveWorkspaceConfig`/`saveGlobalConfig` using the same `RulesetConfig`/`AuthConfig`
+  JSON shape the MCP server already persists and reads. Per the spec's Clarifications
+  (2026-06-21, Q1), `--token` supplied without an explicit `--auth-type github-pat`
+  does NOT implicitly persist `auth.type: "github-pat"` — it resolves to `none` (same
+  default as the grade command), the token is not written to the config file, and an
+  FR-020 ignored-option warning is printed. `get-ruleset` prints the effective
+  resolution plus per-scope values, with secrets redacted (mirroring MCP's
+  `sanitizeAuth` pattern — show `tokenSource`, never the token itself).
 - **Rationale**: Directly fulfills FR-005 (persistent config commands/options at
   workspace/global scope) and SC-002, reusing the exact persisted file format/location
   documented in the spec's Assumptions, so a workspace already configured via the MCP

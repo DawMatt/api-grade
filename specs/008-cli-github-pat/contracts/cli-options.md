@@ -124,12 +124,15 @@ rejection case. No `recoveryOptions` or `instructions` fields are present (FR-00
 |---|---|---|---|
 | `--scope <workspace\|global>` | string | yes | Which persisted config file to write. |
 | `--ruleset <path>` | string | no | Path or URL to set as the default. Omit to clear the default at that scope. |
-| `--auth-type <none\|github-pat>` | string | no | Authorisation type to persist alongside the ruleset, stored as `auth.type`. Defaults to `github-pat` if omitted but `--token` is supplied; defaults to clearing `auth` (equivalent to `none`) if both are omitted. Passing `none` explicitly clears any persisted token at that scope. Does not accept `entra-id` (FR-015) — supplying it is rejected the same way as on the grading command (FR-016). |
-| `--token <pat>` | string | no | GitHub PAT to persist alongside the ruleset (stored under `auth.githubToken`). Only meaningful when the resolved `--auth-type` is `github-pat`; ignored with a warning (FR-020) if combined with `--auth-type none`. |
+| `--auth-type <none\|github-pat>` | string | no | Authorisation type to persist alongside the ruleset, stored as `auth.type`. Defaults to `none` (equivalent to clearing/omitting `auth`) if omitted — including when `--token` is also supplied; `--token` never implicitly upgrades the persisted type to `github-pat` (mirrors the grade command's own `none`-default rule, FR-017/FR-020). Passing `none` explicitly clears any persisted token at that scope. Does not accept `entra-id` (FR-015) — supplying it is rejected the same way as on the grading command (FR-016). |
+| `--token <pat>` | string | no | GitHub PAT to persist alongside the ruleset (stored under `auth.githubToken`). Only meaningful, and only persisted, when `--auth-type github-pat` is also explicitly supplied; if `--auth-type` is omitted or `none`, the resolved type is `none`, the token is NOT persisted, and the CLI prints an FR-020 ignored-option warning instead. |
 
 Writes via core's `saveWorkspaceConfig`/`saveGlobalConfig` to the same file the MCP
 server's `set-ruleset-config` tool writes — both surfaces interoperate on the same
-file. Does not expose `entra-id` as a settable `--auth-type` value (FR-015).
+file. Does not expose `entra-id` as a settable `--auth-type` value (FR-015). Any
+value other than `none`, `github-pat`, or `entra-id` is a `config-invalid` failure —
+the command exits non-zero with an error naming the invalid value, without writing
+the config file (FR-017).
 
 On success, prints a one-line confirmation (human) or `{ scope, rulesetPath,
 configFile }` (JSON) — never the token value.
