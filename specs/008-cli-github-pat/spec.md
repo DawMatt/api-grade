@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Add CLI support for rulesets hosted on GitHub private repos (via PAT)." Refined: the GitHub PAT ruleset-fetching and multi-level persistent ruleset configuration capability already exists in `api-grade-mcp`, is well tested, and must be extracted into `api-grade-core` so both the CLI and the MCP server consume one shared implementation. The MCP server's behavior (including its error handling, response shapes, and messages) must remain unchanged. The CLI gains new command-line options and persistent configuration capabilities to use the shared implementation.
+**Input**: User description: "Add CLI support for rulesets hosted on GitHub private repos (via PAT)." Refined: the GitHub PAT ruleset-fetching and multi-level persistent ruleset configuration capability already exists in `api-grade-mcp`, is well tested, and must be extracted into `api-grade-core` so both the CLI and the MCP server consume one shared implementation. The MCP server's behavior (including its error handling, response shapes, and messages) must remain unchanged. The CLI gains new command-line options and persistent configuration capabilities to use the shared implementation. The existing Microsoft Entra ID authentication capability is extracted into core alongside GitHub PAT (same no-regression requirement for the MCP server), but is deliberately kept inaccessible and undocumented at the CLI surface in this feature — laying groundwork for a planned future CLI feature rather than shipping Entra ID support to CLI users now.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -124,6 +124,44 @@ any change to expected inputs, outputs, or messages.
    invoked post-refactor with the same inputs used before the refactor, **Then**
    they return identical outputs.
 
+### User Story 4 - CLI rejects Entra ID authentication explicitly (Priority: P3)
+
+A user tries to configure or invoke the CLI using a Microsoft Entra ID auth
+configuration — for example, by setting `auth.type: "entra-id"` in a persisted
+config file, or by passing an Entra-related command-line option — believing it is
+supported because it is documented for the MCP server. Since Entra ID auth is
+extracted into core but intentionally not wired up for CLI use yet, the CLI must
+reject the attempt clearly rather than silently ignoring it, attempting an
+unsupported flow, or producing a confusing low-level error.
+
+**Why this priority**: Without an explicit rejection, a user copying an MCP-style
+Entra ID config into a CLI context would get a confusing failure (or, worse, a
+silent fallback to the built-in ruleset) instead of understanding that the
+capability is not yet available for the CLI. This is lower priority than the core
+GitHub PAT delivery because it is a guardrail for a not-yet-offered capability, not
+a capability itself.
+
+**Independent Test**: Can be tested independently by configuring an
+`auth.type: "entra-id"` entry in a workspace or global config file (or supplying an
+equivalent command-line option, if one exists), running the CLI, and confirming it
+exits non-zero with a clear "unsupported authentication type" error rather than
+attempting an Entra ID flow or falling back silently.
+
+**Acceptance Scenarios**:
+
+1. **Given** a workspace or global config file with `auth.type: "entra-id"` set as
+   the default ruleset's auth configuration, **When** the CLI is run without an
+   explicit `--ruleset` override, **Then** the CLI exits non-zero with an error
+   stating that Entra ID authentication is not supported by the CLI.
+2. **Given** a command-line option intended to select Entra ID authentication (if
+   exposed in argument parsing at all), **When** the CLI is run with that option,
+   **Then** the CLI exits non-zero with the same unsupported-authentication-type
+   error rather than attempting any Entra ID device-code or token flow.
+3. **Given** an unsupported-auth-type rejection has occurred, **When** the error is
+   reported, **Then** it does not attempt to fetch the ruleset, does not fall back
+   to the built-in default ruleset silently, and does not partially apply any other
+   configured options.
+
 ### Edge Cases
 
 - What happens when the supplied URL points to a public (not private) GitHub
@@ -144,10 +182,15 @@ any change to expected inputs, outputs, or messages.
   configuration capability, and the core package's session-scope handling is left
   unused — not removed — by the CLI.
 - What happens to Microsoft Entra ID authentication, which the MCP server's config
-  schema already supports alongside GitHub PAT? Entra ID remains out of scope for
-  CLI exposure in this feature (addressed by Feature 10); the core extraction
-  preserves the existing generic auth-config shape so Entra support can be added to
-  the CLI later without another refactor.
+  schema already supports alongside GitHub PAT? The Entra ID auth logic is
+  extracted into core (same as GitHub PAT) so the MCP server keeps working
+  unchanged, but it is not wired up to any CLI command-line option or made part of
+  CLI documentation. If a config file or command-line input nonetheless specifies
+  Entra ID as the auth type for a CLI invocation, the CLI MUST reject it with an
+  explicit "unsupported authentication type" error and exit non-zero, rather than
+  attempting the flow or ignoring the field. This groundwork is intended to make a
+  planned future CLI feature (full Entra ID support, Feature 10) easier to deliver
+  without another core refactor.
 - How does the CLI behave when a configured default ruleset cannot be fetched
   (auth, access, or network failure)? The CLI MUST fail the invocation non-zero
   with an error naming the failure category, distinct from (and reported before) a
@@ -158,16 +201,18 @@ any change to expected inputs, outputs, or messages.
 
 ### Functional Requirements
 
-- **FR-001**: The GitHub PAT ruleset-fetch authentication logic, fetch-failure
-  classification (auth-failed / not-found / network-unreachable / config-invalid),
-  and multi-level ruleset configuration resolution (precedence across per-request,
-  workspace, and global scopes, plus the session scope used only by the MCP server)
-  currently implemented in `api-grade-mcp` MUST be extracted into `api-grade-core`
-  as a single shared implementation.
+- **FR-001**: The GitHub PAT and Microsoft Entra ID ruleset-fetch authentication
+  logic, fetch-failure classification (auth-failed / not-found /
+  network-unreachable / config-invalid), and multi-level ruleset configuration
+  resolution (precedence across per-request, workspace, and global scopes, plus the
+  session scope used only by the MCP server) currently implemented in
+  `api-grade-mcp` MUST be extracted into `api-grade-core` as a single shared
+  implementation, covering both auth types even though the CLI exposes only one of
+  them in this feature.
 - **FR-002**: `api-grade-mcp` MUST be refactored to consume the extracted
-  capability from `api-grade-core` rather than maintaining its own copy, with no
-  change to any tool's observable input/output contract, error code, error message
-  text, or recovery-option payload.
+  capability (both GitHub PAT and Entra ID auth) from `api-grade-core` rather than
+  maintaining its own copy, with no change to any tool's observable input/output
+  contract, error code, error message text, or recovery-option payload.
 - **FR-003**: The CLI MUST allow a custom ruleset to be supplied via a URL pointing
   to a file within a private GitHub repository, using the existing `--ruleset`
   option already used for local paths and public URLs.
@@ -210,6 +255,14 @@ any change to expected inputs, outputs, or messages.
   and framework-agnostic, with no MCP-protocol-specific or CLI-specific types
   leaking into its public interface, so that future consumers (beyond CLI and MCP)
   can adopt it without depending on either.
+- **FR-015**: The CLI MUST NOT expose any documented command-line option or
+  documented config-file field for selecting Microsoft Entra ID as an auth type.
+- **FR-016**: If a config file or command-line input resolved by the CLI specifies
+  an auth type other than GitHub PAT (e.g., `entra-id`) for the active ruleset
+  configuration, the CLI MUST exit non-zero with an explicit
+  unsupported-authentication-type error, MUST NOT attempt the Entra ID
+  authentication flow, and MUST NOT silently fall back to the built-in default
+  ruleset.
 
 ### Key Entities
 
@@ -220,9 +273,10 @@ any change to expected inputs, outputs, or messages.
   option, environment variable, or persisted auth configuration, used solely to
   authenticate ruleset-fetch requests against GitHub hosts.
 - **Ruleset Configuration**: A persisted record (workspace- or global-scoped, per
-  the existing MCP config model) pairing a default ruleset path with optional auth
-  credentials, now resolvable by both the CLI and the MCP server through the shared
-  core implementation.
+  the existing MCP config model) pairing a default ruleset path with an optional
+  auth configuration (GitHub PAT or Entra ID), now resolvable by both the CLI and
+  the MCP server through the shared core implementation. The CLI only acts on
+  GitHub PAT auth configurations; it rejects Entra ID ones.
 - **Fetch Failure Classification**: One of auth-failed, not-found,
   network-unreachable, or config-invalid — the shared, core-defined categorisation
   of why a ruleset fetch did not succeed, consumed identically by CLI error
@@ -249,9 +303,14 @@ any change to expected inputs, outputs, or messages.
 - **SC-005**: A token supplied via any CLI-supported source (CLI option,
   environment variable, persisted config) never appears in CLI stdout, stderr, or
   log output across the automated test suite, including in verbose/debug modes.
-- **SC-006**: The GitHub PAT authentication and ruleset-resolution logic exists in
-  exactly one place in the codebase (the core package) after this feature, with
-  zero duplicated implementations between the CLI and the MCP server.
+- **SC-006**: The GitHub PAT and Entra ID authentication and ruleset-resolution
+  logic exists in exactly one place in the codebase (the core package) after this
+  feature, with zero duplicated implementations between the CLI and the MCP
+  server.
+- **SC-007**: 100% of CLI invocations that resolve to an Entra ID auth
+  configuration (via config file or command-line input) exit non-zero with an
+  unsupported-authentication-type error, verified across the CLI's automated test
+  suite, with no Entra ID flow attempted and no silent fallback.
 
 ## Assumptions
 
@@ -267,9 +326,11 @@ any change to expected inputs, outputs, or messages.
   recovery-option semantics) has no CLI equivalent and is not exposed by the CLI;
   the CLI uses only the workspace and global scopes.
 - Microsoft Entra ID-protected sources (SharePoint, OneDrive) remain out of scope
-  for CLI exposure in this feature; the core extraction preserves the existing
-  generic auth-config shape so this can be added later (Feature 10) without a
-  further refactor.
+  for CLI exposure in this feature. The underlying Entra ID auth logic is extracted
+  into core alongside GitHub PAT (so the MCP server has no behavioral regression
+  and so Feature 10 can wire up full CLI support later without another refactor),
+  but the CLI deliberately rejects any attempt to use it rather than exposing a
+  partial or undocumented implementation.
 - Standard GitHub raw-content URL conventions (owner/repo/branch/path) are assumed
   for resolving the ruleset file location within the repository.
 - "No behavioral change to the MCP server" is verified via its existing automated

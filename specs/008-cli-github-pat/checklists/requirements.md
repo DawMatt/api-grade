@@ -33,9 +33,11 @@
 
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
 - All items passed validation on first iteration. This feature is a refactor: the
-  GitHub PAT authentication, fetch-failure classification, and multi-level
-  ruleset-configuration logic already exist, tested, in `api-grade-mcp`
-  (specs/007-ai-support) and are being extracted into `api-grade-core` so the CLI
-  can consume them. A dedicated user story (User Story 3, P1) and FR-002/SC-003
-  exist specifically to guard against behavioral regression in the MCP server
-  during extraction.
+  GitHub PAT and Entra ID authentication, fetch-failure classification, and
+  multi-level ruleset-configuration logic already exist, tested, in
+  `api-grade-mcp` (specs/007-ai-support) and are being extracted into
+  `api-grade-core` so the CLI can consume them. A dedicated user story (User
+  Story 3, P1) and FR-002/SC-003 exist specifically to guard against behavioral
+  regression in the MCP server during extraction. Entra ID is extracted alongside
+  GitHub PAT but deliberately kept inaccessible at the CLI surface (User Story 4,
+  FR-015/FR-016, SC-007) as groundwork for a planned future CLI feature.
