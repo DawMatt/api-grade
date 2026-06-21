@@ -112,7 +112,33 @@ Warning: --token is ignored because the ruleset is a local file; authorisation o
 Grading proceeds normally using the local file; exit code reflects only the grading
 result, not the ignored options.
 
-## 8. Entra ID configs are rejected, not attempted
+## 8. Configure everything via `.apigrade.json` instead of flags
+
+```json
+{
+  "minGrade": "B",
+  "ruleset": "https://raw.githubusercontent.com/my-org/private-rules/main/ruleset.yaml",
+  "authType": "github-pat",
+  "token": "ghp_xxxxxxxxxxxxxxxxxxxx",
+  "format": "json",
+  "top": 20,
+  "verbose": false
+}
+```
+
+```bash
+api-grade openapi.yaml
+```
+
+Behaves identically to supplying `--min-grade B --ruleset <url> --auth-type
+github-pat --token ghp_... --format json --top 20` on the command line. Any flag
+supplied explicitly still overrides the matching `.apigrade.json` key — e.g.
+`api-grade openapi.yaml --token ghp_other` uses `ghp_other`, not the file's
+`token`. Committing a real token in a checked-in `.apigrade.json` carries the same
+risk as committing any other credential — prefer `GITHUB_TOKEN` or excluding the
+file from version control when it holds a token.
+
+## 9. Entra ID configs are rejected, not attempted
 
 If a config file (e.g. one shared from an MCP-server setup) specifies
 `"auth": { "type": "entra-id", ... }`:

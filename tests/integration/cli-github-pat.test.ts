@@ -45,6 +45,10 @@ function writeGlobalConfig(homeDir: string, config: unknown): void {
   writeFileSync(join(dir, 'config.json'), JSON.stringify(config), 'utf-8');
 }
 
+function writeApigradeJson(baseDir: string, config: unknown): void {
+  writeFileSync(join(baseDir, '.apigrade.json'), JSON.stringify(config), 'utf-8');
+}
+
 const tmpDirsToClean: string[] = [];
 afterEach(() => {
   while (tmpDirsToClean.length > 0) {
@@ -214,5 +218,101 @@ describe('US5: CLI rejects Entra ID authentication explicitly', () => {
   it('--auth-type entra-id is recognised but not documented in --help output (FR-015/FR-017)', () => {
     const { stdout } = runCli(['--help']);
     expect(stdout).not.toMatch(/entra-id/i);
+  });
+});
+
+describe('US6: configure every grading option via .apigrade.json', () => {
+  it('an .apigrade.json setting ruleset/authType/token reaches the same fetch path as the equivalent flags, with no token leak (Acceptance Scenario 1)', () => {
+    const workspaceDir = trackedTmpDir('api-grade-cfg-auth-ws-');
+    writeApigradeJson(workspaceDir, {
+      ruleset: 'https://raw.githubusercontent.com/example/private-repo/main/ruleset.yaml',
+      authType: 'github-pat',
+      token: VALID_TOKEN,
+    });
+    const { status, stdout, stderr } = runCli([OPENAPI_SPEC], { cwd: workspaceDir });
+    expect(status).toBe(1);
+    // A token was supplied (via the file), so the failure must NOT be the "no token at all" message.
+    expect(stderr.toLowerCase()).not.toMatch(/authentication required/);
+    expect(stdout).not.toContain(VALID_TOKEN);
+    expect(stderr).not.toContain(VALID_TOKEN);
+  }, 15000);
+
+  it('an explicit --auth-type flag overrides an .apigrade.json authType value (Acceptance Scenario 2 / FR-025 / SC-012)', () => {
+    const workspaceDir = trackedTmpDir('api-grade-cfg-override-ws-');
+    // The file's authType alone would be rejected as config-invalid.
+    writeApigradeJson(workspaceDir, {
+      ruleset: LOCAL_RULESET,
+      authType: 'bogus-invalid-value',
+      token: VALID_TOKEN,
+    });
+
+    const withoutOverride = runCli([OPENAPI_SPEC], { cwd: workspaceDir });
+    expect(withoutOverride.status).toBe(1);
+    expect(withoutOverride.stderr).toMatch(/Invalid --auth-type value/);
+
+    const withOverride = runCli([OPENAPI_SPEC, '--auth-type', 'github-pat'], { cwd: workspaceDir });
+    expect(withOverride.status).toBe(0);
+    expect(withOverride.stderr).toContain('--auth-type is ignored because the ruleset is a local file');
+    expect(withOverride.stdout).toBeTruthy();
+  }, 30000);
+
+  it('an .apigrade.json token without authType resolves to none, ignores the file token, and warns (Acceptance Scenario 3)', () => {
+    const workspaceDir = trackedTmpDir('api-grade-cfg-none-ws-');
+    writeApigradeJson(workspaceDir, {
+      ruleset: 'https://raw.githubusercontent.com/example/private-repo/main/ruleset.yaml',
+      token: VALID_TOKEN,
+    });
+    const { stderr, stdout } = runCli([OPENAPI_SPEC], { cwd: workspaceDir });
+    expect(stderr).toContain("Warning: --token is ignored because the authorisation type is 'none'");
+    expect(stdout).not.toContain(VALID_TOKEN);
+    expect(stderr).not.toContain(VALID_TOKEN);
+  }, 15000);
+
+  it('an .apigrade.json url value triggers the same "not yet supported" rejection as the --url flag (Acceptance Scenario 4 / FR-027)', () => {
+    const workspaceDir = trackedTmpDir('api-grade-cfg-url-ws-');
+    writeApigradeJson(workspaceDir, { url: 'https://example.com/reserved' });
+    const { status, stderr } = runCli([OPENAPI_SPEC], { cwd: workspaceDir });
+    expect(status).toBe(1);
+    expect(stderr).toMatch(/--url is not yet supported/);
+  });
+
+  it('an .apigrade.json authType value outside none/github-pat/entra-id is a config-invalid failure (Acceptance Scenario 5 / FR-028)', () => {
+    const workspaceDir = trackedTmpDir('api-grade-cfg-badauth-ws-');
+    writeApigradeJson(workspaceDir, {
+      ruleset: 'https://raw.githubusercontent.com/example/private-repo/main/ruleset.yaml',
+      authType: 'github_pat',
+    });
+    const { status, stderr } = runCli([OPENAPI_SPEC], { cwd: workspaceDir });
+    expect(status).toBe(1);
+    expect(stderr).toMatch(/Invalid --auth-type value 'github_pat'/);
+  });
+
+  it('with no .apigrade.json present, behavior is unchanged from pre-feature (Acceptance Scenario 6)', () => {
+    const workspaceDir = trackedTmpDir('api-grade-cfg-none-present-ws-');
+    const { status, stdout } = runCli([OPENAPI_SPEC, '--ruleset', LOCAL_RULESET], { cwd: workspaceDir });
+    expect(status).toBe(0);
+    expect(stdout).toBeTruthy();
+  }, 30000);
+
+  it('config get-ruleset reflects an .apigrade.json-configured authType/token in its effective resolution', () => {
+    const workspaceDir = trackedTmpDir('api-grade-cfg-getruleset-ws-');
+    writeApigradeJson(workspaceDir, {
+      ruleset: 'https://raw.githubusercontent.com/example/private-repo/main/ruleset.yaml',
+      authType: 'github-pat',
+      token: VALID_TOKEN,
+    });
+    const { stdout, stderr } = runCli(['config', 'get-ruleset'], { cwd: workspaceDir });
+    expect(stdout).toContain('authType=github-pat');
+    expect(stdout).toContain('(token configured)');
+    expect(stdout).not.toContain(VALID_TOKEN);
+    expect(stderr).not.toContain(VALID_TOKEN);
+  });
+
+  it('config get-ruleset rejects an invalid .apigrade.json authType value', () => {
+    const workspaceDir = trackedTmpDir('api-grade-cfg-getruleset-bad-ws-');
+    writeApigradeJson(workspaceDir, { authType: 'bogus' });
+    const { status, stderr } = runCli(['config', 'get-ruleset'], { cwd: workspaceDir });
+    expect(status).toBe(1);
+    expect(stderr).toMatch(/Invalid .apigrade.json "authType" value/);
   });
 });

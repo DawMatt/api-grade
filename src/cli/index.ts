@@ -85,11 +85,6 @@ program
     url?: string;
     verbose?: boolean;
   }) => {
-    if (cliOpts.url) {
-      console.error(chalk.red('Error: --url is not yet supported in this version.'));
-      process.exit(1);
-    }
-
     // Load .apigrade.json config; CLI flags override config values
     let fileConfig: ReturnType<typeof loadConfig> = {};
     try {
@@ -97,6 +92,11 @@ program
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(chalk.red(`Error: ${message}`));
+      process.exit(1);
+    }
+
+    if (cliOpts.url ?? fileConfig.url) {
+      console.error(chalk.red('Error: --url is not yet supported in this version.'));
       process.exit(1);
     }
 
@@ -121,8 +121,11 @@ program
       minGrade = g;
     }
 
-    if (cliOpts.authType !== undefined && !isValidAuthType(cliOpts.authType)) {
-      const message = `Invalid --auth-type value '${cliOpts.authType}'. Must be one of: none, github-pat.`;
+    const authTypeOption = cliOpts.authType ?? fileConfig.authType;
+    const tokenOption = cliOpts.token ?? fileConfig.token;
+
+    if (authTypeOption !== undefined && !isValidAuthType(authTypeOption)) {
+      const message = `Invalid --auth-type value '${authTypeOption}'. Must be one of: none, github-pat.`;
       if (outputFormat === 'json') {
         console.log(JSON.stringify({ error: 'RULESET_BAD_CONFIG', message }));
       } else {
@@ -135,8 +138,8 @@ program
     const globalConfig = await loadGlobalConfig();
     const authResult = resolveCliAuth({
       rulesetOption: cliOpts.ruleset ?? fileConfig.rulesetPath,
-      authTypeOption: cliOpts.authType,
-      tokenOption: cliOpts.token,
+      authTypeOption,
+      tokenOption,
       workspaceConfig,
       globalConfig,
     });

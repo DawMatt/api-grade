@@ -126,7 +126,7 @@ than the ruleset.
 | **Consumed by** | CLI only | CLI (`config` subcommand) **and** the `api-grade-mcp` server |
 | **Location** | One file, in the current working directory | Two possible files: workspace (`./.api-grade/config.json`) or global (`~/.api-grade/config.json`) |
 | **How it's written** | Hand-edited JSON file | Written via `api-grade config set-ruleset` or the MCP `set-ruleset-config` tool — never hand-edited |
-| **Keys supported** | `minGrade`, `ruleset`, `format`, `top`, `verbose` | `ruleset` (path/URL) and `auth` (`type` + token) only |
+| **Keys supported** | Every grading-command flag except `--help`/`--version`: `minGrade`, `ruleset`, `authType`, `token`, `format`, `top`, `verbose`, `url` | `ruleset` (path/URL) and `auth` (`type` + token) only |
 
 If you only need a default ruleset for local CLI runs, `.apigrade.json` is usually
 enough. Reach for `api-grade config set-ruleset` instead when the same ruleset/auth
@@ -150,15 +150,25 @@ source (CLI flag or `.apigrade.json`) sets `ruleset` without auth, the workspace
 config's `auth` is *not* picked up, since the whole resolution (ruleset path + auth)
 comes from a single source.
 
-`--auth-type` / `--token` (and the `GITHUB_TOKEN` environment variable) are **only**
-ever supplied via CLI flags/env — `.apigrade.json` has no equivalent keys. They apply
-on top of whichever ruleset source won above: if that source is `.api-grade/config.json`
-and it has persisted `auth`, `--auth-type`/`--token` override that persisted auth;
-otherwise they're the only source of auth.
+`--auth-type` / `--token` have their **own**, separate resolution order — independent
+of which source won the `ruleset` resolution above:
 
-All other `.apigrade.json` keys (`minGrade`, `format`, `top`, `verbose`) have no
-equivalent in `.api-grade/config.json`, so there's no cross-file precedence question
-for them — only "CLI flag overrides `.apigrade.json`" applies.
+1. `--auth-type` / `--token` CLI flag
+2. `authType` / `token` key in `.apigrade.json`
+3. `GITHUB_TOKEN` environment variable (token resolution only — there is no env-var
+   equivalent for `authType`)
+4. `auth.type` / `auth.githubToken` field of the `RulesetConfig` at whichever scope
+   the *ruleset* resolved from above (workspace or global)
+5. `none` (default — equivalent to `auth.type` being absent)
+
+Because this is a separate chain, a ruleset path can come from one source while its
+auth comes from another — e.g. an `.apigrade.json` `ruleset` URL combined with a
+workspace `.api-grade/config.json`'s persisted `auth`, when neither `.apigrade.json`
+nor a CLI flag sets `authType`/`token`.
+
+All other `.apigrade.json` keys (`minGrade`, `format`, `top`, `verbose`, `url`) have
+no equivalent in `.api-grade/config.json`, so there's no cross-file precedence
+question for them — only "CLI flag overrides `.apigrade.json`" applies.
 
 ---
 
@@ -236,19 +246,46 @@ default `ruleset`, and `.apigrade.json` wins.
 }
 ```
 
-All keys are optional. Supported keys:
+All keys are optional. Supported keys — one for every grading-command flag except
+`--help`/`--version`:
 
 | Key | Type | Equivalent flag |
 |-----|------|-----------------|
 | `minGrade` | string | `--min-grade` |
 | `ruleset` | string | `--ruleset` |
+| `authType` | string | `--auth-type` |
+| `token` | string | `--token` |
 | `format` | `"human"` or `"json"` | `--format` |
 | `top` | number | `--top` |
 | `verbose` | boolean | `--verbose` |
+| `url` | string | `--url` (reserved — a non-empty value exits 1, same as the flag) |
 
-There is no `authType`/`token` key — authorisation for a remote ruleset is supplied
-only via `--auth-type`/`--token`/`GITHUB_TOKEN`, or persisted via
-`api-grade config set-ruleset` (see above).
+An explicit command-line flag always overrides the matching `.apigrade.json` key.
+`authType`/`token` have their own resolution chain, independent of `ruleset`'s — see
+[Precedence when the same setting is supplied in multiple places](#precedence-when-the-same-setting-is-supplied-in-multiple-places).
+
+**Fully configuring a private-repo ruleset run with zero flags:**
+
+```json
+{
+  "minGrade": "B",
+  "ruleset": "https://raw.githubusercontent.com/my-org/private-rules/main/ruleset.yaml",
+  "authType": "github-pat",
+  "token": "ghp_xxxxxxxxxxxxxxxxxxxx",
+  "format": "json",
+  "top": 20
+}
+```
+
+```bash
+api-grade openapi.yaml
+```
+
+> **Security note:** a `token` value in `.apigrade.json` is exposed to anything
+> that can read the file — including version control, if it's committed. Prefer
+> the `GITHUB_TOKEN` environment variable, or add `.apigrade.json` to `.gitignore`
+> when it contains a real token. The CLI never prints a `token` value (from any
+> source) to stdout, stderr, or logs, including under `--verbose`.
 
 ---
 

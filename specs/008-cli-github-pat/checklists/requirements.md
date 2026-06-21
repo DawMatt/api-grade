@@ -39,5 +39,5 @@
   `api-grade-core` so the CLI can consume them. A dedicated user story (User
   Story 3, P1) and FR-002/SC-003 exist specifically to guard against behavioral
   regression in the MCP server during extraction. Entra ID is extracted alongside
-  GitHub PAT but deliberately kept inaccessible at the CLI surface (User Story 4,
+  GitHub PAT but deliberately kept inaccessible at the CLI surface (User Story 5,
   FR-015/FR-016, SC-007) as groundwork for a planned future CLI feature.

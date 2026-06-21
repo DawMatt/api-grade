@@ -24,7 +24,12 @@ input/output (no session scope, no recovery-options payload). The CLI explicitly
 rejects `entra-id` auth configurations (including via `--auth-type entra-id`) with a
 clear error rather than attempting or silently ignoring them, and prints a
 non-fatal warning for any authorisation-related option supplied but rendered moot by
-a `none` auth type or a local ruleset source (FR-020/FR-021).
+a `none` auth type or a local ruleset source (FR-020/FR-021). The CLI's
+`.apigrade.json` general-options file is extended to cover every grading-command
+option this feature (and the pre-existing CLI) exposes except `--help`/`--version`
+— adding `authType`, `token`, and `url` keys alongside the existing `minGrade`,
+`ruleset`, `format`, `top`, `verbose` keys, with the existing "CLI flag overrides
+file value" precedence rule applied identically to the new keys (FR-024–FR-028).
 
 ## Technical Context
 
@@ -47,7 +52,9 @@ unmodified (assertion-for-assertion) post-refactor; existing
 suites must also pass unmodified (FR-023/SC-010); new CLI integration tests for
 `--auth-type`, `--token`, `GITHUB_TOKEN`, `config set-ruleset`/`config get-ruleset`,
 auth-type/token precedence, ignored-option warnings (FR-020/FR-021), and Entra ID
-rejection.
+rejection. New unit tests for `.apigrade.json`'s `authType`/`token`/`url` keys
+(FR-024–FR-028), covering per-key CLI-flag-overrides-file precedence and the
+`authType`/`token` resolution-chain insertion point (FR-026).
 
 **Target Platform**: Cross-platform Node.js CLI (Windows/macOS minimum, per
 Constitution V), local and containerised (Docker) execution.
@@ -157,9 +164,14 @@ src/cli/
 │                              # env fallback, resolve-ruleset call, ignored-option
 │                              # warnings (FR-020/FR-021), fetch-failure error
 │                              # reporting (human + JSON), Entra ID rejection,
-│                              # 'config' subcommand registration
-├── config-loader.ts           # UNCHANGED (.apigrade.json general options; separate
-│                              # from ruleset/auth config)
+│                              # 'config' subcommand registration; merges
+│                              # cliOpts.authType/token/url with the corresponding
+│                              # fileConfig values (CLI flag wins) before they reach
+│                              # auth-type/token resolution (FR-024–FR-026)
+├── config-loader.ts           # UPDATED: CliOptions/loadConfig() gain authType,
+│                              # token, url fields (FR-024), read with the same
+│                              # type-checked-field pattern already used for
+│                              # minGrade/ruleset/format/top/verbose
 └── ruleset-config-cli.ts      # NEW: 'config set-ruleset' / 'config get-ruleset'
                                # subcommands (--scope, --ruleset, --auth-type,
                                # --token), thin CLI adapter over core's
@@ -167,6 +179,9 @@ src/cli/
 
 tests/
 ├── unit/cli-ruleset-config.test.ts   # NEW
+├── unit/config-loader.test.ts        # UPDATED (FR-024–FR-028: new .apigrade.json
+│                                      # keys; extended the pre-existing file rather
+│                                      # than adding a duplicate cli-config-loader.test.ts)
 └── integration/cli-github-pat.test.ts # NEW
 
 packages/api-grade-core/tests/

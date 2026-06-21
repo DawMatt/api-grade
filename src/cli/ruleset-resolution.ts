@@ -27,6 +27,8 @@ export interface ResolveAuthInput {
   globalConfig: RulesetConfig | null;
 }
 
+export type TokenSource = 'option' | 'env' | 'stored';
+
 export interface ResolveAuthResult {
   resolution: RulesetResolution;
   /** Raw resolved auth-type string; may be invalid (not none/github-pat/entra-id). */
@@ -35,6 +37,8 @@ export interface ResolveAuthResult {
   isLocalFile: boolean;
   /** Only populated when authType === 'github-pat' and the ruleset is remote. */
   token: string | undefined;
+  /** Where `token` came from; only populated alongside `token`. */
+  tokenSource: TokenSource | undefined;
   warnings: string[];
 }
 
@@ -57,6 +61,7 @@ export function resolveCliAuth(input: ResolveAuthInput): ResolveAuthResult {
 
   const warnings: string[] = [];
   let token: string | undefined;
+  let tokenSource: TokenSource | undefined;
 
   if (isLocalFile) {
     if (input.authTypeOption !== undefined) {
@@ -76,11 +81,20 @@ export function resolveCliAuth(input: ResolveAuthInput): ResolveAuthResult {
       );
     }
     if (authType === 'github-pat') {
-      token = input.tokenOption ?? process.env.GITHUB_TOKEN ?? resolution.auth?.githubToken;
+      if (input.tokenOption !== undefined) {
+        token = input.tokenOption;
+        tokenSource = 'option';
+      } else if (process.env.GITHUB_TOKEN) {
+        token = process.env.GITHUB_TOKEN;
+        tokenSource = 'env';
+      } else if (resolution.auth?.githubToken) {
+        token = resolution.auth.githubToken;
+        tokenSource = 'stored';
+      }
     }
   }
 
-  return { resolution, authType, isRemote, isLocalFile, token, warnings };
+  return { resolution, authType, isRemote, isLocalFile, token, tokenSource, warnings };
 }
 
 export interface EntraRejectionCheck {

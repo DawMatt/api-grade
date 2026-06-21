@@ -15,6 +15,11 @@
 - Q: `config set-ruleset --token <pat>` without an explicit `--auth-type` — should it implicitly persist `auth.type: "github-pat"`, or follow the grade command's own `none`-default rule (token rejected/ignored with a warning, not silently stored)? → A: Same as grade command — `--token` alone never implies `github-pat`; without `--auth-type github-pat` the token is not persisted, and a warning is printed explaining it was ignored.
 - Q: What happens when `--auth-type` is supplied with a value other than `none`, `github-pat`, or `entra-id` (e.g. a typo)? → A: Treated as a `config-invalid` failure — the CLI exits non-zero with an error naming the invalid value, reusing the existing `config-invalid` failure classification (FR-008).
 
+### Session 2026-06-21 (extension: full `.apigrade.json` coverage)
+
+- Q: `.apigrade.json` should be extended to cover every CLI command-line option besides `--help`/`--version` — does "every option" include the required positional `<spec-file>` argument (i.e. should the spec file itself become optional/defaultable via the config file)? → A: No. `<spec-file>` is the per-invocation operand identifying which file to grade, not a configurable default; it remains a mandatory command-line argument. "Every option" means every named `--flag`, not the positional argument.
+- Q: Should storing a GitHub PAT directly in a `token` key trigger a new warning or restriction beyond what already applies to `--token`? → A: No new restriction — `.apigrade.json`'s `token` key is treated exactly like any other config-file-sourced value (FR-007's no-logging guarantee still applies to it once read); documentation calls out the secret-exposure risk of committing it, the same way a hand-edited config file's risk would be called out for any other credential.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Grade using a private-repo ruleset from the CLI (Priority: P1)
@@ -238,6 +243,62 @@ attempting an Entra ID flow or falling back silently.
    the unsupported auth type; it prints an ignored-option warning (per FR-021) and
    proceeds to grade the local file normally.
 
+---
+
+### User Story 6 - Configure every grading option via `.apigrade.json` (Priority: P2)
+
+A developer or CI pipeline wants to fully pre-configure a CLI invocation —
+including the new authorisation options this feature introduces — using the
+existing `.apigrade.json` general-options file, rather than maintaining shell
+scripts or CI-step `args:` lists that repeat the same flags on every run. Today,
+`.apigrade.json` supports `minGrade`, `ruleset`, `format`, `top`, and `verbose`,
+but `--auth-type`, `--token`, and `--url` have no config-file equivalent —
+forcing those three options to always be supplied on the command line even when
+every other option is centrally configured.
+
+**Why this priority**: This closes a gap this feature itself introduces (new
+`--auth-type`/`--token` options with no config-file path) and removes the last
+reason a fully-configured CI invocation would still need explicit command-line
+flags. It is independent of, and lower priority than, User Story 1/2's core
+private-ruleset capability, since the options it covers already work when
+supplied on the command line — this story only adds a second way to supply them.
+
+**Independent Test**: Can be tested independently by writing an `.apigrade.json`
+file that sets every supported key (including `authType` and `token` against a
+stubbed private-ruleset host), running the bare `api-grade <spec-file>` command
+with no other flags, and confirming behavior is identical to the equivalent
+invocation with all options supplied explicitly as command-line flags.
+
+**Acceptance Scenarios**:
+
+1. **Given** an `.apigrade.json` file setting `authType: "github-pat"` and
+   `token: "<pat>"` alongside an existing `ruleset` URL pointing at a private
+   repository, **When** the CLI is run with no `--auth-type`/`--token`/`--ruleset`
+   flags, **Then** the CLI authenticates and fetches the ruleset exactly as if
+   those values had been supplied as command-line flags.
+2. **Given** the same `.apigrade.json` file, **When** the CLI is run with an
+   explicit command-line flag for one of the file's keys (e.g. `--auth-type`),
+   **Then** the command-line flag's value is used instead of the file's value,
+   via the same override mechanism already proven for `minGrade`/`ruleset`/
+   `format`/`top`/`verbose` — and which, by code-path symmetry (FR-025), applies
+   identically to `token` even though a token's content is never directly
+   observable in CLI output (FR-007).
+3. **Given** an `.apigrade.json` file setting `token` but no `authType` (and no
+   `--auth-type` flag), **When** the CLI is run, **Then** the resolved
+   authorisation type is `none` (FR-017's default), the file's `token` value is
+   ignored, and the FR-020 ignored-option warning is printed — identical
+   treatment to a bare `--token` flag with no `--auth-type`.
+4. **Given** an `.apigrade.json` file setting `url` to a non-empty value, **When**
+   the CLI is run, **Then** the CLI exits 1 with the same "not yet supported"
+   message produced by an explicit `--url` flag.
+5. **Given** an `.apigrade.json` file setting `authType` to a value other than
+   `none`, `github-pat`, or `entra-id`, **When** the CLI is run, **Then** the CLI
+   exits non-zero with the same `config-invalid` error an equivalent invalid
+   `--auth-type` flag value would produce.
+6. **Given** no `.apigrade.json` file is present (today's default state), **When**
+   the CLI is run, **Then** behavior is completely unchanged from before this
+   story — confirming the extension is additive only.
+
 ### Edge Cases
 
 - What happens when the supplied URL points to a public (not private) GitHub
@@ -300,6 +361,25 @@ attempting an Entra ID flow or falling back silently.
   this as a `config-invalid` failure and exit non-zero with an error naming the
   invalid value, rather than silently defaulting to `none` or attempting to use the
   value as-is.
+- What happens when `.apigrade.json` sets `authType` to an invalid value (the same
+  kind of typo as the previous edge case, but sourced from the config file rather
+  than a command-line flag)? The CLI MUST apply the identical `config-invalid`
+  rejection regardless of source — there is no separate, file-specific validation
+  path.
+- What happens when both `.apigrade.json` and a workspace/global persisted
+  `RulesetConfig` (`.api-grade/config.json`) specify auth, but `.apigrade.json` only
+  sets `ruleset` (no `authType`/`token`) while the persisted config sets `auth`?
+  Per the existing "sources are not merged" rule already documented for `ruleset`
+  resolution (contracts/cli-options.md), `.apigrade.json`'s `ruleset` value wins
+  outright as the resolved ruleset path, but `authType`/`token` resolution is a
+  *separate* resolution chain (FR-026) from ruleset-path resolution — so a persisted
+  scope's `auth` can still apply on top of an `.apigrade.json`-sourced `ruleset` path
+  if neither `.apigrade.json` nor a CLI flag sets `authType`/`token`. This mirrors
+  exactly how an explicit `--ruleset` flag already combines with a persisted scope's
+  `auth` today (contracts/cli-options.md's existing token-resolution note).
+- What happens when `.apigrade.json` sets `url` to an empty string or omits it
+  entirely? Both are treated as "not set" — identical to omitting `--url` on the
+  command line — and trigger no rejection.
 
 ## Requirements *(mandatory)*
 
@@ -417,6 +497,42 @@ attempting an Entra ID flow or falling back silently.
   packages' existing automated test suites MUST pass unmodified (assertion-for-
   assertion) after the core-package refactor, mirroring the no-regression
   requirement already placed on the MCP server (FR-002).
+- **FR-024**: `.apigrade.json` MUST support a config key for every command-line
+  option exposed by the `api-grade <spec-file>` grading command except `--help` and
+  `--version` (which are meta/process-control options with no persisted-config
+  equivalent). This adds `authType` (↔ `--auth-type`), `token` (↔ `--token`), and
+  `url` (↔ `--url`) to the existing `minGrade`, `ruleset`, `format`, `top`, and
+  `verbose` keys. The required positional `<spec-file>` argument is excluded — it
+  remains a mandatory command-line argument, not a configurable default (per the
+  2026-06-21 extension clarification).
+- **FR-025**: For each key covered by FR-024, the existing "an explicit
+  command-line flag overrides the corresponding `.apigrade.json` value" precedence
+  rule (already in effect for `minGrade`/`ruleset`/`format`/`top`/`verbose`) MUST
+  apply identically to `authType`, `token`, and `url`.
+- **FR-026**: An `.apigrade.json` `authType` or `token` value MUST be inserted into
+  the existing authorisation-type resolution order (FR-017) and token resolution
+  order (FR-004) at the same precedence position the corresponding command-line
+  flag would occupy if supplied directly — above the `GITHUB_TOKEN` environment
+  variable and above any persisted workspace/global `auth` configuration, but below
+  an explicit `--auth-type`/`--token` command-line flag. This is a resolution chain
+  independent of `.apigrade.json`'s `ruleset` key (which has its own, pre-existing
+  resolution position): the two are not coupled, so an `.apigrade.json`-sourced
+  `ruleset` can still combine with a persisted scope's `auth` when `.apigrade.json`
+  sets no `authType`/`token` of its own.
+- **FR-027**: An `.apigrade.json` `url` value MUST trigger the exact same
+  "reserved, not yet supported" rejection (CLI exits 1 before any other processing)
+  that an explicit `--url` command-line flag already triggers, applied identically
+  regardless of which source supplied the value.
+- **FR-028**: An `.apigrade.json` `authType` value that is not one of `none`,
+  `github-pat`, or `entra-id` MUST be treated as the same `config-invalid` failure
+  (FR-008/FR-017) an equivalent invalid `--auth-type` command-line value would
+  produce, regardless of source. FR-007's no-logging guarantee continues to apply
+  unchanged to a `token` value read from `.apigrade.json` — reading it from a file
+  instead of a flag introduces no new exposure in CLI output, though the file
+  itself, if committed to version control, carries the same secret-exposure risk as
+  committing any other credential (documentation MUST call this out and recommend
+  `GITHUB_TOKEN` or excluding `.apigrade.json` from version control when it holds a
+  token).
 
 ### Key Entities
 
@@ -438,8 +554,13 @@ attempting an Entra ID flow or falling back silently.
 - **Authorisation Type**: The resolved value of `auth.type` (`none`, `github-pat`,
   or `entra-id`) governing whether and how a *remote* ruleset fetch is
   authenticated, resolvable from (in order) the `--auth-type` command-line option,
-  persisted workspace/global configuration, or the `none` default. Always ignored
-  for local (file-path) ruleset sources.
+  the `.apigrade.json` `authType` key, persisted workspace/global configuration, or
+  the `none` default. Always ignored for local (file-path) ruleset sources.
+- **General CLI Options File (`.apigrade.json`)**: A hand-edited, CLI-only JSON
+  file (unrelated to and not read by the MCP server) supplying default values for
+  every grading-command option except `--help`/`--version`: `minGrade`, `ruleset`,
+  `authType`, `token`, `format`, `top`, `verbose`, `url`. An explicit command-line
+  flag always overrides the corresponding key.
 
 ## Success Criteria *(mandatory)*
 
@@ -483,6 +604,23 @@ attempting an Entra ID flow or falling back silently.
   `backstage-plugin-api-grade-backend` automated tests pass unmodified, and both
   packages build successfully, after the core-package refactor — confirming zero
   functionality change for existing Backstage plugin consumers.
+- **SC-011**: A CI pipeline can fully configure a grading invocation — including
+  `authType`/`token` against a private ruleset — using only an `.apigrade.json`
+  file and the bare `api-grade <spec-file>` command (zero option flags), verified
+  by an automated test confirming the file-sourced `authType`/`token` reach the
+  same fetch-attempt path (no ignored-option warning, no "authentication
+  required" no-token error) that the equivalent `--auth-type`/`--token` flags
+  would produce. Literal request-level verification (e.g. the exact token
+  transmitted) is not asserted, since FR-007 prohibits any token value from
+  appearing in observable CLI output.
+- **SC-012**: 100% of `.apigrade.json` keys added by this feature (`authType`,
+  `url`) are overridden by their corresponding command-line flag when both are
+  present, verified across the CLI's automated test suite, with zero regression
+  to the pre-existing override behavior of `minGrade`/`ruleset`/`format`/`top`/
+  `verbose`. `token`'s override is verified by code-path symmetry — it uses the
+  identical `cliOpts.token ?? fileConfig.token` merge pattern as `authType`/`url`
+  (FR-025) — rather than by a literal token-content assertion, since FR-007
+  prohibits the token value from appearing in observable output.
 
 ## Assumptions
 
@@ -519,3 +657,13 @@ attempting an Entra ID flow or falling back silently.
   packages; "no behavioral change" for those packages is verified the same way as
   for the MCP server — via their existing automated test suites passing unmodified
   — and any test gaps in those suites are likewise out of scope to backfill here.
+- "Every CLI command-line argument" (User Story 6 / FR-024) means every named
+  `--flag` of the `api-grade <spec-file>` command, not the required positional
+  `<spec-file>` argument, which is excluded by design (2026-06-21 extension
+  clarification) — it identifies the file being graded for that one invocation and
+  is not a sensible default to centrally configure.
+- `.apigrade.json` remains a hand-edited, CLI-only file, unread by `api-grade-mcp`
+  — User Story 6 only widens the set of grading-command options it can supply
+  defaults for; it does not change the file's location, format, or the fact that
+  it is unrelated to the workspace/global `RulesetConfig` persisted by `config
+  set-ruleset` / the MCP server's `set-ruleset-config` tool.

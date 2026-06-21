@@ -11,7 +11,8 @@ import {
   type RulesetConfig,
   type AuthConfig,
 } from '@dawmatt/api-grade-core';
-import { resolveCliAuth, checkEntraRejection, isValidAuthType } from './ruleset-resolution.js';
+import { resolveCliAuth, checkEntraRejection, isValidAuthType, type TokenSource } from './ruleset-resolution.js';
+import { loadConfig } from './config-loader.js';
 
 export interface SetRulesetOptions {
   scope?: string;
@@ -95,11 +96,32 @@ function tokenPresence(auth: AuthConfig | null | undefined): string {
   return '(no token)';
 }
 
+function effectiveTokenPresence(tokenSource: TokenSource | undefined): string {
+  if (tokenSource === 'env') return '(from GITHUB_TOKEN)';
+  if (tokenSource === 'option' || tokenSource === 'stored') return '(token configured)';
+  return '(no token)';
+}
+
 export async function runGetRuleset(opts: { format?: string }): Promise<void> {
+  let fileConfig: ReturnType<typeof loadConfig> = {};
+  try {
+    fileConfig = loadConfig(process.cwd());
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    fail(message, opts.format);
+  }
+
+  if (fileConfig.authType !== undefined && !isValidAuthType(fileConfig.authType)) {
+    fail(`Invalid .apigrade.json "authType" value '${fileConfig.authType}'. Must be one of: none, github-pat.`, opts.format);
+  }
+
   const workspaceConfig = await loadWorkspaceConfig();
   const globalConfig = await loadGlobalConfig();
 
   const authResult = resolveCliAuth({
+    rulesetOption: fileConfig.rulesetPath,
+    authTypeOption: fileConfig.authType,
+    tokenOption: fileConfig.token,
     workspaceConfig,
     globalConfig,
   });
@@ -112,12 +134,21 @@ export async function runGetRuleset(opts: { format?: string }): Promise<void> {
         scope: authResult.resolution.scope,
         rulesetPath: authResult.resolution.rulesetPath,
         authType: authResult.authType,
+        tokenPresence: effectiveTokenPresence(authResult.tokenSource),
       },
       workspace: workspaceConfig?.rulesetPath != null
-        ? { rulesetPath: workspaceConfig.rulesetPath, authType: workspaceConfig.auth?.type ?? 'none' }
+        ? {
+            rulesetPath: workspaceConfig.rulesetPath,
+            authType: workspaceConfig.auth?.type ?? 'none',
+            tokenPresence: tokenPresence(workspaceConfig.auth),
+          }
         : null,
       global: globalConfig?.rulesetPath != null
-        ? { rulesetPath: globalConfig.rulesetPath, authType: globalConfig.auth?.type ?? 'none' }
+        ? {
+            rulesetPath: globalConfig.rulesetPath,
+            authType: globalConfig.auth?.type ?? 'none',
+            tokenPresence: tokenPresence(globalConfig.auth),
+          }
         : null,
       builtIn: 'default',
       ...(entraCheck.rejected ? { unsupportedByCli: entraCheck.message } : {}),
@@ -126,7 +157,7 @@ export async function runGetRuleset(opts: { format?: string }): Promise<void> {
     return;
   }
 
-  console.log(`Effective: scope=${authResult.resolution.scope} rulesetPath=${authResult.resolution.rulesetPath ?? '(built-in)'} authType=${authResult.authType} ${tokenPresence(authResult.resolution.auth)}`);
+  console.log(`Effective: scope=${authResult.resolution.scope} rulesetPath=${authResult.resolution.rulesetPath ?? '(built-in)'} authType=${authResult.authType} ${effectiveTokenPresence(authResult.tokenSource)}`);
   console.log(
     workspaceConfig?.rulesetPath != null
       ? `Workspace (${getWorkspaceConfigPath()}): rulesetPath=${workspaceConfig.rulesetPath} authType=${workspaceConfig.auth?.type ?? 'none'} ${tokenPresence(workspaceConfig.auth)}`

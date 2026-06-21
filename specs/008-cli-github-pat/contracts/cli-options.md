@@ -14,15 +14,19 @@ New/changed options:
 | `--token <pat>` | string | **NEW**. GitHub Personal Access Token used to authenticate a `--ruleset` URL fetch, or a resolved workspace/global default's URL fetch. Only consulted when the resolved authorisation type is `github-pat` (FR-004, FR-018). Highest-precedence token source. Never echoed in any output (FR-007). |
 
 Unchanged options (`--min-grade`, `--format`, `--top`, `--verbose`) behave exactly as
-before; `--url` remains reserved/unsupported (unchanged early-exit behavior).
+before; `--url` remains reserved/unsupported (unchanged early-exit behavior). Every
+option above, plus `--min-grade`/`--format`/`--top`/`--verbose`/`--url`, also has an
+`.apigrade.json` key equivalent — see [`.apigrade.json` keys (FR-024–FR-028)](#apigradejson-keys-fr-024fr-028)
+below.
 
-### Authorisation type resolution (FR-017, FR-018, FR-019)
+### Authorisation type resolution (FR-017, FR-018, FR-019, FR-026)
 
 Order, first match wins:
 1. `--auth-type <type>` command-line option
-2. `auth.type` field of the `RulesetConfig` at whichever scope the ruleset was
+2. `authType` key in `.apigrade.json`
+3. `auth.type` field of the `RulesetConfig` at whichever scope the ruleset was
    resolved from (workspace or global)
-3. `none` (default — equivalent to `auth.type` being absent)
+4. `none` (default — equivalent to `auth.type` being absent)
 
 This resolution applies only to *remote* (URL) ruleset sources. For a local
 (file-path) ruleset, the resolved authorisation type is computed for warning
@@ -32,16 +36,36 @@ for a local read.
 If the resolved type is `none`, no authentication step is attempted for the fetch:
 `GITHUB_TOKEN` and any stored `auth.githubToken` are not consulted, even if present
 (FR-018, SC-008). If the resolved type is `entra-id`, the CLI rejects the invocation
-per FR-016 before any fetch is attempted.
+per FR-016 before any fetch is attempted. An `.apigrade.json` `authType` value
+outside `none`/`github-pat`/`entra-id` triggers the same `config-invalid` rejection
+as an invalid `--auth-type` flag value (FR-028).
 
-### Token resolution (FR-004)
+### Token resolution (FR-004, FR-026)
 
 Only performed when the resolved authorisation type (above) is `github-pat`. Order,
 first match wins:
 1. `--token <pat>` command-line option
-2. `GITHUB_TOKEN` environment variable
-3. `auth.githubToken` field of the `RulesetConfig` at whichever scope the ruleset was
+2. `token` key in `.apigrade.json`
+3. `GITHUB_TOKEN` environment variable
+4. `auth.githubToken` field of the `RulesetConfig` at whichever scope the ruleset was
    resolved from (workspace or global) — set via `config set-ruleset`
+
+### `.apigrade.json` keys (FR-024–FR-028)
+
+| Key | ↔ Flag | Type | Notes |
+|---|---|---|---|
+| `minGrade` | `--min-grade` | string | Unchanged (pre-existing). |
+| `ruleset` | `--ruleset` | string | Unchanged (pre-existing). Note this is a *separate* resolution chain from `authType`/`token` below — see spec.md's edge case on the two not being coupled. |
+| `authType` | `--auth-type` | string | **NEW.** Slots into the authorisation-type resolution order above, above persisted `RulesetConfig.auth.type`, below the `--auth-type` flag. |
+| `token` | `--token` | string | **NEW.** Slots into the token resolution order above, above `GITHUB_TOKEN` and persisted `RulesetConfig.auth.githubToken`, below the `--token` flag. Never echoed in output once read (FR-007/FR-028); committing it to version control carries the same risk as committing any other credential. |
+| `format` | `--format` | `'human' \| 'json'` | Unchanged (pre-existing). |
+| `top` | `--top` | number | Unchanged (pre-existing). |
+| `verbose` | `--verbose` | boolean | Unchanged (pre-existing). |
+| `url` | `--url` | string | **NEW.** A non-empty value triggers the same "reserved, not yet supported" exit-1 rejection as the `--url` flag. |
+
+All keys are optional; an absent or unrecognized key is ignored (pre-existing
+loader behavior, unchanged). `--help`/`--version` have no `.apigrade.json`
+equivalent — they are meta/process-control options, not invocation defaults.
 
 ### Ignored-option warnings (FR-020, FR-021, SC-009)
 
@@ -146,9 +170,12 @@ prints:
 - Human: effective scope + path + resolved auth type, plus per-scope
   (workspace/global) values, token presence indicated only as `(token configured)` /
   `(no token)` / `(from GITHUB_TOKEN)` — never the value.
-- JSON: `{ effective: { scope, rulesetPath, authType }, workspace: {...} | null,
-  global: {...} | null, builtIn: 'default' }` — same redaction rule as MCP's
-  `get-ruleset-config` `sanitizeAuth` (`tokenSource` field, not the token).
+- JSON: `{ effective: { scope, rulesetPath, authType, tokenPresence }, workspace:
+  { rulesetPath, authType, tokenPresence } | null, global: { rulesetPath,
+  authType, tokenPresence } | null, builtIn: 'default' }` — `tokenPresence` is
+  one of `'(token configured)'` / `'(no token)'` / `'(from GITHUB_TOKEN)'`,
+  mirroring the human-output redaction and MCP's `get-ruleset-config`
+  `sanitizeAuth` approach — never the token itself.
 
 If the effective resolution's auth type is `entra-id`, this command reports it
 explicitly as unsupported-by-CLI in its output (informational only here — this read

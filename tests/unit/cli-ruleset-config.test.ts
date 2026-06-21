@@ -144,6 +144,8 @@ describe('config get-ruleset', () => {
     const parsed = JSON.parse(stdout);
     expect(parsed.effective.scope).toBe('workspace');
     expect(parsed.effective.authType).toBe('github-pat');
+    expect(parsed.effective.tokenPresence).toBe('(token configured)');
+    expect(parsed.workspace.tokenPresence).toBe('(token configured)');
   });
 
   it('reports an entra-id config as unsupported-by-CLI informationally, without a non-zero exit (T058)', () => {

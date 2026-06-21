@@ -8,9 +8,12 @@ export interface CliOptions {
   specPath: string;
   minGrade?: LetterGrade;
   rulesetPath?: string;
+  authType?: string;
+  token?: string;
   format: 'human' | 'json';
   top?: number;
   verbose?: boolean;
+  url?: string;
 }
 
 export function loadConfig(cwd: string): Partial<CliOptions> {
@@ -38,6 +41,12 @@ export function loadConfig(cwd: string): Partial<CliOptions> {
   if (typeof parsed.ruleset === 'string') {
     config.rulesetPath = parsed.ruleset;
   }
+  if (typeof parsed.authType === 'string') {
+    config.authType = parsed.authType;
+  }
+  if (typeof parsed.token === 'string') {
+    config.token = parsed.token;
+  }
   if (parsed.format === 'human' || parsed.format === 'json') {
     config.format = parsed.format;
   }
@@ -46,6 +55,9 @@ export function loadConfig(cwd: string): Partial<CliOptions> {
   }
   if (typeof parsed.verbose === 'boolean') {
     config.verbose = parsed.verbose;
+  }
+  if (typeof parsed.url === 'string') {
+    config.url = parsed.url;
   }
 
   return config;
