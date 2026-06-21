@@ -57,4 +57,43 @@ describe('loadConfig', () => {
     const config = loadConfig(tmpDir);
     expect(config.rulesetPath).toBe('./custom.yaml');
   });
+
+  it('reads authType, token, and url alongside the existing keys (FR-024)', () => {
+    writeFileSync(
+      join(tmpDir, '.apigrade.json'),
+      JSON.stringify({
+        minGrade: 'B',
+        ruleset: './my-rules.yaml',
+        authType: 'github-pat',
+        token: 'ghp_test_token',
+        format: 'json',
+        top: 10,
+        verbose: true,
+        url: 'https://example.com/reserved',
+      })
+    );
+    const config = loadConfig(tmpDir);
+    expect(config.authType).toBe('github-pat');
+    expect(config.token).toBe('ghp_test_token');
+    expect(config.url).toBe('https://example.com/reserved');
+  });
+
+  it('ignores authType/token/url when absent, same as today for other optional keys', () => {
+    writeFileSync(join(tmpDir, '.apigrade.json'), JSON.stringify({ minGrade: 'A' }));
+    const config = loadConfig(tmpDir);
+    expect(config.authType).toBeUndefined();
+    expect(config.token).toBeUndefined();
+    expect(config.url).toBeUndefined();
+  });
+
+  it('ignores non-string authType/token/url values', () => {
+    writeFileSync(
+      join(tmpDir, '.apigrade.json'),
+      JSON.stringify({ authType: 42, token: false, url: {} })
+    );
+    const config = loadConfig(tmpDir);
+    expect(config.authType).toBeUndefined();
+    expect(config.token).toBeUndefined();
+    expect(config.url).toBeUndefined();
+  });
 });

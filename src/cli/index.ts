@@ -1,8 +1,20 @@
 #!/usr/bin/env node
+import { unlinkSync } from 'node:fs';
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { GradeEngine, formatHuman, formatJson, LETTER_GRADE_ORDER, gradeToNumber } from '@dawmatt/api-grade-core';
+import {
+  GradeEngine,
+  formatHuman,
+  formatJson,
+  LETTER_GRADE_ORDER,
+  gradeToNumber,
+  loadWorkspaceConfig,
+  loadGlobalConfig,
+} from '@dawmatt/api-grade-core';
 import { loadConfig } from './config-loader.js';
+import { resolveCliAuth, checkEntraRejection, isValidAuthType } from './ruleset-resolution.js';
+import { resolveRemoteRuleset } from './ruleset-fetch.js';
+import { registerConfigCommand } from './ruleset-config-cli.js';
 import type { LetterGrade } from '@dawmatt/api-grade-core';
 
 // Returns "source:line:col — " when error carries Spectral location data, else "" or "source — "
@@ -46,9 +58,12 @@ program
   .name('api-grade')
   .description('Grade API specification quality using Spectral linting rules')
   .version('0.1.0')
+  .enablePositionalOptions()
   .argument('<spec-file>', 'Path to OpenAPI or AsyncAPI specification file')
   .option('--min-grade <LETTER>', 'Exit with code 1 if grade is below this threshold (A-F)')
-  .option('--ruleset <path>', 'Path to a custom Spectral-compatible ruleset file')
+  .option('--ruleset <path>', 'Path to a custom Spectral-compatible ruleset file, or a URL to a remote ruleset')
+  .option('--auth-type <type>', 'Authorisation type for fetching a remote ruleset: none (default) or github-pat')
+  .option('--token <pat>', 'GitHub Personal Access Token for authenticating a remote ruleset fetch')
   .option('--format <type>', 'Output format: human or json')
   .option('--top <n>', 'Show only the top N diagnostics', (v) => {
     const n = parseInt(v, 10);
@@ -63,16 +78,13 @@ program
   .action(async (specFile: string, cliOpts: {
     minGrade?: string;
     ruleset?: string;
+    authType?: string;
+    token?: string;
     format?: string;
     top?: number;
     url?: string;
     verbose?: boolean;
   }) => {
-    if (cliOpts.url) {
-      console.error(chalk.red('Error: --url is not yet supported in this version.'));
-      process.exit(1);
-    }
-
     // Load .apigrade.json config; CLI flags override config values
     let fileConfig: ReturnType<typeof loadConfig> = {};
     try {
@@ -80,6 +92,11 @@ program
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(chalk.red(`Error: ${message}`));
+      process.exit(1);
+    }
+
+    if (cliOpts.url ?? fileConfig.url) {
+      console.error(chalk.red('Error: --url is not yet supported in this version.'));
       process.exit(1);
     }
 
@@ -91,7 +108,6 @@ program
     }
 
     const topN = cliOpts.top ?? fileConfig.top;
-    const rulesetPath = cliOpts.ruleset ?? fileConfig.rulesetPath;
     const verbose = cliOpts.verbose ?? fileConfig.verbose ?? false;
 
     let minGrade: LetterGrade | undefined;
@@ -104,6 +120,55 @@ program
       }
       minGrade = g;
     }
+
+    const authTypeOption = cliOpts.authType ?? fileConfig.authType;
+    const tokenOption = cliOpts.token ?? fileConfig.token;
+
+    if (authTypeOption !== undefined && !isValidAuthType(authTypeOption)) {
+      const message = `Invalid --auth-type value '${authTypeOption}'. Must be one of: none, github-pat.`;
+      if (outputFormat === 'json') {
+        console.log(JSON.stringify({ error: 'RULESET_BAD_CONFIG', message }));
+      } else {
+        console.error(chalk.red(`Error: ${message}`));
+      }
+      process.exit(1);
+    }
+
+    const workspaceConfig = await loadWorkspaceConfig();
+    const globalConfig = await loadGlobalConfig();
+    const authResult = resolveCliAuth({
+      rulesetOption: cliOpts.ruleset ?? fileConfig.rulesetPath,
+      authTypeOption,
+      tokenOption,
+      workspaceConfig,
+      globalConfig,
+    });
+
+    for (const warning of authResult.warnings) {
+      console.warn(chalk.yellow(warning));
+    }
+
+    const entraCheck = checkEntraRejection(authResult);
+    if (entraCheck.rejected) {
+      if (outputFormat === 'json') {
+        console.log(JSON.stringify({ error: 'UNSUPPORTED_AUTH_TYPE', message: entraCheck.message }));
+      } else {
+        console.error(chalk.red(`Error: ${entraCheck.message}`));
+      }
+      process.exit(1);
+    }
+
+    const fetchOutcome = await resolveRemoteRuleset(authResult);
+    if (fetchOutcome.failure) {
+      if (outputFormat === 'json') {
+        console.log(JSON.stringify(fetchOutcome.failure));
+      } else {
+        console.error(chalk.red(`Error: ${fetchOutcome.failure.message}`));
+      }
+      process.exit(1);
+    }
+    const rulesetPath = fetchOutcome.rulesetPath;
+    const tempRulesetFile = fetchOutcome.tempFile;
 
     try {
       const engine = new GradeEngine();
@@ -148,7 +213,13 @@ program
         }
       }
       process.exit(1);
+    } finally {
+      if (tempRulesetFile) {
+        try { unlinkSync(tempRulesetFile); } catch { /* ignore */ }
+      }
     }
   });
+
+registerConfigCommand(program);
 
 program.parse();

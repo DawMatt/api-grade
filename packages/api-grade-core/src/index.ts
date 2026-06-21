@@ -18,3 +18,33 @@ export type {
   LetterGrade,
   RuleMetadata,
 } from './types.js';
+
+export type {
+  AuthConfig,
+  RulesetConfig,
+  RulesetScope,
+  RulesetResolution,
+  SessionState,
+} from './types.js';
+
+export {
+  fetchRulesetContent,
+  fetchRulesetWithGithubPat,
+  RulesetAuthError,
+  INITIAL_FETCH_TIMEOUT_MS,
+  RETRY_FETCH_TIMEOUT_MS,
+} from './auth/github.js';
+
+export { acquireEntraToken, EntraAuthRequired } from './auth/entra.js';
+
+export {
+  getWorkspaceConfigPath,
+  getGlobalConfigPath,
+  loadWorkspaceConfig,
+  loadGlobalConfig,
+  saveWorkspaceConfig,
+  saveGlobalConfig,
+  ConfigWriteError,
+} from './config/ruleset-config.js';
+
+export { resolveRuleset } from './config/resolve-ruleset.js';

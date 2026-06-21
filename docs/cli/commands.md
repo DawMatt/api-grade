@@ -21,7 +21,9 @@ api-grade <spec-file> [options]
 | Flag | Description |
 |------|-------------|
 | `--min-grade <LETTER>` | Exit with code 1 if the grade is below this threshold (A, B, C, D, or F) |
-| `--ruleset <path>` | Path to a custom Spectral-compatible ruleset file |
+| `--ruleset <path>` | Path to a custom Spectral-compatible ruleset file, or a URL into a private GitHub repository |
+| `--auth-type <type>` | Authorisation type for fetching a remote ruleset: `none` (default) or `github-pat` |
+| `--token <pat>` | GitHub Personal Access Token used to authenticate a remote ruleset fetch (only consulted when `--auth-type github-pat`) |
 | `--format <type>` | Output format: `human` (default) or `json` |
 | `--top <n>` | Show only the top N diagnostics (useful for large specs) |
 | `--verbose` | Print the full error stack when a runtime error occurs |
@@ -89,11 +91,150 @@ api-grade openapi.yaml --ruleset ./my-rules.yaml --verbose
 docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml
 ```
 
+**Grade against a private GitHub-hosted ruleset using a Personal Access Token:**
+
+```bash
+api-grade openapi.yaml \
+  --ruleset https://raw.githubusercontent.com/my-org/private-rules/main/ruleset.yaml \
+  --auth-type github-pat \
+  --token ghp_xxxxxxxxxxxxxxxxxxxx
+```
+
+Or via the `GITHUB_TOKEN` environment variable instead of `--token` (still requires
+`--auth-type github-pat` — the token is never consulted unless the authorisation type
+resolves to `github-pat`):
+
+```bash
+export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+api-grade openapi.yaml \
+  --ruleset https://raw.githubusercontent.com/my-org/private-rules/main/ruleset.yaml \
+  --auth-type github-pat
+```
+
 ---
 
-## Configuration File
+## Two Configuration Mechanisms
 
-You can persist options in a `.apigrade.json` file in your working directory. CLI flags always take precedence over config file values.
+There are **two separate, independent configuration files**, with different scope and
+purpose. They are easy to confuse because both can set a default `ruleset`, but only
+one of them is shared with the MCP server, and only one of them covers options other
+than the ruleset.
+
+| | [`.apigrade.json`](#configuration-file-apigradejson) | [`.api-grade/config.json`](#persistent-ruleset-configuration-config-subcommand) |
+|---|---|---|
+| **Purpose** | General CLI run defaults (grading thresholds, output shape) | Persisted *default ruleset* + auth, shareable across tools |
+| **Consumed by** | CLI only | CLI (`config` subcommand) **and** the `api-grade-mcp` server |
+| **Location** | One file, in the current working directory | Two possible files: workspace (`./.api-grade/config.json`) or global (`~/.api-grade/config.json`) |
+| **How it's written** | Hand-edited JSON file | Written via `api-grade config set-ruleset` or the MCP `set-ruleset-config` tool — never hand-edited |
+| **Keys supported** | Every grading-command flag except `--help`/`--version`: `minGrade`, `ruleset`, `authType`, `token`, `format`, `top`, `verbose`, `url` | `ruleset` (path/URL) and `auth` (`type` + token) only |
+
+If you only need a default ruleset for local CLI runs, `.apigrade.json` is usually
+enough. Reach for `api-grade config set-ruleset` instead when the same ruleset/auth
+needs to be visible to **both** the CLI and an MCP client (e.g. an editor or agent
+using `api-grade-mcp`), since that's the one config surface both sides read.
+
+### Precedence when the same setting is supplied in multiple places
+
+For `--ruleset` specifically, every source funnels into one resolution order
+(highest priority first):
+
+1. `--ruleset` CLI flag
+2. `ruleset` key in `.apigrade.json`
+3. Workspace `.api-grade/config.json` (`api-grade config set-ruleset --scope workspace`)
+4. Global `~/.api-grade/config.json` (`api-grade config set-ruleset --scope global`)
+5. Built-in default ruleset
+
+The first source in this list that specifies a ruleset wins outright — sources
+are **not merged**; e.g. if the workspace config sets `auth`, but a higher-priority
+source (CLI flag or `.apigrade.json`) sets `ruleset` without auth, the workspace
+config's `auth` is *not* picked up, since the whole resolution (ruleset path + auth)
+comes from a single source.
+
+`--auth-type` / `--token` have their **own**, separate resolution order — independent
+of which source won the `ruleset` resolution above:
+
+1. `--auth-type` / `--token` CLI flag
+2. `authType` / `token` key in `.apigrade.json`
+3. `GITHUB_TOKEN` environment variable (token resolution only — there is no env-var
+   equivalent for `authType`)
+4. `auth.type` / `auth.githubToken` field of the `RulesetConfig` at whichever scope
+   the *ruleset* resolved from above (workspace or global)
+5. `none` (default — equivalent to `auth.type` being absent)
+
+Because this is a separate chain, a ruleset path can come from one source while its
+auth comes from another — e.g. an `.apigrade.json` `ruleset` URL combined with a
+workspace `.api-grade/config.json`'s persisted `auth`, when neither `.apigrade.json`
+nor a CLI flag sets `authType`/`token`.
+
+All other `.apigrade.json` keys (`minGrade`, `format`, `top`, `verbose`, `url`) have
+no equivalent in `.api-grade/config.json`, so there's no cross-file precedence
+question for them — only "CLI flag overrides `.apigrade.json`" applies.
+
+---
+
+## Persistent Ruleset Configuration (`config` subcommand)
+
+`api-grade config set-ruleset` / `api-grade config get-ruleset` let you configure a
+default ruleset (and optional GitHub PAT auth) once, at workspace or global scope,
+so every subsequent invocation in that workspace — including CI runs — uses it
+automatically without repeating `--ruleset`/`--auth-type`/`--token` on every command,
+and so the same default is visible to MCP clients. See
+[Two Configuration Mechanisms](#two-configuration-mechanisms) for how this relates to
+`.apigrade.json` and which one wins when both set a ruleset.
+
+| Flag (`config set-ruleset`) | Required | Description |
+|---|---|---|
+| `--scope <workspace\|global>` | yes | Which persisted config file to write: `.api-grade/config.json` (workspace) or `~/.api-grade/config.json` (global) |
+| `--ruleset <path>` | no | Path or URL to set as the default; omit to clear the default at that scope |
+| `--auth-type <none\|github-pat>` | no | Authorisation type to persist alongside the ruleset (defaults to `none`) |
+| `--token <pat>` | no | GitHub PAT to persist; only persisted when `--auth-type github-pat` is also explicitly supplied |
+| `--format <type>` | no | Output format: `human` (default) or `json` |
+
+```bash
+api-grade config set-ruleset \
+  --scope workspace \
+  --ruleset https://raw.githubusercontent.com/my-org/private-rules/main/ruleset.yaml \
+  --auth-type github-pat \
+  --token ghp_xxxxxxxxxxxxxxxxxxxx
+```
+
+Every subsequent invocation in this workspace uses it automatically, **as long as
+neither `--ruleset` nor a `.apigrade.json` `ruleset` key is also present** — both
+take precedence over this persisted config (see precedence order above):
+
+```bash
+api-grade openapi.yaml --min-grade B --format json
+```
+
+Check what's configured (never prints the token value — only `(token configured)`,
+`(no token)`, or `(from GITHUB_TOKEN)`):
+
+```bash
+api-grade config get-ruleset
+```
+
+Workspace-scoped config always takes precedence over global config (within this
+config surface — `.apigrade.json` and `--ruleset` still take precedence over both,
+per the order above). Both `config set-ruleset`/`get-ruleset` and the
+`api-grade-mcp` server's `set-ruleset-config`/`get-ruleset-config` tools read/write
+the exact same file — a workspace configured via one is immediately usable by the
+other.
+
+> **Note:** Microsoft Entra ID authentication (used by the MCP server) is not
+> supported by the CLI. If a shared config file specifies `auth.type: "entra-id"`,
+> the CLI exits with a clear error rather than attempting it.
+
+---
+
+## Configuration File (`.apigrade.json`)
+
+You can persist CLI run defaults in a `.apigrade.json` file in your working directory.
+This file is **CLI-only** — it is not read by the `api-grade-mcp` server, and it is
+hand-edited rather than written by a command. CLI flags always take precedence over
+`.apigrade.json` values. See
+[Two Configuration Mechanisms](#two-configuration-mechanisms) if you also use
+`api-grade config set-ruleset` / `.api-grade/config.json` — the two can both specify a
+default `ruleset`, and `.apigrade.json` wins.
 
 ```json
 {
@@ -105,15 +246,46 @@ You can persist options in a `.apigrade.json` file in your working directory. CL
 }
 ```
 
-All keys are optional. Supported keys:
+All keys are optional. Supported keys — one for every grading-command flag except
+`--help`/`--version`:
 
 | Key | Type | Equivalent flag |
 |-----|------|-----------------|
 | `minGrade` | string | `--min-grade` |
 | `ruleset` | string | `--ruleset` |
+| `authType` | string | `--auth-type` |
+| `token` | string | `--token` |
 | `format` | `"human"` or `"json"` | `--format` |
 | `top` | number | `--top` |
 | `verbose` | boolean | `--verbose` |
+| `url` | string | `--url` (reserved — a non-empty value exits 1, same as the flag) |
+
+An explicit command-line flag always overrides the matching `.apigrade.json` key.
+`authType`/`token` have their own resolution chain, independent of `ruleset`'s — see
+[Precedence when the same setting is supplied in multiple places](#precedence-when-the-same-setting-is-supplied-in-multiple-places).
+
+**Fully configuring a private-repo ruleset run with zero flags:**
+
+```json
+{
+  "minGrade": "B",
+  "ruleset": "https://raw.githubusercontent.com/my-org/private-rules/main/ruleset.yaml",
+  "authType": "github-pat",
+  "token": "ghp_xxxxxxxxxxxxxxxxxxxx",
+  "format": "json",
+  "top": 20
+}
+```
+
+```bash
+api-grade openapi.yaml
+```
+
+> **Security note:** a `token` value in `.apigrade.json` is exposed to anything
+> that can read the file — including version control, if it's committed. Prefer
+> the `GITHUB_TOKEN` environment variable, or add `.apigrade.json` to `.gitignore`
+> when it contains a real token. The CLI never prints a `token` value (from any
+> source) to stdout, stderr, or logs, including under `--verbose`.
 
 ---
 
@@ -192,6 +364,24 @@ Pass any flag as you would with the local CLI:
 ```bash
 docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml --min-grade B --format json
 ```
+
+**Containerised CI run against a private-repo ruleset**, supplying the token via
+environment variable (never persisted to disk) and bind-mounting the workspace and
+home directory so persisted `config set-ruleset` defaults are visible inside the
+container:
+
+```bash
+docker run --rm \
+  -e GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx \
+  -v "$PWD":/workspace \
+  -v "$HOME/.api-grade":/root/.api-grade \
+  -w /workspace \
+  dawmatt/api-grade:latest \
+  openapi.yaml --min-grade B
+```
+
+The `-v "$PWD":/workspace` mount makes `.api-grade/config.json` (workspace scope)
+visible; `-v "$HOME/.api-grade":/root/.api-grade` makes the global scope visible.
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "@dawmatt/api-grade-core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Core grading library for api-grade — standalone, framework-agnostic",
   "keywords": [
     "api",
@@ -38,6 +38,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@azure/msal-node": "^2.16.2",
     "@stoplight/spectral-core": "^1.23.0",
     "@stoplight/spectral-formats": "^1.8.3",
     "@stoplight/spectral-parsers": "^1.0.5",

@@ -1,6 +1,6 @@
 {
   "name": "@dawmatt/api-grade-mcp",
-  "version": "0.1.4",
+  "version": "0.3.0",
   "description": "MCP server exposing api-grade capabilities for LLMs and agentic AI tooling",
   "keywords": [
     "api",
@@ -42,7 +42,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@azure/msal-node": "^2.16.2",
     "@dawmatt/api-grade-core": "*",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "zod": "^3.22.0"
