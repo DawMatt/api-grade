@@ -32,7 +32,8 @@ A developer or AI agent that grades an API using the CLI's JSON output, and sepa
 1. **Given** an API spec graded by the CLI in JSON mode, **When** the same spec is graded via the MCP `grade-api` tool, **Then** the grade letter, numeric score, grade label, diagnostic counts, recommendations, and focus-area fields use identical names and shapes in both outputs.
 2. **Given** the MCP `grade-api-detailed` tool's diagnostics list, **When** compared to the CLI's diagnostics list for the same spec, **Then** each diagnostic entry uses the same field names (severity, category, message, location, fixability, etc.) in both outputs.
 3. **Given** the MCP `assert-api-grade` tool's pass/fail result, **When** compared to the equivalent concept in the CLI's JSON output, **Then** the fields that represent the same concept (e.g. actual grade, minimum threshold) use the same names as the common schema.
-4. **Given** a developer runs a new CLI quick-fixes-only output mode against an API spec, **When** compared to the MCP `grade-api-quick-fixes-only` tool's output for the same spec, **Then** the quick-fix list and counts use identical field names and shapes in both outputs.
+4. **Given** a developer runs the CLI's new quick-fixes-only filter in JSON mode against an API spec, **When** compared to the MCP `grade-api-quick-fixes-only` tool's output for the same spec, **Then** the quick-fix list and counts use identical field names and shapes in both outputs.
+5. **Given** a developer runs the CLI's new quick-fixes-only filter in human-readable mode, **When** they read the output, **Then** they see the same non-breaking subset of diagnostics, rendered for human consumption rather than as JSON.
 
 ---
 
@@ -86,7 +87,7 @@ A user or integrator consuming the Backstage API page's underlying JSON data see
 - **FR-007**: Backstage's existing visibility-based field filtering MAY continue to omit fields for unauthorized viewers, but MUST NOT rename or restructure the fields it does retain.
 - **FR-008**: System MUST document the common JSON schema so that CLI, MCP, and Backstage consumers (including AI tooling) can rely on a single, stable reference for shared field names.
 - **FR-009**: Automated tests for CLI, MCP, and Backstage JSON output MUST be updated to assert conformance with the common schema for shared concepts.
-- **FR-010**: The CLI MUST gain a quick-fixes-only output mode equivalent to the MCP `grade-api-quick-fixes-only` tool, using the common schema's field names and structure for the quick-fix list and counts.
+- **FR-010**: The CLI MUST gain a quick-fixes-only filter, invoked via a dedicated command-line option (independent of the human/JSON output-format selection), that narrows the diagnostics shown down to the non-breaking/quick-fix subset MCP's `grade-api-quick-fixes-only` tool identifies. This filter MUST be usable with both human-readable and JSON output, using the common schema's field names and structure for the quick-fix list and counts in JSON mode.
 
 ### Key Entities
 
