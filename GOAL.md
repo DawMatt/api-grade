@@ -71,14 +71,21 @@ Feature 8 - CLI GitHub PAT
 
 - Add CLI support for rulesets hosted on GitHub private repos (via PAT)
 
-Feature 9 - Remote AI support
+Feature 9 - JSON output refactor
+
+- Align the JSON output format for the CLI with the grade-api-* tool outputs for the MCP server. If the backstage plugins also use similar JSON data formats, align those as well.
+- All common concepts across JSON output formats should use the same structure, naming and values. The only differences should be where JSON data is specific to one of the tools producing the JSON (e.g. MCP's `recoveryOptions`).
+- Refactor the packages so JSON output uses a common implementation in api-grade-core, and then tool packages enrich the output with any tool specific details (where required). This is expected to impact the core, MCP and CLI packages. It may also impact the backstage plugin packages.
+- Add the "quick fixes only" capability from the MCP server to the CLI, via an additional command-line argument
+
+Feature 10 - Remote AI support
 
 - Allow API grading to be performed directly (remotely) from LLMs and agentic AI tooling
 - Update AI support to include remote access via streamable/HTTP transport
 - Any remote AI tooling support must explicitly include Claude Code, GitHub Copilot and Copilot Studio
 - Support both direct installed and containerised execution of the functionality.
 
-Feature 10 - Entra and CLI
+Feature 11 - Entra and CLI
 
 - Confirm Entra ID ruleset functionality in MCP is operational, for Entra ID protected environments (e.g. SharePoint, OneDrive)
 - Add Entra ID functionality to CLI as well
