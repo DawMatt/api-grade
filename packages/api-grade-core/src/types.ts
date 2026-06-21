@@ -86,3 +86,28 @@ export function extractCategory(ruleId: string): string {
   const match = ruleId.match(/^([^_-]+)/);
   return match ? match[1] : ruleId;
 }
+
+export interface AuthConfig {
+  type: 'github-pat' | 'entra-id';
+  githubToken?: string;
+  tenantId?: string;
+  clientId?: string;
+}
+
+export interface RulesetConfig {
+  rulesetPath: string | null;
+  auth: AuthConfig | null;
+}
+
+export type RulesetScope = 'per-request' | 'session' | 'workspace' | 'global' | 'built-in';
+
+export interface RulesetResolution {
+  rulesetPath: string | null;
+  scope: RulesetScope;
+  auth: AuthConfig | null;
+}
+
+export interface SessionState {
+  defaultRuleset: RulesetConfig | null;
+  sessionRulesetOverride: 'builtin' | null;
+}

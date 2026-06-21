@@ -24,7 +24,8 @@ The CLI supports **OpenAPI 2/3** and **AsyncAPI 2/3**, custom Spectral rulesets,
 - Full diagnostic list (errors first, then warnings)
 - OpenAPI 2/3 and AsyncAPI 2/3 support from one command
 - CI/CD gate via `--min-grade <LETTER>`
-- Custom Spectral-compatible rulesets via `--ruleset`
+- Custom Spectral-compatible rulesets via `--ruleset`, including private GitHub-hosted rulesets via `--auth-type github-pat`/`--token`/`GITHUB_TOKEN`
+- Persistent workspace/global ruleset+auth defaults via `config set-ruleset`/`config get-ruleset`
 - Machine-readable JSON output via `--format json`
 - Docker support for containerised pipelines
 - Cross-platform: macOS, Linux, and Windows

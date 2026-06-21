@@ -7,8 +7,8 @@ import {
   getWorkspaceConfigPath,
   getGlobalConfigPath,
   ConfigWriteError,
-} from '../config/ruleset-config.js';
-import type { SessionState, RulesetConfig, AuthConfig } from '../types.js';
+} from '@dawmatt/api-grade-core';
+import type { SessionState, RulesetConfig, AuthConfig } from '@dawmatt/api-grade-core';
 
 export function registerSetRulesetConfigTool(server: McpServer, sessionState: SessionState): void {
   server.tool(

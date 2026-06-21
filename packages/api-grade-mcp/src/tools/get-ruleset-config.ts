@@ -1,7 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { loadWorkspaceConfig, loadGlobalConfig, getWorkspaceConfigPath, getGlobalConfigPath } from '../config/ruleset-config.js';
-import { resolveRuleset } from '../config/resolve-ruleset.js';
-import type { SessionState, AuthConfig } from '../types.js';
+import {
+  loadWorkspaceConfig,
+  loadGlobalConfig,
+  getWorkspaceConfigPath,
+  getGlobalConfigPath,
+  resolveRuleset,
+} from '@dawmatt/api-grade-core';
+import type { SessionState, AuthConfig } from '@dawmatt/api-grade-core';
 
 function sanitizeAuth(auth: AuthConfig | null | undefined, hasToken: boolean): Record<string, string> | null {
   if (!auth) return null;

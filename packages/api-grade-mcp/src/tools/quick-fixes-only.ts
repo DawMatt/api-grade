@@ -2,15 +2,22 @@ import { statSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { GradeEngine } from '@dawmatt/api-grade-core';
+import {
+  GradeEngine,
+  loadWorkspaceConfig,
+  loadGlobalConfig,
+  resolveRuleset,
+  fetchRulesetContent,
+  RulesetAuthError,
+  INITIAL_FETCH_TIMEOUT_MS,
+  RETRY_FETCH_TIMEOUT_MS,
+  EntraAuthRequired,
+  acquireEntraToken,
+} from '@dawmatt/api-grade-core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { mcpError, buildRulesetFetchFailureResponse, describeFetchFailureReason, ERROR_CODES } from '../utils/errors.js';
-import { loadWorkspaceConfig, loadGlobalConfig } from '../config/ruleset-config.js';
-import { resolveRuleset } from '../config/resolve-ruleset.js';
-import { fetchRulesetContent, RulesetAuthError, INITIAL_FETCH_TIMEOUT_MS, RETRY_FETCH_TIMEOUT_MS } from '../auth/github.js';
-import { EntraAuthRequired, acquireEntraToken } from '../auth/entra.js';
 import { classifyViolation, buildQuickFix } from '../utils/classify.js';
-import type { SessionState } from '../types.js';
+import type { SessionState } from '@dawmatt/api-grade-core';
 
 const LARGE_SPEC_THRESHOLD_BYTES = 500_000;
 

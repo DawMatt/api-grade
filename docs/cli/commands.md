@@ -21,7 +21,9 @@ api-grade <spec-file> [options]
 | Flag | Description |
 |------|-------------|
 | `--min-grade <LETTER>` | Exit with code 1 if the grade is below this threshold (A, B, C, D, or F) |
-| `--ruleset <path>` | Path to a custom Spectral-compatible ruleset file |
+| `--ruleset <path>` | Path to a custom Spectral-compatible ruleset file, or a URL into a private GitHub repository |
+| `--auth-type <type>` | Authorisation type for fetching a remote ruleset: `none` (default) or `github-pat` |
+| `--token <pat>` | GitHub Personal Access Token used to authenticate a remote ruleset fetch (only consulted when `--auth-type github-pat`) |
 | `--format <type>` | Output format: `human` (default) or `json` |
 | `--top <n>` | Show only the top N diagnostics (useful for large specs) |
 | `--verbose` | Print the full error stack when a runtime error occurs |
@@ -88,6 +90,73 @@ api-grade openapi.yaml --ruleset ./my-rules.yaml --verbose
 ```bash
 docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml
 ```
+
+**Grade against a private GitHub-hosted ruleset using a Personal Access Token:**
+
+```bash
+api-grade openapi.yaml \
+  --ruleset https://raw.githubusercontent.com/my-org/private-rules/main/ruleset.yaml \
+  --auth-type github-pat \
+  --token ghp_xxxxxxxxxxxxxxxxxxxx
+```
+
+Or via the `GITHUB_TOKEN` environment variable instead of `--token` (still requires
+`--auth-type github-pat` — the token is never consulted unless the authorisation type
+resolves to `github-pat`):
+
+```bash
+export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+api-grade openapi.yaml \
+  --ruleset https://raw.githubusercontent.com/my-org/private-rules/main/ruleset.yaml \
+  --auth-type github-pat
+```
+
+---
+
+## Persistent Ruleset Configuration (`config` subcommand)
+
+`api-grade config set-ruleset` / `api-grade config get-ruleset` let you configure a
+default ruleset (and optional GitHub PAT auth) once, at workspace or global scope,
+so every subsequent invocation in that workspace — including CI runs — uses it
+automatically without repeating `--ruleset`/`--auth-type`/`--token` on every command.
+
+| Flag (`config set-ruleset`) | Required | Description |
+|---|---|---|
+| `--scope <workspace\|global>` | yes | Which persisted config file to write: `.api-grade/config.json` (workspace) or `~/.api-grade/config.json` (global) |
+| `--ruleset <path>` | no | Path or URL to set as the default; omit to clear the default at that scope |
+| `--auth-type <none\|github-pat>` | no | Authorisation type to persist alongside the ruleset (defaults to `none`) |
+| `--token <pat>` | no | GitHub PAT to persist; only persisted when `--auth-type github-pat` is also explicitly supplied |
+| `--format <type>` | no | Output format: `human` (default) or `json` |
+
+```bash
+api-grade config set-ruleset \
+  --scope workspace \
+  --ruleset https://raw.githubusercontent.com/my-org/private-rules/main/ruleset.yaml \
+  --auth-type github-pat \
+  --token ghp_xxxxxxxxxxxxxxxxxxxx
+```
+
+Every subsequent invocation in this workspace uses it automatically:
+
+```bash
+api-grade openapi.yaml --min-grade B --format json
+```
+
+Check what's configured (never prints the token value — only `(token configured)`,
+`(no token)`, or `(from GITHUB_TOKEN)`):
+
+```bash
+api-grade config get-ruleset
+```
+
+Workspace-scoped config always takes precedence over global config. Both surfaces
+read/write the exact same file format as the `api-grade-mcp` server's
+`set-ruleset-config`/`get-ruleset-config` tools — a workspace configured via one is
+immediately usable by the other.
+
+> **Note:** Microsoft Entra ID authentication (used by the MCP server) is not
+> supported by the CLI. If a shared config file specifies `auth.type: "entra-id"`,
+> the CLI exits with a clear error rather than attempting it.
 
 ---
 
@@ -192,6 +261,24 @@ Pass any flag as you would with the local CLI:
 ```bash
 docker run --rm -v "$(pwd):/work" api-grade /work/openapi.yaml --min-grade B --format json
 ```
+
+**Containerised CI run against a private-repo ruleset**, supplying the token via
+environment variable (never persisted to disk) and bind-mounting the workspace and
+home directory so persisted `config set-ruleset` defaults are visible inside the
+container:
+
+```bash
+docker run --rm \
+  -e GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx \
+  -v "$PWD":/workspace \
+  -v "$HOME/.api-grade":/root/.api-grade \
+  -w /workspace \
+  dawmatt/api-grade:latest \
+  openapi.yaml --min-grade B
+```
+
+The `-v "$PWD":/workspace` mount makes `.api-grade/config.json` (workspace scope)
+visible; `-v "$HOME/.api-grade":/root/.api-grade` makes the global scope visible.
 
 ---
 
