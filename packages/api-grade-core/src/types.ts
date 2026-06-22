@@ -111,3 +111,44 @@ export interface SessionState {
   defaultRuleset: RulesetConfig | null;
   sessionRulesetOverride: 'builtin' | null;
 }
+
+export type ViolationClass = 'nonBreaking' | 'breaking' | 'unknown';
+
+export interface QuickFix {
+  ruleId: string;
+  message: string;
+  severity: string;
+  path: string[];
+  location: string;
+  currentValue: string | null;
+  expectedImprovement: string;
+}
+
+export interface CommonGradeOutput {
+  specPath: string;
+  format: ApiFormat;
+  letterGrade: LetterGrade;
+  gradeLabel: GradeLabel;
+  numericScore: number;
+  summary: DiagnosticSummary;
+  diagnostics: Diagnostic[];
+  truncated?: boolean;
+  rulesetSource: 'default' | 'custom';
+  rulesetPath?: string;
+}
+
+export interface AssertOutput {
+  passed: boolean;
+  actual: LetterGrade;
+  minimum: LetterGrade;
+  specPath: string;
+  numericScore: number;
+}
+
+export interface QuickFixOutput {
+  specPath: string;
+  format: ApiFormat;
+  totalViolations: number;
+  quickFixCount: number;
+  quickFixes: QuickFix[];
+}

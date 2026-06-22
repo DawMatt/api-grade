@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import type { GradeResult, DiagnosticSeverity } from './types.js';
+import { buildCommonGradeOutput } from './json-output.js';
 
 const SEVERITY_COLORS: Record<DiagnosticSeverity, (s: string) => string> = {
   error: chalk.red,
@@ -73,38 +74,6 @@ export function formatHuman(result: GradeResult, top?: number): string {
 }
 
 export function formatJson(result: GradeResult, top?: number): string {
-  const displayedDiagnostics = top !== undefined
-    ? result.diagnostics.slice(0, top)
-    : result.diagnostics;
-  const output = {
-    grade: {
-      letter: result.letterGrade,
-      score: result.numericScore,
-      label: result.gradeLabel,
-    },
-    specPath: result.specPath,
-    format: result.format,
-    rulesetSource: result.rulesetSource,
-    ...(result.rulesetPath ? { rulesetPath: result.rulesetPath } : {}),
-    tone: result.summary.tone,
-    severityLevel: result.summary.severityLevel,
-    qualityAssessment: result.summary.commentary,
-    diagnosticCounts: {
-      errors: result.summary.errorCount,
-      warnings: result.summary.warnCount,
-      infos: result.summary.infoCount,
-      hints: result.summary.hintCount,
-      total: result.diagnostics.length,
-    },
-    focusRules: result.summary.focusRules,
-    recommendations: result.summary.recommendations,
-    diagnostics: displayedDiagnostics.map((d) => ({
-      ruleId: d.ruleId,
-      message: d.message,
-      severity: d.severity,
-      path: d.path,
-      range: d.range,
-    })),
-  };
+  const output = buildCommonGradeOutput(result, { top });
   return JSON.stringify(output, null, 2);
 }

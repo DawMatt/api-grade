@@ -26,6 +26,7 @@ api-grade <spec-file> [options]
 | `--token <pat>` | GitHub Personal Access Token used to authenticate a remote ruleset fetch (only consulted when `--auth-type github-pat`) |
 | `--format <type>` | Output format: `human` (default) or `json` |
 | `--top <n>` | Show only the top N diagnostics (useful for large specs) |
+| `--quick-fixes-only` | Filter diagnostics to the non-breaking, safely-automatable subset |
 | `--verbose` | Print the full error stack when a runtime error occurs |
 | `-V, --version` | Print the version number |
 | `-h, --help` | Show usage information |
@@ -313,24 +314,41 @@ api-grade openapi.yaml --ruleset my-rules.yaml
 
 ## JSON Output Schema
 
-When using `--format json`, the output is a JSON object with the following structure:
+> **Canonical reference**: this shape is defined once in
+> [`@dawmatt/api-grade-core`'s JSON Output Schema](../package/api-reference.md#json-output-schema)
+> and shared by the CLI, MCP server, and Backstage plugins — this section shows
+> the CLI's usage of it.
+>
+> **Breaking change**: this shape replaced the previous `grade`/`qualityAssessment`/
+> `diagnosticCounts` wrapper. See [CHANGELOG.md](../../CHANGELOG.md) for the
+> old → new field mapping.
+
+When using `--format json`, the output is a JSON object with the same flat field
+names used by the MCP server's `grade-api` / `grade-api-detailed` tools — one
+parser works for both:
 
 ```json
 {
-  "grade": { "letter": "C", "score": 74, "label": "OK" },
   "specPath": "openapi.yaml",
   "format": "openapi-3",
-  "rulesetSource": "default",
-  "tone": "OK effort",
-  "severityLevel": "CRITICAL",
-  "qualityAssessment": "OK effort. 1 error detected...",
-  "diagnosticCounts": { "errors": 1, "warnings": 21, "infos": 0, "hints": 0, "total": 22 },
-  "focusRules": [
-    { "id": "oas3-schema", "title": "Oas3 Schema", "category": "oas3", "count": 1, "impact": "HIGH", "url": null }
-  ],
-  "recommendations": [
-    "Fix 1 error immediately — it blocks production readiness: oas3-schema"
-  ],
+  "letterGrade": "C",
+  "gradeLabel": "OK",
+  "numericScore": 74,
+  "summary": {
+    "tone": "OK effort",
+    "severityLevel": "CRITICAL",
+    "errorCount": 1,
+    "warnCount": 21,
+    "infoCount": 0,
+    "hintCount": 0,
+    "commentary": "OK effort. 1 error detected...",
+    "focusRules": [
+      { "id": "oas3-schema", "title": "Oas3 Schema", "category": "oas3", "count": 1, "impact": "HIGH", "url": null }
+    ],
+    "recommendations": [
+      "Fix 1 error immediately — it blocks production readiness: oas3-schema"
+    ]
+  },
   "diagnostics": [
     {
       "ruleId": "oas3-schema",
@@ -339,9 +357,78 @@ When using `--format json`, the output is a JSON object with the following struc
       "path": ["info", "version"],
       "range": { "start": { "line": 3, "character": 0 }, "end": { "line": 3, "character": 5 } }
     }
+  ],
+  "rulesetSource": "default"
+}
+```
+
+`truncated: true` is added only when `--top` actually drops entries from `diagnostics`.
+`rulesetPath` is added only when a custom ruleset was used.
+
+---
+
+## Quick Fixes (`--quick-fixes-only`)
+
+`--quick-fixes-only` filters diagnostics down to the non-breaking, safely-automatable
+subset — the same classification used by the MCP server's
+`grade-api-quick-fixes-only` tool. It is a *filter*, independent of `--format`, so it
+works with either output format.
+
+**Machine-readable:**
+
+```bash
+api-grade openapi.yaml --quick-fixes-only --format json
+```
+
+```json
+{
+  "specPath": "openapi.yaml",
+  "format": "openapi-3",
+  "totalViolations": 22,
+  "quickFixCount": 3,
+  "quickFixes": [
+    {
+      "ruleId": "info-contact",
+      "message": "Info object must have \"contact\" object.",
+      "severity": "warn",
+      "path": ["info"],
+      "location": "info",
+      "currentValue": null,
+      "expectedImprovement": "Add a `contact` object to the info block with name, email, or url"
+    }
   ]
 }
 ```
+
+**Human-readable** (default, or with `--format human`):
+
+```bash
+api-grade openapi.yaml --quick-fixes-only
+```
+
+Prints the same filtered list as readable text instead of JSON.
+
+`--quick-fixes-only` has no effect on `--min-grade` — the gate still evaluates the
+spec's actual letter grade from the full, unfiltered diagnostics.
+
+---
+
+## Structured `--min-grade` Outcome in JSON Mode
+
+When `--min-grade <LETTER>` is combined with `--format json`, the CLI prints a
+second JSON object — in addition to the grade output above, not instead of it —
+matching the MCP server's `assert-api-grade` shape:
+
+```bash
+api-grade openapi.yaml --min-grade B --format json
+```
+
+```json
+{ "passed": false, "actual": "C", "minimum": "B", "specPath": "openapi.yaml", "numericScore": 74 }
+```
+
+The existing human-readable failure message on stderr and non-zero exit code still
+occur on failure, in both `--format human` and `--format json` modes.
 
 ---
 

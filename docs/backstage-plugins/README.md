@@ -29,7 +29,10 @@ Backstage UI
 
 Renders the **API Grade** card in the Info column of an API entity page. The card shows:
 
-- A grade letter, numeric percentage, and quality label to **all viewers**
+- A grade letter, numeric percentage, and quality label to **all viewers** — using
+  the same `letterGrade`/`gradeLabel`/`numericScore` field names defined in the
+  [JSON Output Schema](../package/api-reference.md#json-output-schema) shared
+  with the CLI and MCP server
 - Quality Assessment commentary, numbered Recommendations, and full Diagnostics to **API owners and configured groups**
 
 The card uses Backstage's `useEntity()` hook to read the current entity reference and calls the backend via Backstage's Discovery and Fetch APIs.

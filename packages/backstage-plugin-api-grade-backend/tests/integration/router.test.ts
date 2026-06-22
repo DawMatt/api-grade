@@ -131,6 +131,25 @@ describe('GET /grade — summary response shape (non-owner)', () => {
     expect(body.grade['numericScore']).toBeDefined();
   });
 
+  // T027 — regression guard: /grade must expose the common schema's field names
+  // (letterGrade/gradeLabel/numericScore/summary.commentary), never the CLI's old
+  // qualityAssessment/diagnosticCounts/nested grade.letter shape (FR-006/FR-007).
+  it('exposes the common schema field names and never the old CLI wrapper fields', async () => {
+    const router = await createRouter({ config, catalog, auth, httpAuth });
+    const { req, res, getBody } = makeReqRes({ entityRef: 'api:default/test-api' });
+    const handlers = (router as unknown as { stack: { route?: { stack: { handle: Function }[] } }[] }).stack;
+    const gradeRoute = handlers.find(l => l.route)?.route?.stack[0]?.handle;
+    if (gradeRoute) await gradeRoute(req, res, () => {});
+    const body = getBody() as { grade: Record<string, unknown> & { summary: Record<string, unknown> } };
+    expect(body.grade['letterGrade']).toBeDefined();
+    expect(body.grade['gradeLabel']).toBeDefined();
+    expect(body.grade['numericScore']).toBeDefined();
+    expect(typeof body.grade.summary['commentary']).toBe('string');
+    expect(body.grade).not.toHaveProperty('qualityAssessment');
+    expect(body.grade).not.toHaveProperty('diagnosticCounts');
+    expect(body.grade).not.toHaveProperty('letter');
+  });
+
   it('strips diagnostics, commentary, and recommendations for non-owner', async () => {
     const router = await createRouter({ config, catalog, auth, httpAuth });
     const { req, res, getBody } = makeReqRes({ entityRef: 'api:default/test-api' });

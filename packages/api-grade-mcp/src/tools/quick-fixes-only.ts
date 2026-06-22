@@ -13,10 +13,10 @@ import {
   RETRY_FETCH_TIMEOUT_MS,
   EntraAuthRequired,
   acquireEntraToken,
+  buildQuickFixOutput,
 } from '@dawmatt/api-grade-core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { mcpError, buildRulesetFetchFailureResponse, describeFetchFailureReason, ERROR_CODES } from '../utils/errors.js';
-import { classifyViolation, buildQuickFix } from '../utils/classify.js';
 import type { SessionState } from '@dawmatt/api-grade-core';
 
 const LARGE_SPEC_THRESHOLD_BYTES = 500_000;
@@ -115,7 +115,7 @@ export function registerQuickFixesOnlyTool(server: McpServer, sessionState: Sess
       }
 
       let largeSpecWarning: string | undefined;
-      let specContent = '';
+      let specContent: string;
 
       try {
         const stat = statSync(specPath);
@@ -136,17 +136,7 @@ export function registerQuickFixesOnlyTool(server: McpServer, sessionState: Sess
         const engine = new GradeEngine();
         const result = await engine.grade({ specPath, rulesetPath: effectiveRulesetPath });
 
-        const quickFixes = result.diagnostics
-          .filter((d) => classifyViolation(d) === 'nonBreaking')
-          .map((d) => buildQuickFix(d, specContent));
-
-        const response: Record<string, unknown> = {
-          specPath: result.specPath,
-          format: result.format,
-          totalViolations: result.diagnostics.length,
-          quickFixCount: quickFixes.length,
-          quickFixes,
-        };
+        const response: Record<string, unknown> = { ...buildQuickFixOutput(result, specContent) };
 
         if (largeSpecWarning) {
           response.largeSpecWarning = largeSpecWarning;

@@ -13,6 +13,7 @@ import {
   RETRY_FETCH_TIMEOUT_MS,
   EntraAuthRequired,
   acquireEntraToken,
+  buildCommonGradeOutput,
 } from '@dawmatt/api-grade-core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { mcpError, buildRulesetFetchFailureResponse, describeFetchFailureReason, ERROR_CODES } from '../utils/errors.js';
@@ -136,18 +137,14 @@ export function registerGradeTool(server: McpServer, sessionState: SessionState)
         const engine = new GradeEngine();
         const result = await engine.grade({ specPath, rulesetPath: effectiveRulesetPath });
 
-        const response: Record<string, unknown> = {
-          specPath: result.specPath,
-          format: result.format,
-          letterGrade: result.letterGrade,
-          gradeLabel: result.gradeLabel,
-          numericScore: result.numericScore,
-          summary: result.summary,
-          rulesetSource: result.rulesetSource,
-          ...((configuredRulesetPath ?? result.rulesetPath)
-            ? { rulesetPath: configuredRulesetPath ?? result.rulesetPath }
-            : {}),
-        };
+        const response: Record<string, unknown> = { ...buildCommonGradeOutput(result) };
+        delete response.diagnostics;
+
+        if (configuredRulesetPath ?? result.rulesetPath) {
+          response.rulesetPath = configuredRulesetPath ?? result.rulesetPath;
+        } else {
+          delete response.rulesetPath;
+        }
 
         if (largeSpecWarning) {
           response.largeSpecWarning = largeSpecWarning;
