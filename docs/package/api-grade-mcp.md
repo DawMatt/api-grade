@@ -84,6 +84,11 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ## Available Tools
 
+> Each tool's grade-shaped fields (`letterGrade`, `gradeLabel`, `numericScore`,
+> `summary`, `diagnostics`, etc.) follow the canonical
+> [JSON Output Schema](api-reference.md#json-output-schema) shared with the CLI
+> and Backstage plugins; fields below are tool-specific additions or subsets of it.
+
 ### `grade-api`
 
 Grade an API specification and return a token-efficient summary — letter grade, score, and diagnostic overview without the full violations list.

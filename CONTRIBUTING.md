@@ -168,7 +168,7 @@ Grade boundaries:
 | D | ≥ 60% |
 | F | < 60% |
 
-The algorithm is documented in `specs/api_diagnostic_algorithm_spec.md` and the constitution at `.specify/memory/constitution.md`. If you propose a change to the algorithm, update `tests/unit/scorer.test.ts` and both documents, and explain the motivation in your pull request.
+The algorithm is documented in `specs/algorithms/api_diagnostic_algorithm_spec.md` and the constitution at `.specify/memory/constitution.md`. If you propose a change to the algorithm, update `tests/unit/scorer.test.ts` and both documents, and explain the motivation in your pull request.
 
 ## Submitting a change
 

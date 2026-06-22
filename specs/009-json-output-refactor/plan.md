@@ -114,7 +114,12 @@ no source changes are expected there, since they already consume the flat shape.
 - **AI Integration Requirements**: PASS — this feature *increases* alignment with
   AI tooling by making the CLI emit the same field names MCP already exposes to
   Claude Code / GitHub Copilot, reducing the parsing logic an AI agent needs to
-  maintain per access method. No change to MCP tool schemas/definitions themselves.
+  maintain per access method. No change to MCP tool schemas/definitions themselves
+  (zod input/output schemas are unmodified — only internal value-shaping code
+  changed), so the constitution's "explicitly verified to function with Claude
+  Code and GitHub Copilot" gate does not introduce new verification surface here;
+  T031's manual quickstart pass already confirms MCP's response *values* are
+  unaffected by the refactor.
 - **CI/CD Integration Requirements**: PASS, with a required follow-up: the CLI's
   `--format json` shape changes (breaking) and `--min-grade` gains a structured
   JSON object in JSON mode. Existing non-zero-exit-on-failure behavior for

@@ -314,6 +314,11 @@ api-grade openapi.yaml --ruleset my-rules.yaml
 
 ## JSON Output Schema
 
+> **Canonical reference**: this shape is defined once in
+> [`@dawmatt/api-grade-core`'s JSON Output Schema](../package/api-reference.md#json-output-schema)
+> and shared by the CLI, MCP server, and Backstage plugins — this section shows
+> the CLI's usage of it.
+>
 > **Breaking change**: this shape replaced the previous `grade`/`qualityAssessment`/
 > `diagnosticCounts` wrapper. See [CHANGELOG.md](../../CHANGELOG.md) for the
 > old → new field mapping.

@@ -104,6 +104,93 @@ Serialises a `GradeResult` to a human-readable text string. The output matches t
 
 ---
 
+## JSON Output Schema
+
+> **Canonical reference**: this is the single, stable definition of the JSON field
+> names and shapes shared across `@dawmatt/api-grade` (CLI), `@dawmatt/api-grade-mcp`,
+> and the Backstage plugins. Every package that emits these concepts in JSON uses
+> these exact field names — see [CLI Commands](../cli/commands.md#json-output-schema)
+> and [MCP Server Tool Reference](api-grade-mcp.md) for where each shape is used.
+
+### `buildCommonGradeOutput(result: GradeResult, options?: { top?: number }): CommonGradeOutput`
+
+Shapes a `GradeResult` for "grade a spec, give me everything" output. Used by the
+CLI's `--format json`, MCP's `grade-api`, and MCP's `grade-api-detailed`.
+
+```typescript
+interface CommonGradeOutput {
+  specPath: string;
+  format: ApiFormat;
+  letterGrade: LetterGrade;
+  gradeLabel: GradeLabel;
+  numericScore: number;
+  summary: DiagnosticSummary;
+  diagnostics: Diagnostic[];
+  truncated?: boolean;            // present only when `options.top` actually dropped entries
+  rulesetSource: 'default' | 'custom';
+  rulesetPath?: string;           // present only when a custom ruleset was used
+}
+```
+
+Tool-specific data (e.g. MCP's `largeSpecWarning`, `recoveryOptions`) is layered
+additively on top of this shape by the consuming package — it is never renamed or
+restructured.
+
+### `buildAssertOutput(result: GradeResult, minimumGrade: LetterGrade): AssertOutput`
+
+Shapes a "did this spec meet a minimum grade" pass/fail result. Used by MCP's
+`assert-api-grade` and by the CLI's `--min-grade` gate in `--format json` mode.
+
+```typescript
+interface AssertOutput {
+  passed: boolean;        // true if `actual` is at or above `minimum`
+  actual: LetterGrade;
+  minimum: LetterGrade;
+  specPath: string;
+  numericScore: number;
+}
+```
+
+### `buildQuickFixOutput(result: GradeResult, specContent: string): QuickFixOutput`
+
+Shapes the "safely-automatable fixes" subset. Used by MCP's
+`grade-api-quick-fixes-only` and the CLI's `--quick-fixes-only --format json`.
+
+```typescript
+interface QuickFixOutput {
+  specPath: string;
+  format: ApiFormat;
+  totalViolations: number;
+  quickFixCount: number;
+  quickFixes: QuickFix[];
+}
+
+interface QuickFix {
+  ruleId: string;
+  message: string;
+  severity: string;
+  path: string[];
+  location: string;              // dot-joined `path`
+  currentValue: string | null;
+  expectedImprovement: string;
+}
+```
+
+### `formatQuickFixesHuman(result: GradeResult, specContent: string): string`
+
+Renders the same filtered `QuickFix[]` list used by `buildQuickFixOutput()` as
+human-readable text. Used by the CLI's `--quick-fixes-only` with `--format human`
+(the default).
+
+### `classifyViolation(diagnostic: Diagnostic): ViolationClass`
+
+Classifies a single diagnostic as `'nonBreaking' | 'breaking' | 'unknown'`. The
+classification basis for `buildQuickFixOutput()`'s filtering. See the
+[Quick-Fixes Algorithm Specification](../../specs/algorithms/quick_fixes_algorithm_spec.md)
+for the full rationale behind which violations are classified which way.
+
+---
+
 ## Types
 
 ### `GradeRequest`
@@ -156,7 +243,10 @@ interface GradeResult {
 
 ### `DiagnosticSummary`
 
-The computed summary attached to every `GradeResult` as `result.summary`.
+The computed summary attached to every `GradeResult` as `result.summary`. See
+the [API Diagnostic Algorithm Specification](../../specs/algorithms/api_diagnostic_algorithm_spec.md)
+for the full scoring, tone, and recommendation-generation logic behind these
+fields.
 
 ```typescript
 interface DiagnosticSummary {
@@ -216,4 +306,7 @@ interface RuleMetadata {
 - [Usage Guide](usage-guide.md) — common patterns and worked examples
 - [Package Overview](README.md) — installation and minimal usage
 - [MCP Server Tool Reference](api-grade-mcp.md) — all six MCP tools including `recoveryOption`
+- [CLI Commands](../cli/commands.md#json-output-schema) — CLI-specific usage of the JSON Output Schema above
+- [API Diagnostic Algorithm Specification](../../specs/algorithms/api_diagnostic_algorithm_spec.md) — full scoring/grading/recommendation algorithm
+- [Quick-Fixes Algorithm Specification](../../specs/algorithms/quick_fixes_algorithm_spec.md) — full non-breaking-vs-breaking classification algorithm
 - [Documentation Index](../index.md) — full navigation across all docs
