@@ -2,6 +2,8 @@ export { GradeEngine } from './grader.js';
 export { formatHuman, formatJson } from './formatter.js';
 export { computeScore, LETTER_GRADE_ORDER, gradeToNumber } from './scorer.js';
 export { extractCategory } from './types.js';
+export { buildCommonGradeOutput, buildAssertOutput } from './json-output.js';
+export { classifyViolation, buildQuickFix, buildQuickFixOutput, formatQuickFixesHuman } from './quick-fixes.js';
 
 export type {
   ApiFormat,
@@ -17,6 +19,11 @@ export type {
   ImpactLevel,
   LetterGrade,
   RuleMetadata,
+  QuickFix,
+  ViolationClass,
+  CommonGradeOutput,
+  AssertOutput,
+  QuickFixOutput,
 } from './types.js';
 
 export type {

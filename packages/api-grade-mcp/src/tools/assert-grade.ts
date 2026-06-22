@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import {
   GradeEngine,
-  gradeToNumber,
   LETTER_GRADE_ORDER,
   loadWorkspaceConfig,
   loadGlobalConfig,
@@ -15,6 +14,7 @@ import {
   RETRY_FETCH_TIMEOUT_MS,
   EntraAuthRequired,
   acquireEntraToken,
+  buildAssertOutput,
 } from '@dawmatt/api-grade-core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { mcpError, buildRulesetFetchFailureResponse, describeFetchFailureReason, ERROR_CODES } from '../utils/errors.js';
@@ -141,16 +141,7 @@ export function registerAssertGradeTool(server: McpServer, sessionState: Session
         const engine = new GradeEngine();
         const result = await engine.grade({ specPath, rulesetPath: effectiveRulesetPath });
 
-        const actual = result.letterGrade;
-        const passed = gradeToNumber(actual) <= gradeToNumber(minimumGrade as (typeof LETTER_GRADE_ORDER)[number]);
-
-        const response = {
-          passed,
-          actual,
-          minimum: minimumGrade,
-          specPath: result.specPath,
-          numericScore: result.numericScore,
-        };
+        const response = buildAssertOutput(result, minimumGrade as (typeof LETTER_GRADE_ORDER)[number]);
 
         return { content: [{ type: 'text', text: JSON.stringify(response) }] };
       } catch (err) {

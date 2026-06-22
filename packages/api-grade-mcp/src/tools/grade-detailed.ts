@@ -13,6 +13,7 @@ import {
   RETRY_FETCH_TIMEOUT_MS,
   EntraAuthRequired,
   acquireEntraToken,
+  buildCommonGradeOutput,
 } from '@dawmatt/api-grade-core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { mcpError, buildRulesetFetchFailureResponse, describeFetchFailureReason, ERROR_CODES } from '../utils/errors.js';
@@ -135,27 +136,14 @@ export function registerGradeDetailedTool(server: McpServer, sessionState: Sessi
         const engine = new GradeEngine();
         const result = await engine.grade({ specPath, rulesetPath: effectiveRulesetPath });
 
-        let truncated = false;
-        let diagnostics = result.diagnostics;
-        if (diagnostics.length > MAX_DIAGNOSTICS) {
-          diagnostics = diagnostics.slice(0, MAX_DIAGNOSTICS);
-          truncated = true;
-        }
+        const built = buildCommonGradeOutput(result, { top: MAX_DIAGNOSTICS });
+        const response: Record<string, unknown> = { ...built, truncated: built.truncated ?? false };
 
-        const response: Record<string, unknown> = {
-          specPath: result.specPath,
-          format: result.format,
-          letterGrade: result.letterGrade,
-          gradeLabel: result.gradeLabel,
-          numericScore: result.numericScore,
-          summary: result.summary,
-          diagnostics,
-          rulesetSource: result.rulesetSource,
-          ...((configuredRulesetPath ?? result.rulesetPath)
-            ? { rulesetPath: configuredRulesetPath ?? result.rulesetPath }
-            : {}),
-          truncated,
-        };
+        if (configuredRulesetPath ?? result.rulesetPath) {
+          response.rulesetPath = configuredRulesetPath ?? result.rulesetPath;
+        } else {
+          delete response.rulesetPath;
+        }
 
         if (largeSpecWarning) {
           response.largeSpecWarning = largeSpecWarning;

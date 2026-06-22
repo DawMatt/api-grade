@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { unlinkSync } from 'node:fs';
+import { unlinkSync, readFileSync } from 'node:fs';
 import { Command } from 'commander';
 import chalk from 'chalk';
 import {
@@ -10,6 +10,9 @@ import {
   gradeToNumber,
   loadWorkspaceConfig,
   loadGlobalConfig,
+  buildAssertOutput,
+  buildQuickFixOutput,
+  formatQuickFixesHuman,
 } from '@dawmatt/api-grade-core';
 import { loadConfig } from './config-loader.js';
 import { resolveCliAuth, checkEntraRejection, isValidAuthType } from './ruleset-resolution.js';
@@ -74,6 +77,7 @@ program
     return n;
   })
   .option('--url <url>', '(reserved for future use)')
+  .option('--quick-fixes-only', 'Filter diagnostics to the non-breaking, safely-automatable subset')
   .option('--verbose', 'Print full error stack on failure')
   .action(async (specFile: string, cliOpts: {
     minGrade?: string;
@@ -83,6 +87,7 @@ program
     format?: string;
     top?: number;
     url?: string;
+    quickFixesOnly?: boolean;
     verbose?: boolean;
   }) => {
     // Load .apigrade.json config; CLI flags override config values
@@ -177,13 +182,24 @@ program
         rulesetPath,
       });
 
-      const output = outputFormat === 'json'
-        ? formatJson(result, topN)
-        : formatHuman(result, topN);
-
-      console.log(output);
+      if (cliOpts.quickFixesOnly) {
+        const specContent = readFileSync(specFile, 'utf-8');
+        const output = outputFormat === 'json'
+          ? JSON.stringify(buildQuickFixOutput(result, specContent))
+          : formatQuickFixesHuman(result, specContent);
+        console.log(output);
+      } else {
+        const output = outputFormat === 'json'
+          ? formatJson(result, topN)
+          : formatHuman(result, topN);
+        console.log(output);
+      }
 
       if (minGrade !== undefined) {
+        if (outputFormat === 'json') {
+          console.log(JSON.stringify(buildAssertOutput(result, minGrade)));
+        }
+
         const resultIdx = gradeToNumber(result.letterGrade);
         const thresholdIdx = gradeToNumber(minGrade);
         if (resultIdx > thresholdIdx) {

@@ -134,53 +134,52 @@ describe('formatJson', () => {
     expect(() => JSON.parse(output)).not.toThrow();
   });
 
-  it('includes grade fields', () => {
+  it('includes flat letterGrade/gradeLabel/numericScore fields', () => {
     const data = JSON.parse(formatJson(baseResult));
-    expect(data.grade.letter).toBe('B');
-    expect(data.grade.score).toBe(85);
-    expect(data.grade.label).toBe('Good');
+    expect(data.letterGrade).toBe('B');
+    expect(data.numericScore).toBe(85);
+    expect(data.gradeLabel).toBe('Good');
   });
 
-  it('includes tone and severityLevel fields', () => {
+  it('includes tone and severityLevel under summary', () => {
     const data = JSON.parse(formatJson(baseResult));
-    expect(data.tone).toBe('Good');
-    expect(data.severityLevel).toBe('INFO');
+    expect(data.summary.tone).toBe('Good');
+    expect(data.summary.severityLevel).toBe('INFO');
   });
 
-  it('includes qualityAssessment field with commentary', () => {
+  it('includes commentary under summary', () => {
     const data = JSON.parse(formatJson(baseResult));
-    expect(data.qualityAssessment).toContain('Good. 5 warnings');
+    expect(data.summary.commentary).toContain('Good. 5 warnings');
   });
 
-  it('includes diagnostic counts', () => {
+  it('includes diagnostic counts under summary', () => {
     const data = JSON.parse(formatJson(baseResult));
-    expect(data.diagnosticCounts.warnings).toBe(5);
-    expect(data.diagnosticCounts.errors).toBe(0);
-    expect(data.diagnosticCounts.total).toBe(0);
+    expect(data.summary.warnCount).toBe(5);
+    expect(data.summary.errorCount).toBe(0);
   });
 
-  it('includes focusRules array with id, impact, and url fields', () => {
+  it('includes focusRules array under summary with id, impact, and url fields', () => {
     const data = JSON.parse(formatJson(baseResult));
-    expect(Array.isArray(data.focusRules)).toBe(true);
-    expect(data.focusRules[0].id).toBe('oas-schema-check');
-    expect(data.focusRules[0].impact).toBe('MEDIUM');
-    expect(data.focusRules[0].url).toBeNull();
+    expect(Array.isArray(data.summary.focusRules)).toBe(true);
+    expect(data.summary.focusRules[0].id).toBe('oas-schema-check');
+    expect(data.summary.focusRules[0].impact).toBe('MEDIUM');
+    expect(data.summary.focusRules[0].url).toBeNull();
   });
 
-  it('includes recommendations array', () => {
+  it('includes recommendations array under summary', () => {
     const data = JSON.parse(formatJson(baseResult));
-    expect(Array.isArray(data.recommendations)).toBe(true);
-    expect(data.recommendations.length).toBeGreaterThan(0);
+    expect(Array.isArray(data.summary.recommendations)).toBe(true);
+    expect(data.summary.recommendations.length).toBeGreaterThan(0);
   });
 
   it('recommendations is empty array when no violations', () => {
     const data = JSON.parse(formatJson(noViolationResult));
-    expect(data.recommendations).toHaveLength(0);
+    expect(data.summary.recommendations).toHaveLength(0);
   });
 
   it('focusRules is empty array when no violations', () => {
     const data = JSON.parse(formatJson(noViolationResult));
-    expect(data.focusRules).toHaveLength(0);
+    expect(data.summary.focusRules).toHaveLength(0);
   });
 
   it('omits rulesetPath when not set', () => {
@@ -194,8 +193,36 @@ describe('formatJson', () => {
     expect(data.rulesetPath).toBe('/custom.yaml');
   });
 
-  it('does not include topRules field (replaced by focusRules)', () => {
+  it('does not include the old grade/qualityAssessment/diagnosticCounts wrapper fields', () => {
     const data = JSON.parse(formatJson(baseResult));
+    expect(data).not.toHaveProperty('grade');
+    expect(data).not.toHaveProperty('qualityAssessment');
+    expect(data).not.toHaveProperty('diagnosticCounts');
     expect(data).not.toHaveProperty('topRules');
+  });
+
+  it('includes diagnostics array', () => {
+    const data = JSON.parse(formatJson(baseResult));
+    expect(Array.isArray(data.diagnostics)).toBe(true);
+  });
+
+  it('sets truncated: true when top slices entries', () => {
+    const diagnostics = Array.from({ length: 5 }, (_, i) => ({
+      ruleId: `rule-${i}`,
+      message: `message ${i}`,
+      severity: 'warn' as const,
+      path: [],
+      range: { start: { line: i, character: 0 }, end: { line: i, character: 0 } },
+      source: 'test.yaml',
+    }));
+    const result: GradeResult = { ...baseResult, diagnostics };
+    const data = JSON.parse(formatJson(result, 2));
+    expect(data.diagnostics).toHaveLength(2);
+    expect(data.truncated).toBe(true);
+  });
+
+  it('omits truncated when top is not supplied', () => {
+    const data = JSON.parse(formatJson(baseResult));
+    expect(data).not.toHaveProperty('truncated');
   });
 });

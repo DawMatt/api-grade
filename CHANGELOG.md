@@ -9,7 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] — Initial public release
 
+### Changed
+
+- **Breaking**: the CLI's `--format json` output shape now matches the MCP server's
+  flat `grade-api` schema instead of its own bespoke wrapper. The old shape's
+  `grade: { letter, score, label }`, `qualityAssessment`, `diagnosticCounts`, and
+  top-level `tone`/`severityLevel`/`focusRules`/`recommendations` fields are removed.
+  The new shape uses flat `letterGrade`/`gradeLabel`/`numericScore` fields plus a
+  `summary` object (`tone`, `severityLevel`, `errorCount`/`warnCount`/`infoCount`/
+  `hintCount`, `commentary`, `focusRules`, `recommendations`). See
+  [contracts/common-grade-output.md](specs/009-json-output-refactor/contracts/common-grade-output.md)
+  for the full new shape.
+- `--min-grade` now additionally prints a structured `{ passed, actual, minimum,
+  specPath, numericScore }` JSON object when combined with `--format json`, in
+  addition to (not instead of) the existing human-readable stderr failure message
+  and non-zero exit code.
+
 ### Added
+
+- New CLI `--quick-fixes-only` flag — filters diagnostics to the non-breaking,
+  safely-automatable subset, matching the MCP server's `grade-api-quick-fixes-only`
+  tool. Composes with both `--format human` (default) and `--format json`.
 
 - `@dawmatt/api-grade-core` — standalone grading library for OpenAPI 2/3 and AsyncAPI 2/3 specifications
 - `@dawmatt/api-grade` — CLI tool (`api-grade`) with letter grades, quality assessments, diagnostics, and `--min-grade` CI gate flag
