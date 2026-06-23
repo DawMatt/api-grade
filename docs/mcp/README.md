@@ -8,7 +8,7 @@ Grade OpenAPI and AsyncAPI specifications directly from your AI tool — Claude 
 
 ## Overview
 
-`@dawmatt/api-grade-mcp` is an MCP (Model Context Protocol) server that wraps the `@dawmatt/api-grade-core` grading engine and exposes it as six MCP tools. Once registered in an AI host, the AI can grade specs, assert grade thresholds, retrieve detailed diagnostics, obtain a classified list of quick fixes (safe, non-breaking improvements), and manage a default ruleset — all without manual CLI invocation.
+`@dawmatt/api-grade-mcp` is an MCP (Model Context Protocol) server that wraps the `@dawmatt/api-grade-core` grading engine and exposes it as six MCP tools. Once registered in an AI host, the AI can grade specs, assert grade thresholds, retrieve detailed diagnostics, obtain a classified list of diagnostics filtered by remediation safety level (`safe`: non-breaking improvements), and manage a default ruleset — all without manual CLI invocation.
 
 ```
 AI tool (Claude Code, Copilot, etc.)
@@ -27,7 +27,7 @@ AI tool (Claude Code, Copilot, etc.)
 | `grade-api` | Letter grade, score, and summary — token-efficient overview |
 | `grade-api-detailed` | Full grade with all violations and diagnostics |
 | `assert-api-grade` | Pass/fail assertion for a minimum grade threshold |
-| `grade-api-quick-fixes-only` | Classified list of quick fixes (safe, non-breaking improvements) for AI-assisted correction |
+| `grade-api-remediation-safety` | Classified list of diagnostics filtered by remediation safety level (`safe`: non-breaking improvements) for AI-assisted correction |
 | `set-ruleset-config` | Set the default Spectral ruleset at session, workspace, or global scope |
 | `get-ruleset-config` | Get the active Spectral ruleset and which scope is effective |
 

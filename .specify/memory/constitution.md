@@ -1,26 +1,12 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.3.0 → 1.4.0
+Version change: 1.4.0 → 1.4.1
 
 Principles modified: none
 
-Sections added:
-  - AI Integration Requirements: new top-level section (parallel to CI/CD Integration
-    Requirements) that requires any AI tooling integration to explicitly verify
-    compatibility with Claude Code and GitHub Copilot (VS Code Agent mode).
-    Single-host implementations do not satisfy this requirement.
-
-Sections removed: none
-
-Templates reviewed:
-  - .specify/templates/plan-template.md ✅ — No update needed; Constitution Check
-    table in plans will capture the new AI Integration gate when relevant.
-  - .specify/templates/spec-template.md ✅ — No alignment changes required.
-  - .specify/templates/tasks-template.md ✅ — Task categories unaffected.
-  - .specify/extensions.yml ✅ — No hook changes required.
-
-Deferred TODOs: none
+Sections modified:
+  - Versioning now clarifies a major version bump is only required for breaking changes once we have reached v1.0.
 -->
 
 # API Grade Constitution
@@ -143,8 +129,9 @@ CI/CD-oriented feature:
 - All new functionality MUST be developed against a feature branch and merged via pull
   request with at least one review.
 - Each pull request MUST pass the full test suite before merging.
-- Breaking changes to the CLI interface or grading output schema MUST be documented
-  in a changelog entry and MUST increment the tool's MAJOR version.
+- Breaking changes to any user interface (CLI or MCP)or grading output schema MUST be documented
+  in a changelog entry.
+- Breaking changes to any user interface (CLI or MCP) MUST increment the tool's MAJOR version, if the tool's MAJOR version is greater than 0.
 - Complexity MUST be justified: any abstraction that is not immediately required by
   the current feature MUST not be introduced (YAGNI).
 - `/speckit-implement` MUST pass all CI quality gate stages (dependency audit, lint,
@@ -175,4 +162,4 @@ All pull requests and code reviews MUST verify compliance with the principles ab
 Complexity violations MUST be recorded in the plan's Complexity Tracking table with
 explicit justification.
 
-**Version**: 1.4.0 | **Ratified**: 2026-06-12 | **Last Amended**: 2026-06-18
+**Version**: 1.4.1 | **Ratified**: 2026-06-12 | **Last Amended**: 2026-06-23

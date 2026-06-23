@@ -119,11 +119,11 @@ Assert that an API specification meets a minimum grade threshold (A > B > C > D 
 
 ---
 
-### `grade-api-quick-fixes-only`
+### `grade-api-remediation-safety`
 
-Return a classified, AI-actionable list of quick fixes — improvements that can be made via non-breaking changes (those that do not alter paths, methods, required parameters, schema types, or response structures). Each quick fix includes `ruleId`, `path`, `location`, `currentValue`, and `expectedImprovement`.
+Return a classified, AI-actionable list of diagnostics filtered by remediation safety level. The `safe` level covers improvements that can be made via non-breaking changes (those that do not alter paths, methods, required parameters, schema types, or response structures). Each result includes `ruleId`, `path`, `location`, `currentValue`, and `expectedImprovement`.
 
-**Input**: `specPath` (required), `rulesetPath` (optional), `recoveryOption` (optional)
+**Input**: `specPath` (required), `level` (required: `safe`), `rulesetPath` (optional), `recoveryOption` (optional)
 
 **Use when**: Asking the AI to generate fixes for documentation and metadata issues without risking breaking changes. Use this tool instead of `grade-api-detailed` when the goal is AI-assisted correction.
 

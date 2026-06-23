@@ -154,7 +154,7 @@ interface AssertOutput {
 ### `buildQuickFixOutput(result: GradeResult, specContent: string): QuickFixOutput`
 
 Shapes the "safely-automatable fixes" subset. Used by MCP's
-`grade-api-quick-fixes-only` and the CLI's `--quick-fixes-only --format json`.
+`grade-api-remediation-safety` and the CLI's `--remediation-safety safe --format json`.
 
 ```typescript
 interface QuickFixOutput {
@@ -179,7 +179,7 @@ interface QuickFix {
 ### `formatQuickFixesHuman(result: GradeResult, specContent: string): string`
 
 Renders the same filtered `QuickFix[]` list used by `buildQuickFixOutput()` as
-human-readable text. Used by the CLI's `--quick-fixes-only` with `--format human`
+human-readable text. Used by the CLI's `--remediation-safety safe` with `--format human`
 (the default).
 
 ### `classifyViolation(diagnostic: Diagnostic): ViolationClass`

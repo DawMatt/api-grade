@@ -77,7 +77,7 @@ program
     return n;
   })
   .option('--url <url>', '(reserved for future use)')
-  .option('--quick-fixes-only', 'Filter diagnostics to the non-breaking, safely-automatable subset')
+  .option('--remediation-safety <level>', 'Filter diagnostics to the given remediation safety level (currently: safe)')
   .option('--verbose', 'Print full error stack on failure')
   .action(async (specFile: string, cliOpts: {
     minGrade?: string;
@@ -87,7 +87,7 @@ program
     format?: string;
     top?: number;
     url?: string;
-    quickFixesOnly?: boolean;
+    remediationSafety?: string;
     verbose?: boolean;
   }) => {
     // Load .apigrade.json config; CLI flags override config values
@@ -109,6 +109,11 @@ program
     const outputFormat = cliOpts.format ?? fileConfig.format ?? 'human';
     if (outputFormat !== 'human' && outputFormat !== 'json') {
       console.error(chalk.red(`Error: --format must be "human" or "json".`));
+      process.exit(1);
+    }
+
+    if (cliOpts.remediationSafety !== undefined && cliOpts.remediationSafety !== 'safe') {
+      console.error(chalk.red(`Error: --remediation-safety must be "safe".`));
       process.exit(1);
     }
 
@@ -172,7 +177,7 @@ program
         rulesetPath,
       });
 
-      if (cliOpts.quickFixesOnly) {
+      if (cliOpts.remediationSafety === 'safe') {
         const specContent = readFileSync(specFile, 'utf-8');
         const output = outputFormat === 'json'
           ? JSON.stringify(buildQuickFixOutput(result, specContent))

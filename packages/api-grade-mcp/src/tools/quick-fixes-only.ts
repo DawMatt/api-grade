@@ -21,14 +21,17 @@ const LARGE_SPEC_THRESHOLD_BYTES = 500_000;
 
 export function registerQuickFixesOnlyTool(server: McpServer, sessionState: SessionState): void {
   server.tool(
-    'grade-api-quick-fixes-only',
-    'Return a classified, AI-actionable list of quick fixes for an API specification. Quick fixes are improvements that can be made via non-breaking changes — those that do not alter the API interface contract (paths, methods, required parameters, schema types, or response structures). Use this tool (not grade-api-detailed) when the goal is for the AI to safely resolve violations; the AI generates the corrected specification content and the MCP server does not modify files.',
+    'grade-api-remediation-safety',
+    'Return a classified, AI-actionable list of diagnostics filtered by remediation safety level. The `safe` level covers improvements that can be made via non-breaking changes — those that do not alter the API interface contract (paths, methods, required parameters, schema types, or response structures). Use this tool (not grade-api-detailed) when the goal is for the AI to safely resolve violations; the AI generates the corrected specification content and the MCP server does not modify files.',
     {
       specPath: z
         .string()
         .describe(
           'Absolute or relative path to the OpenAPI or AsyncAPI specification file (YAML or JSON)'
         ),
+      level: z
+        .enum(['safe'])
+        .describe('Remediation safety level to filter diagnostics by. Only "safe" is supported today.'),
       rulesetPath: z
         .string()
         .optional()
