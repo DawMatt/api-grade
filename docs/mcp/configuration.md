@@ -70,16 +70,12 @@ Or for a local file:
 |-------|------|-------------|
 | `rulesetPath` | `string \| null` | Absolute path or HTTPS URL to a Spectral-compatible ruleset. `null` clears the scope. |
 | `auth` | `object \| null` | Authentication config for remote URLs. `null` means no auth (public URL). |
-| `auth.type` | `"github-pat" \| "entra-id"` | Auth mechanism to use. |
+| `auth.type` | `"github-pat"` | Auth mechanism to use. |
 | `auth.githubToken` | `string` (optional) | Inline PAT for GitHub. Not recommended — use the `GITHUB_TOKEN` env var instead. |
-| `auth.tenantId` | `string` | Entra ID tenant ID (required for `entra-id`). |
-| `auth.clientId` | `string` | Entra ID client/application ID (required for `entra-id`). |
 
 ---
 
 ## Authentication
-
-GitHub PAT and Entra ID use different storage mechanisms because the credentials behave differently, not out of inconsistency: a GitHub PAT is a static secret you provide once, while an Entra ID token is dynamically issued and refreshed by Microsoft and must survive server restarts without you re-entering anything.
 
 ### No Authentication (Public URLs)
 
@@ -114,31 +110,6 @@ Setting `GITHUB_TOKEN` in the environment:
 ```sh
 export GITHUB_TOKEN=ghp_xxxx  # then start your AI tool
 ```
-
-### Microsoft Entra ID (Device Code Flow) — the server handles tokens for you, no env var needed
-
-For rulesets hosted on SharePoint or other Entra ID-protected sites. This requires an Entra ID app registration to already exist in your tenant — see [Entra ID Setup](entra-id-setup.md) for the one-time administrator steps to create it before continuing here.
-
-```json
-{
-  "rulesetPath": "https://mycompany.sharepoint.com/sites/api-standards/ruleset.yaml",
-  "auth": {
-    "type": "entra-id",
-    "tenantId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "clientId": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
-  }
-}
-```
-
-On the first grading request after configuration, the server initiates a **device code flow**:
-
-1. The grading tool returns an `ENTRA_AUTH_REQUIRED` response containing a `userCode` and `verificationUri`.
-2. Visit the URI and enter the code to authenticate (typically 15-minute window).
-3. Retry the grading request — the token is now cached.
-
-**Token cache location**: `~/.api-grade/entra-token-cache.json` — the same pattern Azure CLI uses at `~/.azure`. Written to the user home directory only, never the workspace.
-
-Cached tokens are reused on subsequent requests, including after restarting the MCP server, with no further action from you. If the token expires, the device code flow restarts automatically on the next grading request.
 
 ---
 
@@ -192,7 +163,6 @@ Passing `rulesetPath: null` clears the configuration at that scope without affec
 ## Further Reading
 
 - [Quick Start](quick-start.md) — install and configure in minutes
-- [Entra ID Setup](entra-id-setup.md) — one-time Azure-side app registration required for Entra ID auth
 - [GitHub Token Setup](github-pat-setup.md) — one-time GitHub PAT creation required for `github-pat` auth
 - [Troubleshooting](troubleshooting.md) — auth failures, missing tools, and common errors
 - [Package Documentation](../package/api-grade-mcp.md) — full tool reference with all parameters

@@ -166,7 +166,7 @@ All grading tools support an optional `rulesetPath` parameter for one-off custom
 **Global default** (`~/.api-grade/config.json`):
 > Set my global default ruleset to `/Users/jane/rulesets/personal-standards.yaml`
 
-For full configuration options including GitHub PAT and Entra ID authentication, see the [Configuration Reference](../mcp/configuration.md).
+For full configuration options including GitHub PAT authentication, see the [Configuration Reference](../mcp/configuration.md).
 
 ---
 

@@ -11,8 +11,6 @@ import {
   RulesetAuthError,
   INITIAL_FETCH_TIMEOUT_MS,
   RETRY_FETCH_TIMEOUT_MS,
-  EntraAuthRequired,
-  acquireEntraToken,
   buildCommonGradeOutput,
 } from '@dawmatt/api-grade-core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -71,9 +69,6 @@ export function registerGradeTool(server: McpServer, sessionState: SessionState)
             if (resolved.auth?.type === 'github-pat') {
               const token = resolved.auth.githubToken ?? process.env.GITHUB_TOKEN ?? '';
               content = await fetchRulesetContent(resolved.rulesetPath, token || undefined, timeoutMs);
-            } else if (resolved.auth?.type === 'entra-id' && resolved.auth.tenantId && resolved.auth.clientId) {
-              const token = await acquireEntraToken(resolved.auth.tenantId, resolved.auth.clientId);
-              content = await fetchRulesetContent(resolved.rulesetPath, token, timeoutMs);
             } else {
               content = await fetchRulesetContent(resolved.rulesetPath, undefined, timeoutMs);
             }
@@ -81,21 +76,6 @@ export function registerGradeTool(server: McpServer, sessionState: SessionState)
             writeFileSync(tempRulesetFile, content);
             effectiveRulesetPath = tempRulesetFile;
           } catch (err) {
-            if (err instanceof EntraAuthRequired) {
-              return {
-                content: [{
-                  type: 'text',
-                  text: JSON.stringify({
-                    error: ERROR_CODES.ENTRA_AUTH_REQUIRED,
-                    deviceCodeUrl: err.verificationUri,
-                    userCode: err.userCode,
-                    expiresIn: err.expiresIn,
-                    message: `Complete Entra ID sign-in: Visit ${err.verificationUri} and enter code ${err.userCode}`,
-                  }),
-                }],
-                isError: true as const,
-              };
-            }
             const reason = err instanceof RulesetAuthError ? err.reason : 'network-unreachable';
             return buildRulesetFetchFailureResponse(
               reason,

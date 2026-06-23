@@ -94,7 +94,7 @@ All grading tools support an optional `rulesetPath` per-request. To avoid supply
 
 Precedence: per-request → session → workspace → global → built-in.
 
-Supported auth: GitHub PAT (`GITHUB_TOKEN` env var) and Microsoft Entra ID (device code flow).
+Supported auth: GitHub PAT (`GITHUB_TOKEN` env var).
 
 ## Supported Spec Formats
 

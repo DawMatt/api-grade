@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { resolveCliAuth, checkEntraRejection, isValidAuthType } from '../../src/cli/ruleset-resolution.js';
+import { resolveCliAuth, isValidAuthType } from '../../src/cli/ruleset-resolution.js';
 import { resolveRemoteRuleset } from '../../src/cli/ruleset-fetch.js';
 import type { RulesetConfig } from '@dawmatt/api-grade-core';
 
@@ -9,14 +9,16 @@ afterEach(() => {
 });
 
 describe('isValidAuthType', () => {
-  it('accepts none, github-pat, entra-id', () => {
+  it('accepts none, github-pat', () => {
     expect(isValidAuthType('none')).toBe(true);
     expect(isValidAuthType('github-pat')).toBe(true);
-    expect(isValidAuthType('entra-id')).toBe(true);
   });
   it('rejects anything else', () => {
     expect(isValidAuthType('oauth')).toBe(false);
     expect(isValidAuthType('')).toBe(false);
+  });
+  it('rejects entra-id identically to any other unrecognized string', () => {
+    expect(isValidAuthType('entra-id')).toBe(false);
   });
 });
 
@@ -119,31 +121,6 @@ describe('resolveCliAuth — auth-type/token resolution (FR-017/FR-018/FR-004)',
     });
     expect(result.warnings).toEqual([]);
     expect(result.token).toBe('tok');
-  });
-});
-
-describe('checkEntraRejection (FR-016/FR-019)', () => {
-  it('rejects when resolved auth type is entra-id for a remote ruleset', () => {
-    const result = resolveCliAuth({
-      rulesetOption: 'https://example.com/r.yaml',
-      authTypeOption: 'entra-id',
-      workspaceConfig: null,
-      globalConfig: null,
-    });
-    const check = checkEntraRejection(result);
-    expect(check.rejected).toBe(true);
-    expect(check.message).toMatch(/Entra ID/);
-  });
-
-  it('does not reject when the ruleset is local, even if entra-id is configured (FR-021 takes precedence)', () => {
-    const result = resolveCliAuth({
-      rulesetOption: './local.yaml',
-      authTypeOption: 'entra-id',
-      workspaceConfig: null,
-      globalConfig: null,
-    });
-    const check = checkEntraRejection(result);
-    expect(check.rejected).toBe(false);
   });
 });
 

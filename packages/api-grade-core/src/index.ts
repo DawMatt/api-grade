@@ -42,8 +42,6 @@ export {
   RETRY_FETCH_TIMEOUT_MS,
 } from './auth/github.js';
 
-export { acquireEntraToken, EntraAuthRequired } from './auth/entra.js';
-
 export {
   getWorkspaceConfigPath,
   getGlobalConfigPath,

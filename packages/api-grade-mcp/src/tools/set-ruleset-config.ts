@@ -28,8 +28,8 @@ export function registerSetRulesetConfigTool(server: McpServer, sessionState: Se
         ),
       auth: z
         .object({
-          type: z.enum(['github-pat', 'entra-id']).describe(
-            "'github-pat' uses a Bearer token for GitHub Enterprise URLs. 'entra-id' uses Microsoft Entra ID OAuth 2.0 device-code flow."
+          type: z.enum(['github-pat']).describe(
+            "'github-pat' uses a Bearer token for GitHub Enterprise URLs."
           ),
           githubToken: z
             .string()
@@ -37,36 +37,17 @@ export function registerSetRulesetConfigTool(server: McpServer, sessionState: Se
             .describe(
               "GitHub Personal Access Token. Only used when type is 'github-pat'. If omitted, falls back to GITHUB_TOKEN environment variable."
             ),
-          tenantId: z
-            .string()
-            .optional()
-            .describe("Microsoft Entra ID tenant ID. Required when type is 'entra-id'."),
-          clientId: z
-            .string()
-            .optional()
-            .describe(
-              "Microsoft Entra ID application (client) ID. Required when type is 'entra-id'."
-            ),
         })
         .optional(),
     },
     async ({ scope, rulesetPath, auth }) => {
       const input = { scope, rulesetPath, auth };
 
-      if (auth?.type === 'entra-id' && (!auth.tenantId || !auth.clientId)) {
-        return mcpError(
-          ERROR_CODES.INVALID_AUTH_CONFIG,
-          "auth.type 'entra-id' requires tenantId and clientId fields.",
-          input
-        );
-      }
-
       const resolvedPath = rulesetPath ?? null;
       const resolvedAuth: AuthConfig | null = auth
         ? {
             type: auth.type,
-            ...(auth.type === 'github-pat' && auth.githubToken ? { githubToken: auth.githubToken } : {}),
-            ...(auth.type === 'entra-id' ? { tenantId: auth.tenantId, clientId: auth.clientId } : {}),
+            ...(auth.githubToken ? { githubToken: auth.githubToken } : {}),
           }
         : null;
 

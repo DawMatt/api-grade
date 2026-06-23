@@ -221,10 +221,6 @@ per the order above). Both `config set-ruleset`/`get-ruleset` and the
 the exact same file — a workspace configured via one is immediately usable by the
 other.
 
-> **Note:** Microsoft Entra ID authentication (used by the MCP server) is not
-> supported by the CLI. If a shared config file specifies `auth.type: "entra-id"`,
-> the CLI exits with a clear error rather than attempting it.
-
 ---
 
 ## Configuration File (`.apigrade.json`)

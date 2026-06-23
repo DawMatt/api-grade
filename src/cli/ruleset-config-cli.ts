@@ -11,7 +11,7 @@ import {
   type RulesetConfig,
   type AuthConfig,
 } from '@dawmatt/api-grade-core';
-import { resolveCliAuth, checkEntraRejection, isValidAuthType, type TokenSource } from './ruleset-resolution.js';
+import { resolveCliAuth, isValidAuthType, type TokenSource } from './ruleset-resolution.js';
 import { loadConfig } from './config-loader.js';
 
 export interface SetRulesetOptions {
@@ -38,14 +38,6 @@ export async function runSetRuleset(opts: SetRulesetOptions): Promise<void> {
 
   if (opts.authType !== undefined && !isValidAuthType(opts.authType)) {
     fail(`Invalid --auth-type value '${opts.authType}'. Must be one of: none, github-pat.`, opts.format);
-  }
-
-  if (opts.authType === 'entra-id') {
-    fail(
-      'Microsoft Entra ID authentication is not supported by the CLI. Configure a GitHub PAT instead (--token, GITHUB_TOKEN, or `api-grade config set-ruleset --token`).',
-      opts.format,
-      'UNSUPPORTED_AUTH_TYPE'
-    );
   }
 
   const resolvedAuthType = opts.authType ?? 'none';
@@ -126,7 +118,9 @@ export async function runGetRuleset(opts: { format?: string }): Promise<void> {
     globalConfig,
   });
 
-  const entraCheck = checkEntraRejection(authResult);
+  if (!isValidAuthType(authResult.authType)) {
+    fail(`Invalid stored authType value '${authResult.authType}'. Must be one of: none, github-pat.`, opts.format);
+  }
 
   if (opts.format === 'json') {
     const response = {
@@ -151,7 +145,6 @@ export async function runGetRuleset(opts: { format?: string }): Promise<void> {
           }
         : null,
       builtIn: 'default',
-      ...(entraCheck.rejected ? { unsupportedByCli: entraCheck.message } : {}),
     };
     console.log(JSON.stringify(response));
     return;
@@ -168,9 +161,6 @@ export async function runGetRuleset(opts: { format?: string }): Promise<void> {
       ? `Global (${getGlobalConfigPath()}): rulesetPath=${globalConfig.rulesetPath} authType=${globalConfig.auth?.type ?? 'none'} ${tokenPresence(globalConfig.auth)}`
       : `Global (${getGlobalConfigPath()}): (not configured)`
   );
-  if (entraCheck.rejected) {
-    console.log(chalk.yellow(`Note: ${entraCheck.message}`));
-  }
 }
 
 export function registerConfigCommand(program: Command): void {

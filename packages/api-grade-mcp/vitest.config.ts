@@ -17,7 +17,6 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: [
         'src/index.ts',
-        'src/auth/entra.ts',
       ],
       thresholds: {
         lines: 80,

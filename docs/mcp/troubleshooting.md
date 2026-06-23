@@ -61,7 +61,7 @@ openapi.yaml
 
 ## `RULESET_AUTH_FAILED` on Every Request
 
-**Cause**: The configured default ruleset's host was reached, but the request was rejected on credentials — wrong, missing, or expired token (401/403), or Entra ID re-authentication is needed.
+**Cause**: The configured default ruleset's host was reached, but the request was rejected on credentials — wrong, missing, or expired token (401/403).
 
 **Diagnosis**:
 1. Run `get-ruleset-config` to see what ruleset URL is configured.
@@ -78,7 +78,7 @@ openapi.yaml
 
 **Cause**: The stored auth configuration for the configured default ruleset (in `.api-grade/config.json` or `~/.api-grade/config.json`) is malformed or missing required fields — this is distinct from `RULESET_AUTH_FAILED`, since no credentials were even sent to the host; the configuration itself failed validation before a request could be made.
 
-**Fix**: Run `get-ruleset-config` to inspect the stored `auth` block for the affected scope, then use `set-ruleset-config` to supply a complete, valid `auth` configuration (e.g. `tenantId` and `clientId` for `entra-id`, or `type: "github-pat"` with `GITHUB_TOKEN` set in the environment for GitHub).
+**Fix**: Run `get-ruleset-config` to inspect the stored `auth` block for the affected scope, then use `set-ruleset-config` to supply a complete, valid `auth` configuration (`type: "github-pat"` with `GITHUB_TOKEN` set in the environment for GitHub).
 
 ---
 
@@ -94,23 +94,6 @@ When the default ruleset fetch fails, the grading tool returns four recovery opt
 | cancel | Cancels the request |
 
 **Expected AI behaviour**: the failure response includes an `instructions` field telling the AI to present these four options to you and wait for your explicit choice — it should not silently pick one (e.g. falling back to the built-in ruleset) on your behalf and disclose that after the fact. If an AI client ignores this and falls back silently anyway, tell it explicitly, e.g. *"Don't fall back to the built-in ruleset without asking me — show me the recovery options from the error response."*
-
----
-
-## Entra ID Device Code Not Completing
-
-**Cause**: The device code has a short expiry window (typically 15 minutes).
-
-**Fix**: If you miss the window, retry the grading request — the server initiates a new device-code flow and returns a fresh code.
-
-Check:
-- `tenantId` and `clientId` are correct in the config
-- `~/.api-grade/entra-token-cache.json` is writable
-
-To force a fresh authentication (clearing the cached token):
-```sh
-rm ~/.api-grade/entra-token-cache.json
-```
 
 ---
 
