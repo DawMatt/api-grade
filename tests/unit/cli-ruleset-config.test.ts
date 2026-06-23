@@ -93,17 +93,6 @@ describe('config set-ruleset', () => {
     expect(written.auth).toBeNull();
   });
 
-  it('rejects --auth-type entra-id the same way as the grade command', () => {
-    const workspaceDir = trackedTmpDir('api-grade-entra-set-');
-    const homeDir = trackedTmpDir('api-grade-entra-set-home-');
-    const { status, stderr } = runCli(
-      ['config', 'set-ruleset', '--scope', 'workspace', '--ruleset', 'https://example.com/r.yaml', '--auth-type', 'entra-id'],
-      { cwd: workspaceDir, env: { HOME: homeDir } }
-    );
-    expect(status).not.toBe(0);
-    expect(stderr).toMatch(/Entra ID/i);
-  });
-
   it('rejects an unrecognised --auth-type value without writing the config file', () => {
     const workspaceDir = trackedTmpDir('api-grade-invalid-set-');
     const homeDir = trackedTmpDir('api-grade-invalid-set-home-');
@@ -148,20 +137,22 @@ describe('config get-ruleset', () => {
     expect(parsed.workspace.tokenPresence).toBe('(token configured)');
   });
 
-  it('reports an entra-id config as unsupported-by-CLI informationally, without a non-zero exit (T058)', () => {
+  it('reports a configuration error (not unsupportedByCli) when the loaded config has auth.type entra-id', () => {
     const workspaceDir = trackedTmpDir('api-grade-get-entra-');
     const homeDir = trackedTmpDir('api-grade-get-entra-home-');
     runCli(
       ['config', 'set-ruleset', '--scope', 'workspace', '--ruleset', 'https://example.com/r.yaml'],
       { cwd: workspaceDir, env: { HOME: homeDir } }
     );
-    // Hand-write an entra-id config directly since set-ruleset itself rejects entra-id.
+    // Hand-write an entra-id config directly since set-ruleset itself rejects it as an invalid auth type.
     writeFileSync(
       join(workspaceDir, '.api-grade', 'config.json'),
-      JSON.stringify({ rulesetPath: 'https://example.com/r.yaml', auth: { type: 'entra-id', tenantId: 't', clientId: 'c' } })
+      JSON.stringify({ rulesetPath: 'https://example.com/r.yaml', auth: { type: 'entra-id' } })
     );
     const { status, stdout } = runCli(['config', 'get-ruleset', '--format', 'json'], { cwd: workspaceDir, env: { HOME: homeDir } });
-    expect(status).toBe(0);
-    expect(JSON.parse(stdout).unsupportedByCli).toMatch(/Entra ID/);
+    expect(status).not.toBe(0);
+    expect(stdout).not.toContain('unsupportedByCli');
+    const parsed = JSON.parse(stdout);
+    expect(parsed.message).toMatch(/Invalid stored authType/);
   });
 });

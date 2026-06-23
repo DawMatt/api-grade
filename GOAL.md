@@ -64,7 +64,7 @@ Feature 7 - Local AI support
 - Use the api-grade's JSON format output so the AI is able to process and reformat the information in a way that suits its requirements
 - Leverage the AI support to not just grade the API, but also resolve the "non-breaking change" issues highlighted by the grading that are bringing down the result
 - Any local AI tooling support must explicitly include Claude Code and GitHub Copilot
-- Add support for rulesets hosted on GitHub private repos (via PAT) and Entra ID protected environments (e.g. SharePoint, OneDrive)
+- Add support for rulesets hosted on GitHub private repos (via PAT)
 - Support both direct installed and containerised execution of the functionality.
 
 Feature 8 - CLI GitHub PAT

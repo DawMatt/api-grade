@@ -73,11 +73,6 @@ describe('runSetRuleset', () => {
     expect(errors.join('\n')).toMatch(/Invalid --auth-type value/);
   });
 
-  it('rejects --auth-type entra-id', async () => {
-    await expect(runSetRuleset({ scope: 'workspace', authType: 'entra-id' })).rejects.toBeInstanceOf(FakeExit);
-    expect(errors.join('\n')).toMatch(/Entra ID/);
-  });
-
   it('--token without --auth-type github-pat does not persist the token and warns (Q1)', async () => {
     await runSetRuleset({ scope: 'workspace', ruleset: 'https://example.com/r.yaml', token: 'tok' });
     expect(warnings.join('\n')).toMatch(/--token is ignored because the authorisation type is 'none'/);
@@ -130,16 +125,5 @@ describe('runGetRuleset', () => {
     const parsed = JSON.parse(output);
     expect(parsed.effective.authType).toBe('github-pat');
     expect(parsed.workspace.rulesetPath).toBe('https://example.com/r.yaml');
-  });
-
-  it('reports an entra-id config as unsupported-by-CLI informationally', async () => {
-    await runSetRuleset({ scope: 'workspace', ruleset: 'https://example.com/r.yaml' });
-    // Hand-write entra-id auth since set-ruleset itself rejects it.
-    const { writeFileSync } = await import('node:fs');
-    writeFileSync(getWorkspaceConfigPath(), JSON.stringify({ rulesetPath: 'https://example.com/r.yaml', auth: { type: 'entra-id', tenantId: 't', clientId: 'c' } }));
-    logs = [];
-    await runGetRuleset({ format: 'json' });
-    const parsed = JSON.parse(logs.join(''));
-    expect(parsed.unsupportedByCli).toMatch(/Entra ID/);
   });
 });

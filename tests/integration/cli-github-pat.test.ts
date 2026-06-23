@@ -119,6 +119,21 @@ describe('US1: CLI grading against a private GitHub-hosted ruleset', () => {
     expect(status).toBe(1);
     expect(stderr).toMatch(/Invalid --auth-type value/);
   });
+
+  it('rejects --auth-type entra-id with the same config-invalid failure shape as any other unrecognized value', () => {
+    const entra = runCli([
+      OPENAPI_SPEC,
+      '--ruleset', 'https://raw.githubusercontent.com/example/private-repo/main/ruleset.yaml',
+      '--auth-type', 'entra-id',
+    ]);
+    const bogus = runCli([
+      OPENAPI_SPEC,
+      '--ruleset', 'https://raw.githubusercontent.com/example/private-repo/main/ruleset.yaml',
+      '--auth-type', 'bogus',
+    ]);
+    expect(entra.status).toBe(bogus.status);
+    expect(entra.stderr.replace('entra-id', 'bogus')).toBe(bogus.stderr);
+  });
 });
 
 describe('US2: persistent workspace/global ruleset defaults', () => {
@@ -161,64 +176,6 @@ describe('US2: persistent workspace/global ruleset defaults', () => {
     // Resolves to auth type 'none' so GITHUB_TOKEN must never be consulted (SC-008); no auth-required wording.
     expect(result.stderr).not.toMatch(/authentication required/i);
   }, 15000);
-});
-
-describe('US5: CLI rejects Entra ID authentication explicitly', () => {
-  it('exits non-zero when a workspace config specifies auth.type entra-id and no --ruleset override is given', () => {
-    const workspaceDir = trackedTmpDir('api-grade-entra-ws-');
-    const homeDir = trackedTmpDir('api-grade-entra-home-');
-    writeWorkspaceConfig(workspaceDir, {
-      rulesetPath: 'https://example.com/private-ruleset.yaml',
-      auth: { type: 'entra-id', tenantId: 't', clientId: 'c' },
-    });
-    const { status, stderr } = runCli([OPENAPI_SPEC], { cwd: workspaceDir, env: { HOME: homeDir } });
-    expect(status).not.toBe(0);
-    expect(stderr).toMatch(/Entra ID/i);
-  });
-
-  it('exits non-zero with --auth-type entra-id on the grade command, with no device-code flow attempted', () => {
-    const { status, stderr } = runCli([
-      OPENAPI_SPEC,
-      '--ruleset', 'https://example.com/private-ruleset.yaml',
-      '--auth-type', 'entra-id',
-    ]);
-    expect(status).not.toBe(0);
-    expect(stderr).toMatch(/Entra ID/i);
-    expect(stderr).not.toMatch(/device.?code/i);
-  });
-
-  it('rejects entra-id before any fetch attempt, with no partial application of other options', () => {
-    const { status, stdout, stderr } = runCli([
-      OPENAPI_SPEC,
-      '--ruleset', 'https://example.com/private-ruleset.yaml',
-      '--auth-type', 'entra-id',
-      '--min-grade', 'A',
-    ]);
-    expect(status).toBe(1);
-    expect(stderr).toMatch(/Entra ID/i);
-    expect(stdout).not.toMatch(/letter ?grade/i);
-  });
-
-  it('does NOT reject entra-id for a local ruleset file; warns instead and grades successfully', () => {
-    const workspaceDir = trackedTmpDir('api-grade-entra-local-ws-');
-    const homeDir = trackedTmpDir('api-grade-entra-local-home-');
-    writeWorkspaceConfig(workspaceDir, {
-      rulesetPath: 'https://example.com/private-ruleset.yaml',
-      auth: { type: 'entra-id', tenantId: 't', clientId: 'c' },
-    });
-    const { status, stderr, stdout } = runCli(
-      [OPENAPI_SPEC, '--ruleset', LOCAL_RULESET],
-      { cwd: workspaceDir, env: { HOME: homeDir } }
-    );
-    expect(status).toBe(0);
-    expect(stderr).not.toMatch(/Entra ID/i);
-    expect(stdout).toBeTruthy();
-  }, 30000);
-
-  it('--auth-type entra-id is recognised but not documented in --help output (FR-015/FR-017)', () => {
-    const { stdout } = runCli(['--help']);
-    expect(stdout).not.toMatch(/entra-id/i);
-  });
 });
 
 describe('US6: configure every grading option via .apigrade.json', () => {
@@ -276,7 +233,7 @@ describe('US6: configure every grading option via .apigrade.json', () => {
     expect(stderr).toMatch(/--url is not yet supported/);
   });
 
-  it('an .apigrade.json authType value outside none/github-pat/entra-id is a config-invalid failure (Acceptance Scenario 5 / FR-028)', () => {
+  it('an .apigrade.json authType value outside none/github-pat is a config-invalid failure (Acceptance Scenario 5 / FR-028)', () => {
     const workspaceDir = trackedTmpDir('api-grade-cfg-badauth-ws-');
     writeApigradeJson(workspaceDir, {
       ruleset: 'https://raw.githubusercontent.com/example/private-repo/main/ruleset.yaml',

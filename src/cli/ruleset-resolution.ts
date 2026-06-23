@@ -5,10 +5,10 @@ import {
   type SessionState,
 } from '@dawmatt/api-grade-core';
 
-export type ResolvedAuthType = 'none' | 'github-pat' | 'entra-id';
+export type ResolvedAuthType = 'none' | 'github-pat';
 
 export function isValidAuthType(value: string): value is ResolvedAuthType {
-  return value === 'none' || value === 'github-pat' || value === 'entra-id';
+  return value === 'none' || value === 'github-pat';
 }
 
 export function makeInertSessionState(): SessionState {
@@ -31,7 +31,7 @@ export type TokenSource = 'option' | 'env' | 'stored';
 
 export interface ResolveAuthResult {
   resolution: RulesetResolution;
-  /** Raw resolved auth-type string; may be invalid (not none/github-pat/entra-id). */
+  /** Raw resolved auth-type string; may be invalid (not none/github-pat). */
   authType: string;
   isRemote: boolean;
   isLocalFile: boolean;
@@ -95,26 +95,4 @@ export function resolveCliAuth(input: ResolveAuthInput): ResolveAuthResult {
   }
 
   return { resolution, authType, isRemote, isLocalFile, token, tokenSource, warnings };
-}
-
-export interface EntraRejectionCheck {
-  rejected: boolean;
-  message: string;
-}
-
-const ENTRA_REJECTION_MESSAGE =
-  "Microsoft Entra ID authentication is not supported by the CLI. Configure a GitHub PAT instead (--token, GITHUB_TOKEN, or `api-grade config set-ruleset --token`).";
-
-/**
- * FR-016/FR-019: entra-id is rejected only when it would actually gate a remote fetch —
- * never for a local ruleset (FR-021's warning applies there instead).
- */
-export function checkEntraRejection(result: ResolveAuthResult): EntraRejectionCheck {
-  if (result.isLocalFile) {
-    return { rejected: false, message: '' };
-  }
-  if (result.authType === 'entra-id') {
-    return { rejected: true, message: ENTRA_REJECTION_MESSAGE };
-  }
-  return { rejected: false, message: '' };
 }

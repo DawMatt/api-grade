@@ -31,7 +31,7 @@ Structure.
 
 **Purpose**: Establish a known-good baseline before removing anything
 
-- [ ] T001 Run the full test suite (`npm test --workspaces --if-present && npm test` from repo root) and confirm it is currently green; record this as the baseline all subsequent phases must not regress
+- [X] T001 Run the full test suite (`npm test --workspaces --if-present && npm test` from repo root) and confirm it is currently green; record this as the baseline all subsequent phases must not regress
 
 ---
 
@@ -44,12 +44,12 @@ against the final shared shape, not a moving target.
 
 **⚠️ CRITICAL**: No User Story work can begin until this phase is complete
 
-- [ ] T002 Delete `packages/api-grade-core/src/auth/entra.ts`
-- [ ] T003 Remove the `acquireEntraToken`/`EntraAuthRequired` export line for `./auth/entra.js` from `packages/api-grade-core/src/index.ts` (depends on T002)
-- [ ] T004 In `packages/api-grade-core/src/types.ts`, narrow `AuthConfig.type` to `'github-pat'` only and remove the `tenantId`/`clientId` fields, per data-model.md
-- [ ] T005 Remove the `@azure/msal-node` dependency from `packages/api-grade-core/package.json`
-- [ ] T006 Run `npm install` from the repo root to refresh the lockfile after the dependency removal (depends on T005)
-- [ ] T007 Build/typecheck `packages/api-grade-core` (e.g. `npm run build --workspace=packages/api-grade-core` or the project's equivalent) and confirm it compiles cleanly with no Entra ID references (depends on T002, T003, T004, T006)
+- [X] T002 Delete `packages/api-grade-core/src/auth/entra.ts`
+- [X] T003 Remove the `acquireEntraToken`/`EntraAuthRequired` export line for `./auth/entra.js` from `packages/api-grade-core/src/index.ts` (depends on T002)
+- [X] T004 In `packages/api-grade-core/src/types.ts`, narrow `AuthConfig.type` to `'github-pat'` only and remove the `tenantId`/`clientId` fields, per data-model.md
+- [X] T005 Remove the `@azure/msal-node` dependency from `packages/api-grade-core/package.json`
+- [X] T006 Run `npm install` from the repo root to refresh the lockfile after the dependency removal (depends on T005)
+- [X] T007 Build/typecheck `packages/api-grade-core` (e.g. `npm run build --workspace=packages/api-grade-core` or the project's equivalent) and confirm it compiles cleanly with no Entra ID references (depends on T002, T003, T004, T006)
 
 **Checkpoint**: `api-grade-core` no longer exposes any Entra ID code or type value — User Story work can now begin
 
@@ -67,23 +67,23 @@ root CLI test suites and confirm all `none`/`github-pat` tests still pass.
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] Delete `packages/api-grade-mcp/src/auth/entra.ts`
-- [ ] T009 [P] [US1] Remove the `ENTRA_AUTH_REQUIRED` error code from `packages/api-grade-mcp/src/utils/errors.ts`
-- [ ] T010 [P] [US1] Remove the `EntraAuthRequired`/`acquireEntraToken` imports and the `entra-id` branch from `packages/api-grade-mcp/src/tools/grade.ts`
-- [ ] T011 [P] [US1] Remove the `EntraAuthRequired`/`acquireEntraToken` imports and the `entra-id` branch from `packages/api-grade-mcp/src/tools/grade-detailed.ts`
-- [ ] T012 [P] [US1] Remove the `EntraAuthRequired`/`acquireEntraToken` imports and the `entra-id` branch from `packages/api-grade-mcp/src/tools/assert-grade.ts`
-- [ ] T013 [P] [US1] Remove the `EntraAuthRequired`/`acquireEntraToken` imports and the `entra-id` branch from `packages/api-grade-mcp/src/tools/quick-fixes-only.ts`
-- [ ] T014 [US1] In `packages/api-grade-mcp/src/tools/set-ruleset-config.ts`, remove `'entra-id'` from the `auth.type` enum, remove the `tenantId`/`clientId` schema fields, and remove the `entra-id`-specific validation branch (depends on T002–T007)
-- [ ] T015 [US1] Remove the `src/auth/entra.ts` coverage exclusion entry from `packages/api-grade-mcp/vitest.config.ts`
-- [ ] T016 [P] [US1] Remove the `auth.type: "entra-id"` → `INVALID_AUTH_CONFIG` test case from `packages/api-grade-mcp/tests/integration/set-ruleset-config.test.ts`
-- [ ] T017 [US1] In `src/cli/ruleset-resolution.ts`, remove `'entra-id'` from `ResolvedAuthType` and `isValidAuthType`, and delete `checkEntraRejection`/`EntraRejectionCheck` entirely (depends on T002–T007)
-- [ ] T018 [US1] Remove the Entra-specific rejection messaging/branches from `src/cli/ruleset-config-cli.ts` (depends on T017)
-- [ ] T019 [US1] Remove the `entraCheck` usage and `UNSUPPORTED_AUTH_TYPE` handling from `src/cli/index.ts` (depends on T017)
-- [ ] T020 [P] [US1] Remove the "US5: CLI rejects Entra ID authentication explicitly" `describe` block from `tests/integration/cli-github-pat.test.ts`
-- [ ] T021 [P] [US1] Remove the `entra-id`-specific test cases from `tests/unit/cli-ruleset-config.test.ts`
-- [ ] T022 [P] [US1] Remove the `entra-id`-specific test cases from `tests/unit/cli-ruleset-resolution.test.ts`
-- [ ] T023 [P] [US1] Remove the `entra-id`-specific test cases from `tests/unit/ruleset-config-cli.test.ts`
-- [ ] T024 [US1] Run the full test suite (`npm test --workspaces --if-present && npm test`) and confirm all `none`/`github-pat` tests pass with zero remaining Entra ID references in `packages/api-grade-core/src`, `packages/api-grade-mcp/src`, and `src/cli` (depends on T008–T023)
+- [X] T008 [P] [US1] Delete `packages/api-grade-mcp/src/auth/entra.ts`
+- [X] T009 [P] [US1] Remove the `ENTRA_AUTH_REQUIRED` error code from `packages/api-grade-mcp/src/utils/errors.ts`
+- [X] T010 [P] [US1] Remove the `EntraAuthRequired`/`acquireEntraToken` imports and the `entra-id` branch from `packages/api-grade-mcp/src/tools/grade.ts`
+- [X] T011 [P] [US1] Remove the `EntraAuthRequired`/`acquireEntraToken` imports and the `entra-id` branch from `packages/api-grade-mcp/src/tools/grade-detailed.ts`
+- [X] T012 [P] [US1] Remove the `EntraAuthRequired`/`acquireEntraToken` imports and the `entra-id` branch from `packages/api-grade-mcp/src/tools/assert-grade.ts`
+- [X] T013 [P] [US1] Remove the `EntraAuthRequired`/`acquireEntraToken` imports and the `entra-id` branch from `packages/api-grade-mcp/src/tools/quick-fixes-only.ts`
+- [X] T014 [US1] In `packages/api-grade-mcp/src/tools/set-ruleset-config.ts`, remove `'entra-id'` from the `auth.type` enum, remove the `tenantId`/`clientId` schema fields, and remove the `entra-id`-specific validation branch (depends on T002–T007)
+- [X] T015 [US1] Remove the `src/auth/entra.ts` coverage exclusion entry from `packages/api-grade-mcp/vitest.config.ts`
+- [X] T016 [P] [US1] Remove the `auth.type: "entra-id"` → `INVALID_AUTH_CONFIG` test case from `packages/api-grade-mcp/tests/integration/set-ruleset-config.test.ts`
+- [X] T017 [US1] In `src/cli/ruleset-resolution.ts`, remove `'entra-id'` from `ResolvedAuthType` and `isValidAuthType`, and delete `checkEntraRejection`/`EntraRejectionCheck` entirely (depends on T002–T007)
+- [X] T018 [US1] Remove the Entra-specific rejection messaging/branches from `src/cli/ruleset-config-cli.ts` (depends on T017)
+- [X] T019 [US1] Remove the `entraCheck` usage and `UNSUPPORTED_AUTH_TYPE` handling from `src/cli/index.ts` (depends on T017)
+- [X] T020 [P] [US1] Remove the "US5: CLI rejects Entra ID authentication explicitly" `describe` block from `tests/integration/cli-github-pat.test.ts`
+- [X] T021 [P] [US1] Remove the `entra-id`-specific test cases from `tests/unit/cli-ruleset-config.test.ts`
+- [X] T022 [P] [US1] Remove the `entra-id`-specific test cases from `tests/unit/cli-ruleset-resolution.test.ts`
+- [X] T023 [P] [US1] Remove the `entra-id`-specific test cases from `tests/unit/ruleset-config-cli.test.ts`
+- [X] T024 [US1] Run the full test suite (`npm test --workspaces --if-present && npm test`) and confirm all `none`/`github-pat` tests pass with zero remaining Entra ID references in `packages/api-grade-core/src`, `packages/api-grade-mcp/src`, and `src/cli` (depends on T008–T023)
 
 **Checkpoint**: At this point, User Story 1 is complete — the codebase carries no Entra ID code, types, or dependencies, and existing supported-path tests are green
 
@@ -103,12 +103,12 @@ remaining.
 
 ### Implementation for User Story 2
 
-- [ ] T025 [P] [US2] Add a test to `tests/unit/cli-ruleset-resolution.test.ts` asserting `isValidAuthType('entra-id')` returns `false`, identically to any other unrecognized string (depends on T017)
-- [ ] T026 [P] [US2] Add a test to `tests/integration/cli-github-pat.test.ts` asserting `--auth-type entra-id` produces the same `config-invalid` failure shape/message format as an arbitrary unrecognized value (e.g. `--auth-type bogus`) (depends on T017, T019)
-- [ ] T027 [US2] Remove the `unsupportedByCli` field and its Entra-specific messaging from the `config get-ruleset` output path in `src/cli/ruleset-config-cli.ts`, so a persisted config with `auth.type: "entra-id"` now reports a configuration error instead (depends on T018)
-- [ ] T028 [P] [US2] Add a test to `tests/unit/cli-ruleset-config.test.ts` asserting `config get-ruleset` reports a configuration error (not `unsupportedByCli`, non-zero exit) when the loaded config has `auth.type: "entra-id"` (depends on T027)
-- [ ] T029 [P] [US2] Add a test to `packages/api-grade-mcp/tests/integration/set-ruleset-config.test.ts` asserting `auth: { type: "entra-id" }` fails standard enum/schema validation rather than producing `INVALID_AUTH_CONFIG` (depends on T014)
-- [ ] T030 [US2] Manually run quickstart.md steps 4–5 (CLI and MCP `entra-id` rejection scenarios) and confirm both behave per contracts/auth-surfaces.md (depends on T025–T029)
+- [X] T025 [P] [US2] Add a test to `tests/unit/cli-ruleset-resolution.test.ts` asserting `isValidAuthType('entra-id')` returns `false`, identically to any other unrecognized string (depends on T017)
+- [X] T026 [P] [US2] Add a test to `tests/integration/cli-github-pat.test.ts` asserting `--auth-type entra-id` produces the same `config-invalid` failure shape/message format as an arbitrary unrecognized value (e.g. `--auth-type bogus`) (depends on T017, T019)
+- [X] T027 [US2] Remove the `unsupportedByCli` field and its Entra-specific messaging from the `config get-ruleset` output path in `src/cli/ruleset-config-cli.ts`, so a persisted config with `auth.type: "entra-id"` now reports a configuration error instead (depends on T018)
+- [X] T028 [P] [US2] Add a test to `tests/unit/cli-ruleset-config.test.ts` asserting `config get-ruleset` reports a configuration error (not `unsupportedByCli`, non-zero exit) when the loaded config has `auth.type: "entra-id"` (depends on T027)
+- [X] T029 [P] [US2] Add a test to `packages/api-grade-mcp/tests/integration/set-ruleset-config.test.ts` asserting `auth: { type: "entra-id" }` fails standard enum/schema validation rather than producing `INVALID_AUTH_CONFIG` (depends on T014)
+- [X] T030 [US2] Manually run quickstart.md steps 4–5 (CLI and MCP `entra-id` rejection scenarios) and confirm both behave per contracts/auth-surfaces.md (depends on T025–T029)
 
 **Checkpoint**: At this point, User Stories 1 AND 2 both work independently — no surface treats `entra-id` as anything other than an invalid value
 
@@ -125,15 +125,15 @@ exists and nothing links to it.
 
 ### Implementation for User Story 3
 
-- [ ] T031 [P] [US3] Delete `docs/mcp/entra-id-setup.md`
-- [ ] T032 [P] [US3] Remove Entra ID mentions and links to the setup guide from `docs/mcp/README.md`
-- [ ] T033 [P] [US3] Remove the Entra ID configuration section from `docs/mcp/configuration.md`
-- [ ] T034 [P] [US3] Remove the Entra ID troubleshooting section from `docs/mcp/troubleshooting.md`
-- [ ] T035 [P] [US3] Remove Entra ID mentions from `docs/cli/commands.md`
-- [ ] T036 [P] [US3] Remove Entra ID mentions from `docs/index.md`
-- [ ] T037 [P] [US3] Remove Entra ID mentions from `docs/package/api-grade-mcp.md`
-- [ ] T038 [P] [US3] Remove Entra ID mentions from `packages/api-grade-mcp/README.md`
-- [ ] T039 [US3] Run quickstart.md step 6 (doc reference check) and confirm `docs/mcp/entra-id-setup.md` is gone with no dangling links (depends on T031–T038)
+- [X] T031 [P] [US3] Delete `docs/mcp/entra-id-setup.md`
+- [X] T032 [P] [US3] Remove Entra ID mentions and links to the setup guide from `docs/mcp/README.md`
+- [X] T033 [P] [US3] Remove the Entra ID configuration section from `docs/mcp/configuration.md`
+- [X] T034 [P] [US3] Remove the Entra ID troubleshooting section from `docs/mcp/troubleshooting.md`
+- [X] T035 [P] [US3] Remove Entra ID mentions from `docs/cli/commands.md`
+- [X] T036 [P] [US3] Remove Entra ID mentions from `docs/index.md`
+- [X] T037 [P] [US3] Remove Entra ID mentions from `docs/package/api-grade-mcp.md`
+- [X] T038 [P] [US3] Remove Entra ID mentions from `packages/api-grade-mcp/README.md`
+- [X] T039 [US3] Run quickstart.md step 6 (doc reference check) and confirm `docs/mcp/entra-id-setup.md` is gone with no dangling links (depends on T031–T038)
 
 **Checkpoint**: All user stories are now independently functional — no Entra ID code, configuration behavior, or documentation remains
 
@@ -143,9 +143,9 @@ exists and nothing links to it.
 
 **Purpose**: Project-tracking and final whole-repository validation
 
-- [ ] T040 [P] Strike the "Entra ID protected environments (e.g. SharePoint, OneDrive)" line from the Feature 7 entry in `GOAL.md`, per FR-008 and the spec's Clarifications session
-- [ ] T041 Run the full quickstart.md validation (all 6 steps) end-to-end and confirm every check passes (depends on T001–T040)
-- [ ] T042 Run the project's full CI quality gate locally (dependency audit, lint, typecheck, test + coverage threshold, build), per the constitution's Development Workflow requirement, and remediate any failure before considering this feature complete (depends on T041)
+- [X] T040 [P] Strike the "Entra ID protected environments (e.g. SharePoint, OneDrive)" line from the Feature 7 entry in `GOAL.md`, per FR-008 and the spec's Clarifications session
+- [X] T041 Run the full quickstart.md validation (all 6 steps) end-to-end and confirm every check passes (depends on T001–T040)
+- [X] T042 Run the project's full CI quality gate locally (dependency audit, lint, typecheck, test + coverage threshold, build), per the constitution's Development Workflow requirement, and remediate any failure before considering this feature complete (depends on T041)
 
 ---
 

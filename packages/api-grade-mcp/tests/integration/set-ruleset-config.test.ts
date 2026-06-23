@@ -68,16 +68,15 @@ describe('set-ruleset-config tool', () => {
     expect(config.session).toBeNull();
   });
 
-  it('auth.type: "entra-id" without tenantId/clientId → INVALID_AUTH_CONFIG', async () => {
+  it('auth: { type: "entra-id" } fails standard schema validation rather than producing INVALID_AUTH_CONFIG', async () => {
     const server = createServer();
-    const result = await callTool(server, 'set-ruleset-config', {
+    const tools = (server as unknown as { _registeredTools: Record<string, { inputSchema: { safeParse: (args: unknown) => { success: boolean } } }> })._registeredTools;
+    const result = tools['set-ruleset-config'].inputSchema.safeParse({
       scope: 'global',
       rulesetPath: 'https://example.com/ruleset.yaml',
       auth: { type: 'entra-id' },
     });
-    expect(result.isError).toBe(true);
-    const body = JSON.parse(result.content[0].text);
-    expect(body.error).toBe('INVALID_AUTH_CONFIG');
+    expect(result.success).toBe(false);
   });
 
   it('unwritable workspace path → CONFIG_WRITE_ERROR', async () => {

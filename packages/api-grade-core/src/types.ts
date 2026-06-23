@@ -88,10 +88,8 @@ export function extractCategory(ruleId: string): string {
 }
 
 export interface AuthConfig {
-  type: 'github-pat' | 'entra-id';
+  type: 'github-pat';
   githubToken?: string;
-  tenantId?: string;
-  clientId?: string;
 }
 
 export interface RulesetConfig {

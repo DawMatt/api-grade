@@ -15,7 +15,7 @@ import {
   formatQuickFixesHuman,
 } from '@dawmatt/api-grade-core';
 import { loadConfig } from './config-loader.js';
-import { resolveCliAuth, checkEntraRejection, isValidAuthType } from './ruleset-resolution.js';
+import { resolveCliAuth, isValidAuthType } from './ruleset-resolution.js';
 import { resolveRemoteRuleset } from './ruleset-fetch.js';
 import { registerConfigCommand } from './ruleset-config-cli.js';
 import type { LetterGrade } from '@dawmatt/api-grade-core';
@@ -151,16 +151,6 @@ program
 
     for (const warning of authResult.warnings) {
       console.warn(chalk.yellow(warning));
-    }
-
-    const entraCheck = checkEntraRejection(authResult);
-    if (entraCheck.rejected) {
-      if (outputFormat === 'json') {
-        console.log(JSON.stringify({ error: 'UNSUPPORTED_AUTH_TYPE', message: entraCheck.message }));
-      } else {
-        console.error(chalk.red(`Error: ${entraCheck.message}`));
-      }
-      process.exit(1);
     }
 
     const fetchOutcome = await resolveRemoteRuleset(authResult);
