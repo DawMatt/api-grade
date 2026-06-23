@@ -83,7 +83,23 @@ Feature 10 - Remove Entra ID
 - Remove Entra ID related functionality from the project. This includes all functionality and all end-user/developer documentation in all of the packages. 
 - Entra ID related functionality was adding extra dependencies, administration requirements, and was proving impractical to implement. It was an incidental feature that can be more practically delivered outside of this software. Removing this unproven feature is the most appropriate solution.
 
-Feature 11 - Remote AI support
+Feature 11 - Rename quick fixes only
+
+- Rename all user visible "quick fixes only" command line arguments or MCP tools to "remediation safety", 
+with an argument (level). The estimated remediation safety level of safe equates to quick fixes only. e.g. CLI's `--quick-fixes-only` argument would be replaced by `--remediation-safety safe`. 
+- Propose how the MCP server's equivalent tools should be named and work. Should the tools accept the safety level as an argument, or do we need to supply one tool per safety level (e.g. tool `grade-api-remediation-safety-safe`)
+- Make this change at a superficial level only. It should change the visible user experience and user focussed documentation, but the underlying implementation can still refer to "quick fixes only" in function names, etc. The full implementation of this feature will be implemented in an upcoming feature.
+
+Feature 12 - Remediation safety
+
+- Build a ruleset analyser that determines the level of risk associated with remediating violations identified by each of its rules. The analyser should also identify its level of confidence in each risk level.
+- Extend the remediation safety feature to support additional safety levels: humanreview, unsafe.
+- Remediation safety is calculated using the output of the ruleset analyser.
+- Implement the ruleset analyser and remediation safety calculation in alignment with specification automated_remediation_safety_algorithm_spec.md .
+- Remediation safety should be made visible in the JSON and human output formats of the various tools and packages.
+- Complete refactoring of the code base (including documentation) to move away from the older "quick fixes only" concept to "remediation safety". "Quick fixes" should no longer be mentioned in the code base or user facing documentation.
+
+Feature 13 - Remote AI support
 
 - Allow API grading to be performed directly (remotely) from LLMs and agentic AI tooling
 - Update AI support to include remote access via streamable/HTTP transport
