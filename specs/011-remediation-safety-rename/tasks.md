@@ -29,7 +29,7 @@ Single-project monorepo: `src/cli/`, `packages/api-grade-mcp/src/`, `tests/`, `d
 
 **Purpose**: Establish a passing baseline before any renaming begins
 
-- [ ] T001 Run the existing test suites that exercise today's "quick fixes only" behavior — `npx vitest run tests/integration/cli-quick-fixes.test.ts` and `npx vitest run packages/api-grade-mcp/tests/integration/quick-fixes-only.test.ts` — and confirm both pass, establishing the baseline this rename must not regress
+- [X] T001 Run the existing test suites that exercise today's "quick fixes only" behavior — `npx vitest run tests/integration/cli-quick-fixes.test.ts` and `npx vitest run packages/api-grade-mcp/tests/integration/quick-fixes-only.test.ts` — and confirm both pass, establishing the baseline this rename must not regress
 
 **Checkpoint**: Baseline tests green — safe to start renaming
 
@@ -51,12 +51,12 @@ No foundational/blocking tasks are required for this feature. US1 (CLI) and US2 
 
 > Update this test first so it fails against the current `--quick-fixes-only` implementation, then make it pass in the implementation task below.
 
-- [ ] T002 [US1] Update `tests/integration/cli-quick-fixes.test.ts` to invoke `--remediation-safety safe` instead of `--quick-fixes-only`, assert output is unchanged from today's behavior, assert `--quick-fixes-only` is no longer a recognized option (commander "unknown option" failure), and add a case asserting `--remediation-safety unsafe` (or any non-`safe` value) fails with a clear error and non-zero exit code
+- [X] T002 [US1] Update `tests/integration/cli-quick-fixes.test.ts` to invoke `--remediation-safety safe` instead of `--quick-fixes-only`, assert output is unchanged from today's behavior, assert `--quick-fixes-only` is no longer a recognized option (commander "unknown option" failure), and add a case asserting `--remediation-safety unsafe` (or any non-`safe` value) fails with a clear error and non-zero exit code
 
 ### Implementation for User Story 1
 
-- [ ] T003 [US1] In `src/cli/index.ts`, replace the `--quick-fixes-only` boolean option with `--remediation-safety <level>`: parse the level, validate it equals `safe` (error `Error: --remediation-safety must be "safe"` on any other value, matching the existing `--format`/`--auth-type` validation style), and route a validated `safe` level into the existing quick-fix output path (`buildQuickFixOutput`/`formatQuickFixesHuman`) exactly as `cliOpts.quickFixesOnly` did before (T002 must pass after this change)
-- [ ] T004 [P] [US1] Update `docs/cli/commands.md`: rename the `--quick-fixes-only` option-table row and the `## Quick Fixes (--quick-fixes-only)` section (heading, body text, and example commands) to use `--remediation-safety <level>` per `contracts/remediation-safety-surfaces.md`
+- [X] T003 [US1] In `src/cli/index.ts`, replace the `--quick-fixes-only` boolean option with `--remediation-safety <level>`: parse the level, validate it equals `safe` (error `Error: --remediation-safety must be "safe"` on any other value, matching the existing `--format`/`--auth-type` validation style), and route a validated `safe` level into the existing quick-fix output path (`buildQuickFixOutput`/`formatQuickFixesHuman`) exactly as `cliOpts.quickFixesOnly` did before (T002 must pass after this change)
+- [X] T004 [P] [US1] Update `docs/cli/commands.md`: rename the `--quick-fixes-only` option-table row and the `## Quick Fixes (--quick-fixes-only)` section (heading, body text, and example commands) to use `--remediation-safety <level>` per `contracts/remediation-safety-surfaces.md`
 
 **Checkpoint**: CLI rename fully functional and testable independently — MVP deliverable
 
@@ -72,15 +72,15 @@ No foundational/blocking tasks are required for this feature. US1 (CLI) and US2 
 
 > Update this test first so it fails against the current tool name/schema, then make it pass in the implementation task below.
 
-- [ ] T005 [P] [US2] Update `packages/api-grade-mcp/tests/integration/quick-fixes-only.test.ts` to call the renamed tool (e.g. `grade-api-remediation-safety`) with `{ specPath, level: "safe" }` instead of the old tool name with no level, assert the response is unchanged from today's `grade-api-quick-fixes-only` output, and add a case asserting an unsupported `level` value is rejected by schema validation
+- [X] T005 [P] [US2] Update `packages/api-grade-mcp/tests/integration/quick-fixes-only.test.ts` to call the renamed tool (e.g. `grade-api-remediation-safety`) with `{ specPath, level: "safe" }` instead of the old tool name with no level, assert the response is unchanged from today's `grade-api-quick-fixes-only` output, and add a case asserting an unsupported `level` value is rejected by schema validation
 
 ### Implementation for User Story 2
 
-- [ ] T006 [US2] In `packages/api-grade-mcp/src/tools/quick-fixes-only.ts`, rename the registered tool string from `grade-api-quick-fixes-only` to the new remediation-safety tool name, add a required `level` zod enum input (currently `z.enum(['safe'])`), update the tool description to use "remediation safety" vocabulary (per `contracts/remediation-safety-surfaces.md`), and pass the validated level through to the existing `buildQuickFixOutput` call unchanged; leave the exported function name `registerQuickFixesOnlyTool` and the file name as-is per FR-009 (T005 must pass after this change). Confirm `packages/api-grade-mcp/src/server.ts` needs no edit since it only calls the unchanged exported function name.
-- [ ] T007 [P] [US2] Update `docs/mcp/quick-start.md`: rename the `grade-api-quick-fixes-only` row in the tool table and the example prompt to reference the new tool name and its `level` parameter, using remediation-safety wording
-- [ ] T008 [P] [US2] Update `docs/package/api-grade-mcp.md`: rename the `### grade-api-quick-fixes-only` section heading and body to the new tool name and remediation-safety description
-- [ ] T009 [P] [US2] Update `docs/getting-started.md`: replace the `grade-api-quick-fixes-only` mention in the six-MCP-tools sentence with the new tool name
-- [ ] T010 [P] [US2] Update `packages/api-grade-mcp/README.md`: rename the tool table row and example prompt referencing `grade-api-quick-fixes-only` to the new tool name and `level` parameter
+- [X] T006 [US2] In `packages/api-grade-mcp/src/tools/quick-fixes-only.ts`, rename the registered tool string from `grade-api-quick-fixes-only` to the new remediation-safety tool name, add a required `level` zod enum input (currently `z.enum(['safe'])`), update the tool description to use "remediation safety" vocabulary (per `contracts/remediation-safety-surfaces.md`), and pass the validated level through to the existing `buildQuickFixOutput` call unchanged; leave the exported function name `registerQuickFixesOnlyTool` and the file name as-is per FR-009 (T005 must pass after this change). Confirm `packages/api-grade-mcp/src/server.ts` needs no edit since it only calls the unchanged exported function name.
+- [X] T007 [P] [US2] Update `docs/mcp/quick-start.md`: rename the `grade-api-quick-fixes-only` row in the tool table and the example prompt to reference the new tool name and its `level` parameter, using remediation-safety wording
+- [X] T008 [P] [US2] Update `docs/package/api-grade-mcp.md`: rename the `### grade-api-quick-fixes-only` section heading and body to the new tool name and remediation-safety description
+- [X] T009 [P] [US2] Update `docs/getting-started.md`: replace the `grade-api-quick-fixes-only` mention in the six-MCP-tools sentence with the new tool name
+- [X] T010 [P] [US2] Update `packages/api-grade-mcp/README.md`: rename the tool table row and example prompt referencing `grade-api-quick-fixes-only` to the new tool name and `level` parameter
 
 **Checkpoint**: CLI (US1) and MCP (US2) renames both independently functional and testable
 
@@ -94,7 +94,7 @@ No foundational/blocking tasks are required for this feature. US1 (CLI) and US2 
 
 ### Implementation for User Story 3
 
-- [ ] T011 [US3] Run `grep -rn "quick.fix" docs/ packages/api-grade-mcp/README.md` and `node dist/cli/index.js --help` (or `npx tsx src/cli/index.ts --help`) after T003–T010 are complete; fix any remaining user-visible "quick fixes only" reference not already covered by US1/US2 tasks (depends on T003, T004, T006, T007, T008, T009, T010)
+- [X] T011 [US3] Run `grep -rn "quick.fix" docs/ packages/api-grade-mcp/README.md` and `node dist/cli/index.js --help` (or `npx tsx src/cli/index.ts --help`) after T003–T010 are complete; fix any remaining user-visible "quick fixes only" reference not already covered by US1/US2 tasks (depends on T003, T004, T006, T007, T008, T009, T010)
 
 **Checkpoint**: All user stories independently functional; zero "quick fixes only" wording remains in user-facing surfaces
 
@@ -104,9 +104,9 @@ No foundational/blocking tasks are required for this feature. US1 (CLI) and US2 
 
 **Purpose**: Final validation and release notes
 
-- [ ] T012 Run the full test suite (`npm test`) and confirm no regressions beyond the intended renames
-- [ ] T013 Walk through `specs/011-remediation-safety-rename/quickstart.md` end-to-end (CLI example, MCP example, grep verification) and confirm each step behaves as documented
-- [ ] T014 [P] Add a `CHANGELOG.md` entry under `[Unreleased]` documenting the breaking rename of `--quick-fixes-only` → `--remediation-safety safe` and `grade-api-quick-fixes-only` → the renamed MCP tool, following the existing "Breaking" entry style used for the v1.0.0 section
+- [X] T012 Run the full test suite (`npm test`) and confirm no regressions beyond the intended renames
+- [X] T013 Walk through `specs/011-remediation-safety-rename/quickstart.md` end-to-end (CLI example, MCP example, grep verification) and confirm each step behaves as documented
+- [X] T014 [P] Add a `CHANGELOG.md` entry under `[Unreleased]` documenting the breaking rename of `--quick-fixes-only` → `--remediation-safety safe` and `grade-api-quick-fixes-only` → the renamed MCP tool, following the existing "Breaking" entry style used for the v1.0.0 section
 
 ---
 

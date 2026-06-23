@@ -26,7 +26,7 @@ api-grade <spec-file> [options]
 | `--token <pat>` | GitHub Personal Access Token used to authenticate a remote ruleset fetch (only consulted when `--auth-type github-pat`) |
 | `--format <type>` | Output format: `human` (default) or `json` |
 | `--top <n>` | Show only the top N diagnostics (useful for large specs) |
-| `--quick-fixes-only` | Filter diagnostics to the non-breaking, safely-automatable subset |
+| `--remediation-safety <level>` | Filter diagnostics to the given remediation safety level (currently: `safe`) |
 | `--verbose` | Print the full error stack when a runtime error occurs |
 | `-V, --version` | Print the version number |
 | `-h, --help` | Show usage information |
@@ -363,17 +363,18 @@ parser works for both:
 
 ---
 
-## Quick Fixes (`--quick-fixes-only`)
+## Remediation Safety (`--remediation-safety <level>`)
 
-`--quick-fixes-only` filters diagnostics down to the non-breaking, safely-automatable
-subset — the same classification used by the MCP server's
-`grade-api-quick-fixes-only` tool. It is a *filter*, independent of `--format`, so it
-works with either output format.
+`--remediation-safety safe` filters diagnostics down to the non-breaking,
+safely-automatable subset — the same classification used by the MCP server's
+`grade-api-remediation-safety` tool. It is a *filter*, independent of `--format`, so it
+works with either output format. Only `safe` is accepted today; any other value is
+rejected with a non-zero exit code.
 
 **Machine-readable:**
 
 ```bash
-api-grade openapi.yaml --quick-fixes-only --format json
+api-grade openapi.yaml --remediation-safety safe --format json
 ```
 
 ```json
@@ -399,12 +400,12 @@ api-grade openapi.yaml --quick-fixes-only --format json
 **Human-readable** (default, or with `--format human`):
 
 ```bash
-api-grade openapi.yaml --quick-fixes-only
+api-grade openapi.yaml --remediation-safety safe
 ```
 
 Prints the same filtered list as readable text instead of JSON.
 
-`--quick-fixes-only` has no effect on `--min-grade` — the gate still evaluates the
+`--remediation-safety safe` has no effect on `--min-grade` — the gate still evaluates the
 spec's actual letter grade from the full, unfiltered diagnostics.
 
 ---

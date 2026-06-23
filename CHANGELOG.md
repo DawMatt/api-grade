@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking**: the CLI's `--quick-fixes-only` flag is renamed to
+  `--remediation-safety <level>` (only `level=safe` is accepted today; output for
+  `safe` is identical to the old flag). `--quick-fixes-only` is no longer a
+  recognized option. The MCP server's `grade-api-quick-fixes-only` tool is renamed
+  to `grade-api-remediation-safety` and now requires a `level` input (only `safe`
+  is valid today); the response shape for `level: "safe"` is unchanged. See
+  [contracts/remediation-safety-surfaces.md](specs/011-remediation-safety-rename/contracts/remediation-safety-surfaces.md)
+  for the full before/after surface.
+
 ## [1.0.0] — Initial public release
 
 ### Changed

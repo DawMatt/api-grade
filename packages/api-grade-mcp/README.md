@@ -60,7 +60,7 @@ Create `.vscode/mcp.json` in your project root:
 | `grade-api` | Letter grade, score, and summary — token-efficient overview |
 | `grade-api-detailed` | Full grade with all violations and diagnostics |
 | `assert-api-grade` | Pass/fail assertion for a minimum grade threshold |
-| `grade-api-quick-fixes-only` | Classified list of quick fixes (safe, non-breaking improvements) for AI-assisted correction |
+| `grade-api-remediation-safety` | Classified list of diagnostics filtered by remediation safety level (`safe`: non-breaking improvements) for AI-assisted correction |
 | `set-ruleset-config` | Set the default Spectral ruleset at session, workspace, or global scope |
 | `get-ruleset-config` | Get the active Spectral ruleset and which scope is effective |
 
@@ -77,7 +77,7 @@ Check whether /workspace/my-api/openapi.yaml meets a minimum grade of B
 ```
 
 ```
-Apply quick fixes to /workspace/my-api/openapi.yaml
+Apply safe remediations to /workspace/my-api/openapi.yaml
 ```
 
 ```

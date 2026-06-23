@@ -17,10 +17,10 @@ async function callTool(server: ReturnType<typeof createServer>, toolName: strin
   return tool.handler(args, {}) as Promise<{ content: [{ type: string; text: string }]; isError?: boolean }>;
 }
 
-describe('grade-api-quick-fixes-only tool', () => {
+describe('grade-api-remediation-safety tool', () => {
   it('returns non-empty quickFixes for a spec with documentation gaps (quick fix opportunities)', async () => {
     const server = createServer();
-    const result = await callTool(server, 'grade-api-quick-fixes-only', { specPath: OPENAPI_POOR });
+    const result = await callTool(server, 'grade-api-remediation-safety', { specPath: OPENAPI_POOR, level: 'safe' });
     expect(result.isError).toBeFalsy();
     const body = JSON.parse(result.content[0].text);
     expect(body).toHaveProperty('quickFixes');
@@ -30,7 +30,7 @@ describe('grade-api-quick-fixes-only tool', () => {
 
   it('each violation has all required fields', async () => {
     const server = createServer();
-    const result = await callTool(server, 'grade-api-quick-fixes-only', { specPath: OPENAPI_POOR });
+    const result = await callTool(server, 'grade-api-remediation-safety', { specPath: OPENAPI_POOR, level: 'safe' });
     expect(result.isError).toBeFalsy();
     const body = JSON.parse(result.content[0].text);
     if (body.quickFixes.length > 0) {
@@ -49,7 +49,7 @@ describe('grade-api-quick-fixes-only tool', () => {
 
   it('no violation in quickFixes is a breaking change', async () => {
     const server = createServer();
-    const result = await callTool(server, 'grade-api-quick-fixes-only', { specPath: OPENAPI_POOR });
+    const result = await callTool(server, 'grade-api-remediation-safety', { specPath: OPENAPI_POOR, level: 'safe' });
     expect(result.isError).toBeFalsy();
     const body = JSON.parse(result.content[0].text);
     for (const v of body.quickFixes) {
@@ -60,7 +60,7 @@ describe('grade-api-quick-fixes-only tool', () => {
 
   it('quickFixCount matches quickFixes length', async () => {
     const server = createServer();
-    const result = await callTool(server, 'grade-api-quick-fixes-only', { specPath: OPENAPI_MUSEUM });
+    const result = await callTool(server, 'grade-api-remediation-safety', { specPath: OPENAPI_MUSEUM, level: 'safe' });
     expect(result.isError).toBeFalsy();
     const body = JSON.parse(result.content[0].text);
     expect(typeof body.quickFixCount).toBe('number');
@@ -69,8 +69,9 @@ describe('grade-api-quick-fixes-only tool', () => {
 
   it('returns RULESET_NOT_FOUND for non-existent local ruleset', async () => {
     const server = createServer();
-    const result = await callTool(server, 'grade-api-quick-fixes-only', {
+    const result = await callTool(server, 'grade-api-remediation-safety', {
       specPath: OPENAPI_POOR,
+      level: 'safe',
       rulesetPath: '/nonexistent/ruleset.yaml',
     });
     expect(result.isError).toBe(true);
@@ -80,9 +81,16 @@ describe('grade-api-quick-fixes-only tool', () => {
 
   it('returns SPEC_NOT_FOUND for non-existent spec', async () => {
     const server = createServer();
-    const result = await callTool(server, 'grade-api-quick-fixes-only', { specPath: '/no/such/file.yaml' });
+    const result = await callTool(server, 'grade-api-remediation-safety', { specPath: '/no/such/file.yaml', level: 'safe' });
     expect(result.isError).toBe(true);
     const body = JSON.parse(result.content[0].text);
     expect(body.error).toBe('SPEC_NOT_FOUND');
+  });
+
+  it('rejects an unsupported level value via schema validation', async () => {
+    const server = createServer();
+    const tools = (server as unknown as { _registeredTools: ToolRegistry })._registeredTools;
+    const tool = tools['grade-api-remediation-safety'] as unknown as { inputSchema: { parse: (v: unknown) => unknown } };
+    expect(() => tool.inputSchema.parse({ specPath: OPENAPI_POOR, level: 'unsafe' })).toThrow();
   });
 });
