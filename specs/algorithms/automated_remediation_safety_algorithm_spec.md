@@ -10,7 +10,7 @@ Determines, for every **rule** in a loaded ruleset, how risky it would be to aut
 
 This algorithm supersedes the two-class `classifyViolation()` algorithm described in [`quick_fixes_algorithm_spec.md`](./quick_fixes_algorithm_spec.md), extending it from a binary `nonBreaking`/`breaking` split (with `unknown` as an exclusion bucket) to three first-class risk levels with an explicit confidence dimension. It consumes rule **metadata** (`ruleId`, the rule's `given` JSONPath expression(s), `then.function`) from a loaded Spectral ruleset object — it does not consume `Diagnostic[]` directly; diagnostics are matched to their rule's pre-computed result by `ruleId` when remediation safety is needed for a grading run.
 
-Before running automated classification, the analyser first checks for a previously persisted or pre-calculated analysis for this exact ruleset's content (Stage 0) — both a baseline for the built-in ruleset and a place for users to durably correct classifications they disagree with, so the same ruleset is not re-estimated, and re-reviewed, from scratch on every run.
+Before running automated classification, the analyser first checks, per rule, for a previously persisted or pre-calculated analysis (Stage 0): a baseline bundled for the built-in ruleset, a **Shared Ruleset Analysis** colocated with the ruleset itself so a team shares one set of judgements automatically, and a personal override layer for individual corrections. This means the same ruleset is not re-estimated, and re-reviewed, from scratch on every run — or by every person who uses it.
 
 ---
 
@@ -36,40 +36,43 @@ Each rule's risk level carries a confidence level:
 
 ## Input & Output
 
-**Input:** a loaded Spectral ruleset object (`LoadedRuleset.ruleset` from `packages/api-grade-core/src/rulesets/loader.ts`), specifically its `rules` map: `{ [ruleId]: { given: string | string[], then: { function: string }, severity, description, recommended } }`. A **Ruleset Identity** (see Stage 0) is derived from this same input and used to look up any persisted or bundled pre-calculated analysis.
+**Input:** a loaded Spectral ruleset object (`LoadedRuleset.ruleset` from `packages/api-grade-core/src/rulesets/loader.ts`), specifically its `rules` map: `{ [ruleId]: { given: string | string[], then: { function: string }, severity, description, recommended } }`, plus the ruleset's resolved location (local path or remote/GitHub URL). A per-rule **Fingerprint** (see Stage 0) is derived from each rule's own content and used to look up any persisted or bundled pre-calculated analysis for that rule.
 
 **Output:** `analyseRuleset(ruleset) -> RulesetAnalysis`:
 - `rulesetSource: 'default' | 'custom'`, `rulesetPath?: string` — mirrors the input `LoadedRuleset`.
-- `rulesetIdentity: string` — the content hash described in Stage 0.
 - `rules: RuleAnalysis[]` — exactly one entry per rule key in the input ruleset (no omissions — see Implementation Notes).
 
 Each `RuleAnalysis`: `{ ruleId, riskLevel, confidenceLevel, rationale, source }`, where `source` is one of `'persisted'` (Stage 0a/0b), `'bundled-default'` (Stage 0c), `'curated'` (Stage 1), `'heuristic'` (Stage 2), or `'fallback'` (Stage 3) — see Data Model for the full enum.
 
 A second function, `getRemediationSafety(diagnostic, rulesetAnalysis) -> { riskLevel, confidenceLevel }`, performs the per-violation lookup at grading time (see Stage 5).
 
-A third function, `persistRuleAnalysisOverride(rulesetIdentity, ruleId, riskLevel, scope)`, writes a user correction for one rule into the persisted-analysis store at the given scope (`workspace` | `global`), to be picked up by Stage 0 on future runs.
+A third function, `persistRuleAnalysisOverride(ruleset, ruleId, riskLevel, scope)`, writes a user correction for one rule into either the colocated Shared Ruleset Analysis (`scope: 'shared'`) or the personal-override store (`scope: 'personal'`, `workspace` | `global`), to be picked up by Stage 0 on future runs (see Stage 4 for the write-target rules, including the remote/GitHub-hosted fallback).
 
 ---
 
 ## Stage 0: Persisted / Pre-Calculated Lookup
 
-Runs **before** Stage 1, once per loaded ruleset (not per rule). Computes the ruleset's **Ruleset Identity** — a SHA-256 hash over its rule definitions, normalized as `sortBy(ruleId) -> ruleId + '|' + given + '|' + then.function + '|' + severity + '|' + description`, joined and hashed. Identity is derived from rule *content*, never from `rulesetPath`/`rulesetUrl`, so relocating or re-fetching an unchanged ruleset still hits the cache, and editing a ruleset at a stable path correctly misses it.
+Runs **before** Stage 1, once per loaded ruleset (not per rule). For each rule, computes a **Rule Fingerprint** — a hash over that rule's own content: `hash(ruleId + '|' + given + '|' + then.function + '|' + severity + '|' + description)`. Fingerprinting is per-rule, not a single whole-ruleset hash, so that editing one rule invalidates only that rule's persisted entry, not every entry in a shared analysis file that a team may have spent time curating (FR-014).
 
-Checked in order; the first hit for a given `ruleId` is used, and per-`ruleId` lookup continues independently — a ruleset's overall analysis can be assembled from a mix of sources:
+Checked in order; the first hit for a given `ruleId` (with a matching Fingerprint) is used, and per-`ruleId` lookup continues independently — a ruleset's overall analysis is typically assembled from a mix of sources:
 
 ```
-0a. workspace-scoped persisted analysis for this rulesetIdentity (if present)
-0b. global-scoped persisted analysis for this rulesetIdentity (if present)
+0a. Personal Ruleset Analysis Override (workspace-scoped, then global-scoped) for this ruleId+fingerprint, if present
+0b. Shared Ruleset Analysis colocated with the ruleset, for this ruleId+fingerprint, if present
 0c. bundled pre-calculated analysis, ONLY if this is the built-in ruleset
 ```
 
 For each `ruleId` covered by a hit: `RETURN { riskLevel, confidenceLevel, rationale, source: 'persisted' | 'bundled-default' }` using the stored values as-is (a `persisted` entry's `confidenceLevel` is whatever was stored when the correction was made — typically `high`, since a human confirmed it).
 
-Any `ruleId` **not** covered by Stage 0 (no persisted/bundled entry exists for it — including the common case of an entirely new custom ruleset) falls through to Stage 1. This is the same "lookup miss → keep going" behavior as the per-violation lookup in Stage 5; Stage 0 never blocks or fails the analysis, it only short-circuits the rules it has prior knowledge of (FR-012, FR-015).
+Any `ruleId` **not** covered by Stage 0 — no hit in 0a/0b/0c, or a hit exists but its stored Fingerprint no longer matches the rule's current definition (the rule was edited since the entry was captured) — falls through to Stage 1. This is the same "lookup miss → keep going" behavior as the per-violation lookup in Stage 5; Stage 0 never blocks or fails the analysis, it only short-circuits the rules it has valid prior knowledge of (FR-012, FR-014, FR-015).
 
-**Rationale:** directly required by `clarification-algorithm.md`'s "Recommended High Level Approach" (steps 1 and 4): load pre-calculated risk/safety for known rulesets first, and let users persist their own corrections so the same ruleset doesn't need re-estimating — and re-confirming via human review — on every run. Content-hash identity (rather than path/URL) is what makes "the same ruleset" a meaningful, stable lookup key across separate invocations, possibly on different machines or after the ruleset file/URL has moved (FR-014).
+**Shared Ruleset Analysis location (0b) — colocated via naming convention (FR-016/FR-017):** derived deterministically from the ruleset's own path/URL (e.g. appending a fixed suffix to the ruleset's filename), so presence is a direct lookup at that location, not a separate index. For a local ruleset this is a sibling file on disk; for a GitHub-hosted ruleset this is a sibling file fetched via the same resolution/auth flow already used to fetch the ruleset (`resolveRuleset`/`fetchRulesetContent`). Anyone who can read the ruleset can read this file, so a team sharing a ruleset automatically shares its analysis (SC-008) with no per-user configuration step.
 
-**Bundled pre-calculated analysis for the built-in ruleset:** shipped with the package (generated by running Stages 1–3 once over the built-in ruleset at release time and committing the result), so `ruleset-analysis`/`analyse-ruleset-safety` against the built-in ruleset never requires per-rule computation at request time (SC-007), and so the built-in ruleset itself satisfies the "at a minimum the default ruleset" baseline the clarification document calls for.
+**Personal Ruleset Analysis Override (0a):** checked first because it represents the most specific, most recently expressed intent — a user actively disagreeing with or supplementing the shared analysis for themselves, without writing to the shared file (FR-018). Stored using the existing workspace/global config-file scope (`packages/api-grade-core/src/config/ruleset-config.ts` pattern), repurposed for this narrower role.
+
+**Bundled pre-calculated analysis for the built-in ruleset (0c):** shipped with the package (generated by running Stages 1–3 once over the built-in ruleset at release time and committing the result), so `ruleset-analysis`/`analyse-ruleset-safety` against the built-in ruleset never requires per-rule computation at request time (SC-007), and so the built-in ruleset itself satisfies the "at a minimum the default ruleset" baseline the clarification document calls for.
+
+**Rationale:** directly required by `clarification-algorithm.md`'s "Recommended High Level Approach" (steps 1 and 4) and by the project's own stated goal of letting an organisation share one set of judgements rather than each person separately configuring their own copy. Colocation (rather than a per-user store as the primary mechanism) is what makes that sharing automatic; per-rule fingerprinting (rather than a whole-ruleset hash) is what keeps a shared file useful as the ruleset evolves incrementally instead of being invalidated wholesale by any single edit.
 
 ---
 
@@ -188,18 +191,29 @@ RETURN { riskLevel: "unsafe", confidenceLevel: "low", rationale: "no recognizabl
 
 ## Stage 4: Persisting a Correction
 
-Not part of the per-rule classification pipeline — an explicit, user-initiated action (FR-013) that writes into the store Stage 0 reads from:
+Not part of the per-rule classification pipeline — an explicit, user-initiated action (FR-013/FR-018/FR-019) that writes into one of the two stores Stage 0 reads from. The target store depends on `scope` and on whether the ruleset's location is locally writable:
 
 ```
-persist_rule_analysis_override(rulesetIdentity, ruleId, riskLevel, scope):
+persist_rule_analysis_override(ruleset, ruleId, riskLevel, scope):
+  fingerprint ← fingerprint_of(ruleset.rules[ruleId])   // see Stage 0
   confidenceLevel ← "high"   // a human has explicitly confirmed this level
   rationale ← "user-confirmed override"
-  entry ← { ruleId, riskLevel, confidenceLevel, rationale, source: "persisted" }
-  write entry into the (workspace | global) persisted-analysis store, keyed by (rulesetIdentity, ruleId)
-  // last-write-wins per ruleId; does not require re-submitting other rules' entries (FR-015)
+  entry ← { ruleId, fingerprint, riskLevel, confidenceLevel, rationale, source: "persisted" }
+
+  IF scope == "personal":
+    write entry into the (workspace | global) personal-override store, keyed by ruleId
+    RETURN { written: "personal" }
+
+  IF scope == "shared":
+    IF ruleset.location is a local file path:
+      write entry into the colocated Shared Ruleset Analysis file next to the ruleset (FR-016)
+      RETURN { written: "shared" }
+    ELSE:   // remote/GitHub-hosted, not locally writable — FR-019
+      write entry into the personal-override store as a fallback (so it still takes effect locally)
+      RETURN { written: "personal-fallback", sharedFileContent: <updated shared-file content for the user to commit themselves> }
 ```
 
-**Rationale:** this is the mechanism `clarification-algorithm.md` describes as letting "the user perform this review once and then encode the correct safety level for this rule in this ruleset" — turning a one-time `humanreview`/`unsafe`, low-confidence determination into a durable `high`-confidence one for every future run against that same ruleset content.
+**Rationale:** this is the mechanism `clarification-algorithm.md` describes as letting "the user perform this review once and then encode the correct safety level for this rule in this ruleset" — turning a one-time `humanreview`/`unsafe`, low-confidence determination into a durable `high`-confidence one. Defaulting `scope` to `"shared"` for a local, writable ruleset maximizes the chance a correction benefits the whole team automatically (the spirit of FR-016); falling back to a personal-store write for a non-writable remote location (rather than failing, or silently attempting a remote write) keeps the correction useful immediately for the user who made it, without the tool performing an unrequested write to a shared, remote artifact (FR-019).
 
 ---
 
@@ -244,7 +258,7 @@ rules = [
 | `custom-channel-rename` | Stage 2a (channel key-selector) | `unsafe` | `high` | `given` selects channel object keys directly |
 | `custom-channel-address` | Stage 2b (`address` segment) | `unsafe` | `medium` | `given` path matched the unsafe segment set only (AsyncAPI channel address) |
 | `custom-no-signal` | Stage 3 (fallback) | `unsafe` | `low` | No recognizable rule-id or path signal |
-| `previously-reviewed-rule` | Stage 0 (persisted) | *(whatever the user set)* | `high` | User-confirmed override from a prior run against this same ruleset content |
+| `previously-reviewed-rule` | Stage 0 (persisted) | *(whatever was set)* | `high` | Matched a shared or personal override for this exact rule definition, from a prior run against this same ruleset |
 
 ---
 
@@ -254,19 +268,22 @@ rules = [
 |---|---|
 | **Classification granularity** | Per rule, not per violation instance — one `RuleAnalysis` per `ruleId` in the ruleset |
 | **Stage priority** | Persisted/bundled lookup (Stage 0) → curated rule-id table (Stage 1) → key-selector + path heuristic on `given` (Stage 2) → fallback (Stage 3) |
-| **Ruleset identity** | Content hash over normalized rule definitions (`ruleId`, `given`, `then.function`, `severity`, `description`) — never the supplied path/URL |
+| **Stage 0 lookup order** | Personal override (workspace, then global) → Shared Ruleset Analysis colocated with the ruleset → bundled default (built-in ruleset only) |
+| **Rule identity** | Per-rule Fingerprint (hash of `ruleId`, `given`, `then.function`, `severity`, `description`) — never a whole-ruleset hash, and never the supplied path/URL |
+| **Sharing mechanism** | Shared Ruleset Analysis is colocated with the ruleset via a naming convention (local sibling file, or same-repo-path fetch for GitHub-hosted) — not a per-user store (FR-016/FR-017) |
 | **Tier priority (Stage 1 and Stage 2)** | `unsafe` checked/preferred over `humanreview` over `safe` whenever ambiguity exists |
 | **Confidence assignment** | `high` = persisted/curated/key-selector match; `medium` = single-tier path-segment match; `low` = fallback or multi-tier path match |
 | **Default when unanalysable** | `unsafe` / `low` confidence — never `safe` |
 | **Per-violation lookup miss** | Defaults to `unsafe` / `low`, same as an unanalysable rule (FR-009) |
-| **Caching** | Computed once per distinct ruleset content (by identity); persisted across invocations, not just cached for one process (FR-012) |
-| **Partial persisted coverage** | A persisted/bundled analysis covering only some `ruleId`s short-circuits just those rules; the rest proceed through Stages 1–3 normally (FR-015) |
+| **Caching** | Computed once per distinct rule definition (by Fingerprint); persisted across invocations and across users sharing a ruleset, not just cached for one process (FR-012, FR-016) |
+| **Partial persisted coverage** | A personal/shared/bundled analysis covering only some `ruleId`s short-circuits just those rules; the rest proceed through Stages 1–3 normally (FR-015) |
+| **Remote write-back** | Never automatic for a non-writable (e.g. GitHub-hosted) ruleset location — falls back to a local personal-override write plus emitted shared-file content for the user to commit (FR-019) |
 
 ---
 
 ## Implementation Notes
 
-- **Deterministic for a given input state:** re-analysing the same ruleset content with the same persisted-analysis store always yields the same `RulesetAnalysis`. Stage 0 deliberately introduces store-dependence by design — a user's persisted correction is *supposed* to change the outcome on later runs; it does not undermine determinism, since the store itself is also keyed by content and changes only on an explicit user action (Stage 4).
+- **Deterministic for a given input state:** re-analysing the same ruleset with the same shared/personal override data present always yields the same `RulesetAnalysis`. Stage 0 deliberately introduces store-dependence by design — a persisted correction (personal or shared) is *supposed* to change the outcome on later runs, including for colleagues who read the same shared file; it does not undermine determinism, since lookups are keyed by per-rule Fingerprint and change only via an explicit write (Stage 4).
 - **Total coverage:** every rule key present in the input ruleset produces exactly one `RuleAnalysis` (Stage 3 guarantees this) — satisfies SC-005.
 - **Spec-format agnostic:** operates on ruleset rule metadata, which is uniform across the OpenAPI and AsyncAPI built-in rulesets and any custom Spectral-compatible ruleset; Stage 2's segment sets and key-selector check are explicitly format-aware (covering both OpenAPI and AsyncAPI contract-surface terms) but require no spec-type branching in the algorithm itself.
 - **Conservative by design:** `unsafe`/`low` is the universal fallback, not an error condition.

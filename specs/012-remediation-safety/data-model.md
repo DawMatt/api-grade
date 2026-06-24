@@ -30,15 +30,15 @@ One entry per rule in an analysed ruleset.
 
 **Validation rules**: every rule present in the input ruleset MUST produce exactly one `RuleAnalysis` entry (FR-001, SC-005) — no rule is ever omitted from analyser output.
 
-## RulesetIdentity
+## RuleFingerprint
 
-A stable identifier for "the same ruleset" across separate invocations (FR-014), used as the lookup/storage key for `PersistedRulesetAnalysis` and the bundled default.
+A stable identifier for "this exact rule definition" (FR-014), used as part of the lookup/storage key for persisted entries. Deliberately scoped to one rule, not the whole ruleset — see `research.md` §8 for why a whole-ruleset hash was rejected (it would invalidate an entire shared analysis file on any single rule edit).
 
 | Field | Type | Description |
 |---|---|---|
-| `value` | string | SHA-256 hash over the ruleset's normalized rule definitions (`ruleId`, `given`, `then.function`, `severity`, `description`, sorted by `ruleId`). |
+| `value` | string | Hash over one rule's own content: `ruleId`, `given`, `then.function`, `severity`, `description`. |
 
-**Relationships**: Derived solely from ruleset *content*, never from `rulesetPath`/`rulesetUrl` — the same content hashes identically regardless of where it was loaded from; different content (even at an unchanged path/URL) hashes differently. This is what lets a persisted/bundled analysis be correctly reused or correctly invalidated (spec.md Edge Cases).
+**Relationships**: Computed independently per `ruleId`; never derived from `rulesetPath`/`rulesetUrl`. A `RuleAnalysis` entry stored with a given `RuleFingerprint` is only reused if the rule's current `RuleFingerprint` still matches (spec.md Edge Cases — stale entries are skipped per-rule, not per-ruleset).
 
 ## RulesetAnalysis
 
@@ -46,22 +46,31 @@ A stable identifier for "the same ruleset" across separate invocations (FR-014),
 |---|---|---|
 | `rulesetSource` | `"default" \| "custom"` | Mirrors `GradeResult.rulesetSource`. |
 | `rulesetPath` | string (optional) | Present when `rulesetSource === "custom"`. |
-| `rulesetIdentity` | string | The `RulesetIdentity.value` for this ruleset's content. |
-| `rules` | `RuleAnalysis[]` | One entry per rule, see above. May be assembled from a mix of `source` values — some rules from Stage 0 (persisted/bundled), the rest from Stages 1–3. |
+| `rules` | `RuleAnalysis[]` | One entry per rule, see above. May be assembled from a mix of `source` values — some rules from Stage 0 (persisted/shared/bundled), the rest from Stages 1–3. |
 
-**Relationships**: Computed once per distinct ruleset content (keyed by `rulesetIdentity`, see `PersistedRulesetAnalysis` below), not merely cached for the lifetime of one process — this corrects the original design, which assumed no cross-invocation persistence (see `research.md` §8, added after reassessment against `clarification-algorithm.md`). `GradeEngine` (or a caller wrapping it) holds the `RulesetAnalysis` alongside the loaded ruleset for the duration of a single run and consults it when building remediation-safety output, rather than recomputing per violation; across separate runs, the persisted/bundled layer (Stage 0) is what avoids recomputing per-rule classification for rules it covers.
+**Relationships**: Computed once per distinct rule definition (keyed by `RuleFingerprint`, see `SharedRulesetAnalysis`/`PersonalRulesetAnalysisOverride` below), not merely cached for the lifetime of one process — this corrects the original design, which assumed no cross-invocation persistence (see `research.md` §8, added after reassessment against `clarification-algorithm.md` and further revised after direct user input on the sharing requirement). `GradeEngine` (or a caller wrapping it) holds the `RulesetAnalysis` alongside the loaded ruleset for the duration of a single run and consults it when building remediation-safety output, rather than recomputing per violation; across separate runs — and across different users pointed at the same ruleset — the persisted/shared/bundled layer (Stage 0) is what avoids recomputing per-rule classification for rules it covers.
 
-## PersistedRulesetAnalysis (new)
+## SharedRulesetAnalysis (new)
 
-A partial or full `RulesetAnalysis`, saved against a `RulesetIdentity` so it can be reloaded automatically on future runs against the same ruleset content (FR-012, FR-013).
+A partial or full `RulesetAnalysis`, **colocated with the ruleset itself** (FR-016/FR-017) so it can be reloaded automatically on future runs against the same ruleset — by anyone who can read that ruleset, not just the user who created it.
 
 | Field | Type | Description |
 |---|---|---|
-| `rulesetIdentity` | string | The `RulesetIdentity.value` this analysis applies to. |
-| `scope` | `"workspace" \| "global"` | Storage scope, reusing the precedence already established by `RulesetScope`/`RulesetResolution` for ruleset *selection* (workspace checked before global). |
-| `rules` | `Record<string, RuleAnalysis>` | Keyed by `ruleId`. May cover all or only some of a ruleset's rules — uncovered rules are simply absent from the map, not represented as explicit nulls. |
+| `location` | string | Derived deterministically from the ruleset's own path/URL via a fixed naming convention (e.g. appending a suffix to the ruleset's filename) — never a separately-tracked or registered location. |
+| `rules` | `Record<string, RuleAnalysis & { fingerprint: string }>` | Keyed by `ruleId`. May cover all or only some of a ruleset's rules — uncovered rules are simply absent from the map. Each entry carries the `RuleFingerprint.value` it was captured against, for staleness detection. |
 
-**Validation rules**: every `RuleAnalysis` value in `rules` MUST have `source: "persisted"` (entries are only ever written here via an explicit user correction, Stage 4 of the algorithm spec). Storage location reuses the existing workspace/global config file scope already used for `RulesetConfig` (`packages/api-grade-core/src/config/ruleset-config.ts`), rather than introducing a new persistence subsystem.
+**Validation rules**: every `RuleAnalysis` value in `rules` MUST have `source: "persisted"`. For a local ruleset this file lives on disk next to the ruleset and is read/written directly; for a GitHub-hosted ruleset it is *read* via the same `resolveRuleset`/`fetchRulesetContent` flow already used to fetch the ruleset (FR-017), but is never *written* automatically (FR-019) — see `PersonalRulesetAnalysisOverride` for what happens when a write is requested against a non-writable location.
+
+## PersonalRulesetAnalysisOverride (new, replaces the original PersistedRulesetAnalysis)
+
+A user-local correction (FR-018) that does not modify `SharedRulesetAnalysis`. Reuses the existing workspace/global config-file scope already established for `RulesetConfig` (`packages/api-grade-core/src/config/ruleset-config.ts`), narrowed to this role rather than serving as the primary persistence mechanism.
+
+| Field | Type | Description |
+|---|---|---|
+| `scope` | `"workspace" \| "global"` | Storage scope, reusing the precedence already established by `RulesetScope`/`RulesetResolution` for ruleset *selection* (workspace checked before global). |
+| `rules` | `Record<string, RuleAnalysis & { fingerprint: string }>` | Keyed by `ruleId`, same shape as `SharedRulesetAnalysis.rules`. |
+
+**Validation rules**: every `RuleAnalysis` value in `rules` MUST have `source: "persisted"`. This is also the write target when a correction is requested against a ruleset whose location is not writable (e.g. GitHub-hosted) — see Stage 4 of the algorithm spec for the exact fallback behavior.
 
 ## BundledRulesetAnalysis (new)
 
@@ -69,7 +78,7 @@ The built-in ruleset's pre-calculated analysis, shipped with the package (FR-012
 
 ## Lookup precedence (Stage 0)
 
-For a given `rulesetIdentity` and `ruleId`, checked in order until one matches: workspace-scoped `PersistedRulesetAnalysis` → global-scoped `PersistedRulesetAnalysis` → `BundledRulesetAnalysis` (only if this is the built-in ruleset) → fall through to Stages 1–3 of the algorithm.
+For a given `ruleId`, checked in order until one matches a current `RuleFingerprint`: workspace-scoped `PersonalRulesetAnalysisOverride` → global-scoped `PersonalRulesetAnalysisOverride` → `SharedRulesetAnalysis` colocated with the ruleset → `BundledRulesetAnalysis` (only if this is the built-in ruleset) → fall through to Stages 1–3 of the algorithm. Personal overrides are checked first because they represent the most specific, most recently expressed intent for that user.
 
 ## RemediationItem (was `QuickFix`)
 
@@ -96,7 +105,7 @@ For a given `rulesetIdentity` and `ruleId`, checked in order until one matches: 
 | `remediationItems` | `RemediationItem[]` | Renamed from `quickFixes`. |
 | `requestedLevel` | `RemediationSafetyLevel` | **New** — echoes the level that was filtered for, since there are now three possible values instead of one implicit one. |
 
-**State transitions**: `RemediationItem`/`RemediationSafetyOutput` are computed fresh per grading/analysis request and never persisted — only the per-rule `RuleAnalysis` entries behind them (via `RulesetAnalysis`/`PersistedRulesetAnalysis`/`BundledRulesetAnalysis`) are persisted, and only at the granularity of "one rule's classification within one ruleset's identity," not as a snapshot of any specific request's output. This corrects the original assumption (carried over from Feature 11's request-scoped data model) that nothing in this feature persists across requests — `clarification-algorithm.md` requires the per-rule analysis layer specifically to survive across requests so it is not re-estimated, and re-reviewed by a human, on every run against the same ruleset.
+**State transitions**: `RemediationItem`/`RemediationSafetyOutput` are computed fresh per grading/analysis request and never persisted — only the per-rule `RuleAnalysis` entries behind them (via `SharedRulesetAnalysis`/`PersonalRulesetAnalysisOverride`/`BundledRulesetAnalysis`) are persisted, and only at the granularity of "one rule's classification, keyed by that rule's fingerprint," not as a snapshot of any specific request's output. This corrects the original assumption (carried over from Feature 11's request-scoped data model) that nothing in this feature persists across requests — `clarification-algorithm.md`, and the project's own goal of letting a team share judgements rather than each configuring their own copy, both require the per-rule analysis layer to survive across requests and across users.
 
 ## Lookup / default behavior
 
