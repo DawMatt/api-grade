@@ -43,9 +43,9 @@ The most effective fully automated approach is:
 
 For an unknown ruleset, the system should be designed to produce:
 
-* `estimatedRisk`
-* `confidence`
-* `remediationSafetyLevel`
+* `estimatedRisk` (low, medium, high)
+* `confidence` (low, medium, high)
+* `remediationSafetyLevel` (safe, humanreview, unsafe)
 
 rather than a false claim of certainty.
 
@@ -98,7 +98,7 @@ OpenAPI formally describes HTTP API structure including `paths`, operations, par
 
 So you should classify targeted locations roughly like this:
 
-#### High consumer-impact areas
+##### High consumer-impact areas
 
 * `paths` keys
 * path template variables
@@ -109,20 +109,20 @@ So you should classify targeted locations roughly like this:
 * security requirements
 * reusable schemas referenced by the above [\[swagger.io\]](https://swagger.io/specification/), [\[spec.openapis.org\]](https://spec.openapis.org/oas/v3.1.1.html)
 
-#### Medium consumer-impact areas
+##### Medium consumer-impact areas
 
 * `operationId`
 * tags or names used by codegen and docs
 * component identifiers used in client generation [\[swagger.io\]](https://swagger.io/specification/), [\[spec.openapis.org\]](https://spec.openapis.org/oas/v3.1.1.html)
 
-#### Low consumer-impact areas
+##### Low consumer-impact areas
 
 * descriptions
 * contact metadata
 * licence metadata
 * summaries, where not used as identifiers [\[github.com\]](https://github.com/stoplightio/spectral/blob/develop/docs/getting-started/3-rulesets.md), [\[docs.stoplight.io\]](https://docs.stoplight.io/docs/spectral/branches/develop/d3482ff0ccae9-rules)
 
-#### Important example
+##### Important example
 
 OpenAPI path templating requires that each template expression correspond to a path parameter. That means a rule targeting path-template consistency is touching a real contract concern, even if worded as “correctness” rather than “compatibility”. [\[swagger.io\]](https://swagger.io/specification/), [\[spec.openapis.org\]](https://spec.openapis.org/oas/v3.1.1.html)
 
@@ -134,7 +134,7 @@ AsyncAPI formally describes channels, operations, messages, and action semantics
 
 So you should classify:
 
-### High consumer-impact areas
+##### High consumer-impact areas
 
 * channel `address`
 * channel parameters tied to address placeholders
@@ -143,7 +143,7 @@ So you should classify:
 * messages and payload schemas
 * reply or operation semantics if covered by the ruleset [\[asyncapi.com\]](https://www.asyncapi.com/docs/reference/specification/v3.1.0), [\[asyncapi.com\]](https://www.asyncapi.com/docs/concepts/asyncapi-document/dynamic-channel-address), [\[asyncapi.com\]](https://www.asyncapi.com/docs/concepts/asyncapi-document/adding-operations)
 
-#### Low consumer-impact areas
+##### Low consumer-impact areas
 
 * metadata such as descriptions and contact details [\[asyncapi.com\]](https://www.asyncapi.com/docs/reference/specification/v3.1.0)
 
@@ -208,7 +208,7 @@ This is exactly why your algorithm must output **risk plus confidence**, not jus
 
 ***
 
-### 5. Separate risk from confidence
+### 5. Separate risk from confidence from safety level
 
 This is essential.
 
@@ -225,6 +225,20 @@ A rule can be:
 
 Without this separation, the system will either over-block harmless changes or under-block dangerous ones.
 
+The implementation shall decide remediation safety as follows:
+If estimatedRisk = Low and confidence in {High, Medium}:
+    remediationSafety = safe
+
+Else if estimatedRisk = Medium and confidence = High:
+    automationDecision = human review
+
+Else if estimatedRisk = High:
+    remediationSafety = unsafe
+
+Else:
+    remediationSafety = human review
+
+
 ## References
 
 - [OpenAPI Breaking Changes: The Complete List of Rules | oasdiff](https://www.oasdiff.com/docs/breaking-changes)
@@ -234,7 +248,7 @@ Without this separation, the system will either over-block harmless changes or u
 ## Additional Context
 
 
-## Spectral Rule Facts
+### Spectral Rule Facts
 
 * Spectral rules are built from selectors and functions, and rulesets can extend built-in format-specific support for OpenAPI and AsyncAPI. [\[github.com\]](https://github.com/stoplightio/spectral/blob/develop/docs/getting-started/3-rulesets.md), [\[docs.stoplight.io\]](https://docs.stoplight.io/docs/spectral/branches/develop/d3482ff0ccae9-rules)
 * Spectral supports custom JavaScript functions. [\[github.com\]](https://github.com/stoplightio/spectral/blob/develop/docs/guides/5-custom-functions.md)

@@ -4,13 +4,17 @@
 
 Enum string: `"safe"` | `"humanreview"` | `"unsafe"`. Ordered from least to most cautious. Replaces the prior two-class `ViolationClass` (`nonBreaking`/`breaking`/`unknown`).
 
+## RiskLevel
+
+Enum string: `"low"` | `"medium"` | `"high"`. The analyser's **estimate of consumer-impact likelihood** for the minimal edit that would satisfy a rule — independent of how confident the analyser is in that estimate (`ConfidenceLevel`, below) and independent of the `RemediationSafetyLevel` it resolves to (see Decision Matrix). Carried on the `riskLevel` field of both `RuleAnalysis` and `RemediationItem` — a deliberately distinct field, with a distinct type and distinct values, from each entity's separate `remediationSafetyLevel` field. An earlier version of this document conflated the two under one field also named `riskLevel` but typed as `RemediationSafetyLevel`; that was incorrect and is corrected throughout this document.
+
 ## ConfidenceLevel
 
-Enum string: `"high"` | `"medium"` | `"low"`. Describes how confident the ruleset analyser is in a `RuleAnalysis`'s assigned `RemediationSafetyLevel`.
+Enum string: `"high"` | `"medium"` | `"low"`. Describes how confident the ruleset analyser is in a `RuleAnalysis`'s/`RemediationItem`'s assigned `riskLevel` — **not** directly in `remediationSafetyLevel`, though it feeds into deriving that value via the Decision Matrix below.
 
-- `high` — the rule id matched a curated, known table (Stage 1), the rule's `given` selected path/channel object keys directly (Stage 2a), or the entry came from a persisted user correction or bundled pre-calculated default (Stage 0).
-- `medium` — classification came from the generic path-segment heuristic only (Stage 2b), with a single, unambiguous tier match.
-- `low` — either no recognizable signal at all (Stage 3 fallback), or the path-segment heuristic matched more than one tier (genuine ambiguity, downgraded from `medium`).
+- `high` — the rule id matched a curated, known table (Stage 1); the rule's `given` selected path/channel object keys directly (Stage 2a); a recognized function (`truthy`/`pattern`/etc.) targeted an ontology area matching exactly one tier (Stage 2b); or the entry came from a persisted user correction or bundled pre-calculated default (Stage 0).
+- `medium` — a recognized function's target spanned more than one ontology tier (Stage 2b), or the generic segment fallback matched a single, unambiguous tier (Stage 2c).
+- `low` — the rule's function is unrecognized/custom (Stage 2b), the generic segment fallback matched more than one tier (Stage 2c, genuine ambiguity), or no recognizable signal at all (Stage 3 fallback).
 
 ## AnalysisSource
 
@@ -23,12 +27,26 @@ One entry per rule in an analysed ruleset.
 | Field | Type | Description |
 |---|---|---|
 | `ruleId` | string | The rule's identifier within its ruleset. |
-| `riskLevel` | `RemediationSafetyLevel` | The assigned risk level for auto-remediating violations of this rule. |
-| `confidenceLevel` | `ConfidenceLevel` | Confidence in `riskLevel`. |
-| `rationale` | string | Short human-readable explanation of why this level/confidence was assigned (e.g. "rule id matched curated safe-prefix table" or "given path touches `parameters` and `description` — conservative match, ambiguous"). |
+| `riskLevel` | `RiskLevel` \| `null` | The analyser's estimate of consumer-impact likelihood (Stages 1–3 only — see Decision Matrix below). `null` for `source: "persisted"` / `"bundled-default"` entries, which store a human-confirmed or pre-computed `remediationSafetyLevel` directly rather than deriving it from a risk estimate. |
+| `confidenceLevel` | `ConfidenceLevel` | Confidence in `riskLevel` (Stages 1–3), or the confidence carried over from a Stage 0 entry. |
+| `remediationSafetyLevel` | `RemediationSafetyLevel` | A field in its own right — the final assigned safety level for auto-remediating violations of this rule. For Stages 1–3, derived from `riskLevel` + `confidenceLevel` via the Decision Matrix below — never assigned directly by a stage. For Stage 0 entries, this is the stored value itself. |
+| `rationale` | string | Short human-readable explanation of why this level/confidence was assigned (e.g. "rule id matched curated safe-prefix table" or "`pattern` function on a `paths` object key — public-surface rename"). |
 | `source` | `AnalysisSource` | Which stage produced this entry — see above. |
 
-**Validation rules**: every rule present in the input ruleset MUST produce exactly one `RuleAnalysis` entry (FR-001, SC-005) — no rule is ever omitted from analyser output.
+**Validation rules**: every rule present in the input ruleset MUST produce exactly one `RuleAnalysis` entry (FR-001, SC-005) — no rule is ever omitted from analyser output. For `source` values `"curated"`, `"heuristic"`, and `"fallback"` (Stages 1–3), `remediationSafetyLevel` MUST equal `decisionMatrix(riskLevel, confidenceLevel)` — it is a derived value, not independently settable.
+
+### Decision Matrix
+
+The single function shared by Stages 1–3 to derive `remediationSafetyLevel` from `riskLevel` and `confidenceLevel`, taken verbatim from `clarification-algorithm.md` §5 (see `research.md` §3 for how each stage produces its `riskLevel`/`confidenceLevel` inputs):
+
+```
+If riskLevel = low and confidenceLevel in {high, medium}:  remediationSafetyLevel = safe
+Else if riskLevel = medium and confidenceLevel = high:       remediationSafetyLevel = humanreview
+Else if riskLevel = high:                                     remediationSafetyLevel = unsafe
+Else:                                                         remediationSafetyLevel = humanreview
+```
+
+This table is total over the 3×3 `(riskLevel, confidenceLevel)` space — every combination not explicitly listed (`low`/`low`, `medium`/`medium`, `medium`/`low`) falls into the final `Else` and resolves to `humanreview`, so there is no input pair this function leaves unresolved.
 
 ## RuleFingerprint
 
@@ -91,8 +109,9 @@ For a given `ruleId`, checked in order until one matches a current `RuleFingerpr
 | `location` | string | Unchanged. |
 | `currentValue` | string \| null | Unchanged. |
 | `expectedImprovement` | string | Unchanged. |
-| `riskLevel` | `RemediationSafetyLevel` | **New** — the violation's computed remediation safety, looked up from the rule's `RuleAnalysis`. |
+| `riskLevel` | `RiskLevel` \| `null` | **New** — the violation's rule-level estimated risk (`low`/`medium`/`high`), looked up from the rule's `RuleAnalysis`. `null` when the lookup hit a Stage 0 entry that has no `riskLevel` of its own (see `RuleAnalysis`). |
 | `confidenceLevel` | `ConfidenceLevel` | **New** — confidence behind `riskLevel`, from the same lookup. |
+| `remediationSafetyLevel` | `RemediationSafetyLevel` | **New** — a field in its own right, distinct from `riskLevel` both in name and in type/values (`safe`/`humanreview`/`unsafe`, not `low`/`medium`/`high`). The violation's computed remediation safety, looked up from the rule's `RuleAnalysis.remediationSafetyLevel`. This is the field `--remediation-safety`/`level` filtering matches against. |
 
 ## RemediationSafetyOutput (was `QuickFixOutput`)
 
@@ -109,6 +128,6 @@ For a given `ruleId`, checked in order until one matches a current `RuleFingerpr
 
 ## Lookup / default behavior
 
-`getRemediationSafety(diagnostic, rulesetAnalysis) -> { riskLevel, confidenceLevel }`:
-- If `rulesetAnalysis.rules` contains an entry for `diagnostic.ruleId`, return its `riskLevel`/`confidenceLevel`.
-- Otherwise (FR-009), return `{ riskLevel: "unsafe", confidenceLevel: "low" }`.
+`getRemediationSafety(diagnostic, rulesetAnalysis) -> { riskLevel, confidenceLevel, remediationSafetyLevel }`:
+- If `rulesetAnalysis.rules` contains an entry for `diagnostic.ruleId`, return its `riskLevel`/`confidenceLevel`/`remediationSafetyLevel` verbatim — all three are carried through to `RemediationItem` unchanged.
+- Otherwise (FR-009), return `{ riskLevel: "high", confidenceLevel: "low", remediationSafetyLevel: "unsafe" }` — equivalent to a synthetic Stage 3 entry run through the Decision Matrix.

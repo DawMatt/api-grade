@@ -8,7 +8,7 @@ api-grade openapi.yaml --remediation-safety humanreview  # new
 api-grade openapi.yaml --remediation-safety unsafe       # new
 ```
 
-Each returned item now includes `riskLevel` and `confidenceLevel`:
+Each returned item now includes `riskLevel`, `confidenceLevel`, and `remediationSafetyLevel` — three separate fields, not one. `riskLevel` is `low`/`medium`/`high`; `remediationSafetyLevel` is `safe`/`humanreview`/`unsafe` and is what `--remediation-safety`/`requestedLevel` filters against:
 
 ```json
 {
@@ -20,8 +20,9 @@ Each returned item now includes `riskLevel` and `confidenceLevel`:
   "remediationItems": [
     {
       "ruleId": "operation-operationId",
-      "riskLevel": "humanreview",
+      "riskLevel": "medium",
       "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
       "...": "..."
     }
   ]
@@ -32,10 +33,10 @@ Each returned item now includes `riskLevel` and `confidenceLevel`:
 
 ```bash
 api-grade ruleset-analysis --format human
-# rule id                          risk         confidence  rationale
-# operation-description            safe         high        rule id matched curated safe-prefix table
-# operation-operationId            humanreview  high        rule id matched curated humanreview-prefix table
-# oas3-schema                      unsafe       low         no recognizable rule-id or path signal
+# rule id                          risk level  confidence  remediation safety  rationale
+# operation-description            low         high        safe                rule id matched curated safe-prefix table
+# operation-operationId            medium      high        humanreview          rule id matched curated humanreview-prefix table
+# oas3-schema                      high        low         unsafe               no recognizable rule-id, function, or path signal
 
 api-grade ruleset-analysis --ruleset-path ./my-ruleset.yaml --format json
 ```
