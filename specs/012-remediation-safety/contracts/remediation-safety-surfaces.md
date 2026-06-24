@@ -7,7 +7,7 @@ Supersedes `specs/011-remediation-safety-rename/contracts/remediation-safety-sur
 | Before this feature | After this feature |
 |---|---|
 | Accepts only `safe`; any other value rejected with `Error: --remediation-safety must be "safe".` | Accepts `safe`, `humanreview`, `unsafe`. Any other value rejected with `Error: --remediation-safety must be one of: safe, humanreview, unsafe.` |
-| Filtered output built by `buildQuickFixOutput`/`formatQuickFixesHuman`, shape `QuickFixOutput` (`quickFixCount`, `quickFixes`). | Filtered output built by `buildRemediationSafetyOutput`/`formatRemediationSafetyHuman`, shape `RemediationSafetyOutput` (`remediationItemCount`, `remediationItems`, `requestedLevel`). Each item additionally carries `riskLevel` (`low`/`medium`/`high`), `confidenceLevel`, and `remediationSafetyLevel` (`safe`/`humanreview`/`unsafe` — a field in its own right, not the same field/type as `riskLevel`). |
+| Filtered output built by `buildQuickFixOutput`/`formatQuickFixesHuman`, shape `QuickFixOutput` (`quickFixCount`, `quickFixes`). | Filtered output built by `buildRemediationSafetyOutput`/`formatRemediationSafetyHuman`, shape `RemediationSafetyOutput` (`remediationItemCount`, `remediationItems`, `requestedLevel`). Each item additionally carries `riskLevel` (`low`/`medium`/`high`), `confidenceLevel`, `remediationSafetyLevel` (`safe`/`humanreview`/`unsafe` — a field in its own right, not the same field/type as `riskLevel`), and `staleFingerprintWarning` (`null` unless the rule's classification is human-assessed and its fingerprint no longer matches — FR-021). |
 | `--remediation-safety safe` output identical to pre-Feature-12 `safe` output in violation membership. | Unchanged for `safe` membership (FR-007); new fields (`riskLevel`, `confidenceLevel`, `remediationSafetyLevel`, `requestedLevel`) are additive. `--remediation-safety`/`requestedLevel` filter against `remediationSafetyLevel`, not `riskLevel`. |
 
 ## CLI: new `ruleset-analysis` subcommand
@@ -18,7 +18,7 @@ api-grade ruleset-analysis [--ruleset-path <path>] [--format json|human]
 
 - Without `--ruleset-path`, analyses the built-in default ruleset for the relevant format(s).
 - `--format json` returns a `RulesetAnalysis` JSON document.
-- `--format human` (default) prints a table: rule id, risk level, confidence level, remediation safety level, rationale. Risk level and confidence level are the two independent signals the analyser produces (FR-003); remediation safety level is a field in its own right, derived from them via the decision matrix in `automated_remediation_safety_algorithm_spec.md`, not assigned directly.
+- `--format human` (default) prints a table: rule id, risk level, confidence level, remediation safety level, assessed by (`human`/`automated` — FR-020), rationale, plus a fingerprint-mismatch warning line for any human-assessed rule whose stored fingerprint no longer matches (FR-021). Risk level and confidence level are the two independent signals the analyser produces (FR-003); remediation safety level is a field in its own right, derived from them via the decision matrix in `automated_remediation_safety_algorithm_spec.md`, not assigned directly — except for `assessed by: human` rows, which store `remediationSafetyLevel` directly and have no `riskLevel` to derive it from.
 - Exits non-zero only on a genuine error (e.g. ruleset file not found / unparseable) — analysis itself never partially fails (every rule gets an entry, per FR-001/SC-005).
 
 ## MCP: `grade-api-remediation-safety` tool — `level` parameter
@@ -26,7 +26,7 @@ api-grade ruleset-analysis [--ruleset-path <path>] [--format json|human]
 | Before this feature | After this feature |
 |---|---|
 | `level: z.enum(['safe'])` | `level: z.enum(['safe', 'humanreview', 'unsafe'])` |
-| Response payload: `QuickFixOutput` shape under different field names (`quickFixCount`, `quickFixes`) | Response payload: `RemediationSafetyOutput` shape (`remediationItemCount`, `remediationItems`, `requestedLevel`); each item includes `riskLevel`, `confidenceLevel`, `remediationSafetyLevel` |
+| Response payload: `QuickFixOutput` shape under different field names (`quickFixCount`, `quickFixes`) | Response payload: `RemediationSafetyOutput` shape (`remediationItemCount`, `remediationItems`, `requestedLevel`); each item includes `riskLevel`, `confidenceLevel`, `remediationSafetyLevel`, `staleFingerprintWarning` |
 | Tool description silent on confidence/risk-tier concept | Tool description updated to mention all three levels and that each returned item carries a confidence indicator |
 
 ## MCP: new `analyse-ruleset-safety` tool

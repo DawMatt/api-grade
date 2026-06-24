@@ -8,7 +8,7 @@ api-grade openapi.yaml --remediation-safety humanreview  # new
 api-grade openapi.yaml --remediation-safety unsafe       # new
 ```
 
-Each returned item now includes `riskLevel`, `confidenceLevel`, and `remediationSafetyLevel` — three separate fields, not one. `riskLevel` is `low`/`medium`/`high`; `remediationSafetyLevel` is `safe`/`humanreview`/`unsafe` and is what `--remediation-safety`/`requestedLevel` filters against:
+Each returned item now includes `riskLevel`, `confidenceLevel`, `remediationSafetyLevel`, and `staleFingerprintWarning` (usually `null`). `riskLevel` is `low`/`medium`/`high`; `remediationSafetyLevel` is `safe`/`humanreview`/`unsafe` and is what `--remediation-safety`/`requestedLevel` filters against:
 
 ```json
 {
@@ -23,6 +23,7 @@ Each returned item now includes `riskLevel`, `confidenceLevel`, and `remediation
       "riskLevel": "medium",
       "confidenceLevel": "high",
       "remediationSafetyLevel": "humanreview",
+      "staleFingerprintWarning": null,
       "...": "..."
     }
   ]
@@ -33,13 +34,16 @@ Each returned item now includes `riskLevel`, `confidenceLevel`, and `remediation
 
 ```bash
 api-grade ruleset-analysis --format human
-# rule id                          risk level  confidence  remediation safety  rationale
-# operation-description            low         high        safe                rule id matched curated safe-prefix table
-# operation-operationId            medium      high        humanreview          rule id matched curated humanreview-prefix table
-# oas3-schema                      high        low         unsafe               no recognizable rule-id, function, or path signal
+# rule id                          risk level  confidence  remediation safety  assessed by  rationale
+# operation-description            low         high        safe                human        maintainer-confirmed safe classification (bundled)
+# operation-operationId            medium      high        humanreview         human        maintainer-confirmed humanreview classification (bundled)
+# oas3-schema                      high        low         unsafe              automated    no recognizable rule-id, function, or path signal
+# custom-team-rule-007             low         high        safe                human        WARNING: fingerprint mismatch (stored a1b2c3..., current d4e5f6...) — rule changed since this was last reviewed; persisted classification still honored
 
 api-grade ruleset-analysis --ruleset-path ./my-ruleset.yaml --format json
 ```
+
+There is no separate hard-coded table backing the `human`-assessed rows above for the built-in ruleset — they are ordinary bundled persisted entries (FR-012/FR-020), the same mechanism a user would use to persist a correction for their own ruleset (FR-013). The last row illustrates FR-021: a human-assessed entry whose rule definition has since changed is still honored, but flagged with both the stored and current fingerprint rather than silently discarded.
 
 ## 3. MCP: same filtering, plus a dedicated ruleset-analysis tool
 
