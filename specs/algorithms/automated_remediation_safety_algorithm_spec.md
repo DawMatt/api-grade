@@ -10,6 +10,8 @@ Determines, for every **rule** in a loaded ruleset, how risky it would be to aut
 
 This algorithm supersedes the two-class `classifyViolation()` algorithm described in [`quick_fixes_algorithm_spec.md`](./quick_fixes_algorithm_spec.md), extending it from a binary `nonBreaking`/`breaking` split (with `unknown` as an exclusion bucket) to three first-class risk levels with an explicit confidence dimension. It consumes rule **metadata** (`ruleId`, the rule's `given` JSONPath expression(s), `then.function`) from a loaded Spectral ruleset object — it does not consume `Diagnostic[]` directly; diagnostics are matched to their rule's pre-computed result by `ruleId` when remediation safety is needed for a grading run.
 
+Before running automated classification, the analyser first checks for a previously persisted or pre-calculated analysis for this exact ruleset's content (Stage 0) — both a baseline for the built-in ruleset and a place for users to durably correct classifications they disagree with, so the same ruleset is not re-estimated, and re-reviewed, from scratch on every run.
+
 ---
 
 ## Risk Levels
@@ -34,15 +36,40 @@ Each rule's risk level carries a confidence level:
 
 ## Input & Output
 
-**Input:** a loaded Spectral ruleset object (`LoadedRuleset.ruleset` from `packages/api-grade-core/src/rulesets/loader.ts`), specifically its `rules` map: `{ [ruleId]: { given: string | string[], then: { function: string }, severity, description, recommended } }`.
+**Input:** a loaded Spectral ruleset object (`LoadedRuleset.ruleset` from `packages/api-grade-core/src/rulesets/loader.ts`), specifically its `rules` map: `{ [ruleId]: { given: string | string[], then: { function: string }, severity, description, recommended } }`. A **Ruleset Identity** (see Stage 0) is derived from this same input and used to look up any persisted or bundled pre-calculated analysis.
 
 **Output:** `analyseRuleset(ruleset) -> RulesetAnalysis`:
 - `rulesetSource: 'default' | 'custom'`, `rulesetPath?: string` — mirrors the input `LoadedRuleset`.
+- `rulesetIdentity: string` — the content hash described in Stage 0.
 - `rules: RuleAnalysis[]` — exactly one entry per rule key in the input ruleset (no omissions — see Implementation Notes).
 
-Each `RuleAnalysis`: `{ ruleId, riskLevel, confidenceLevel, rationale }`.
+Each `RuleAnalysis`: `{ ruleId, riskLevel, confidenceLevel, rationale, source }`, where `source` is one of `'persisted'` (Stage 0a/0b), `'bundled-default'` (Stage 0c), `'curated'` (Stage 1), `'heuristic'` (Stage 2), or `'fallback'` (Stage 3) — see Data Model for the full enum.
 
-A second function, `getRemediationSafety(diagnostic, rulesetAnalysis) -> { riskLevel, confidenceLevel }`, performs the per-violation lookup at grading time (see Stage 4).
+A second function, `getRemediationSafety(diagnostic, rulesetAnalysis) -> { riskLevel, confidenceLevel }`, performs the per-violation lookup at grading time (see Stage 5).
+
+A third function, `persistRuleAnalysisOverride(rulesetIdentity, ruleId, riskLevel, scope)`, writes a user correction for one rule into the persisted-analysis store at the given scope (`workspace` | `global`), to be picked up by Stage 0 on future runs.
+
+---
+
+## Stage 0: Persisted / Pre-Calculated Lookup
+
+Runs **before** Stage 1, once per loaded ruleset (not per rule). Computes the ruleset's **Ruleset Identity** — a SHA-256 hash over its rule definitions, normalized as `sortBy(ruleId) -> ruleId + '|' + given + '|' + then.function + '|' + severity + '|' + description`, joined and hashed. Identity is derived from rule *content*, never from `rulesetPath`/`rulesetUrl`, so relocating or re-fetching an unchanged ruleset still hits the cache, and editing a ruleset at a stable path correctly misses it.
+
+Checked in order; the first hit for a given `ruleId` is used, and per-`ruleId` lookup continues independently — a ruleset's overall analysis can be assembled from a mix of sources:
+
+```
+0a. workspace-scoped persisted analysis for this rulesetIdentity (if present)
+0b. global-scoped persisted analysis for this rulesetIdentity (if present)
+0c. bundled pre-calculated analysis, ONLY if this is the built-in ruleset
+```
+
+For each `ruleId` covered by a hit: `RETURN { riskLevel, confidenceLevel, rationale, source: 'persisted' | 'bundled-default' }` using the stored values as-is (a `persisted` entry's `confidenceLevel` is whatever was stored when the correction was made — typically `high`, since a human confirmed it).
+
+Any `ruleId` **not** covered by Stage 0 (no persisted/bundled entry exists for it — including the common case of an entirely new custom ruleset) falls through to Stage 1. This is the same "lookup miss → keep going" behavior as the per-violation lookup in Stage 5; Stage 0 never blocks or fails the analysis, it only short-circuits the rules it has prior knowledge of (FR-012, FR-015).
+
+**Rationale:** directly required by `clarification-algorithm.md`'s "Recommended High Level Approach" (steps 1 and 4): load pre-calculated risk/safety for known rulesets first, and let users persist their own corrections so the same ruleset doesn't need re-estimating — and re-confirming via human review — on every run. Content-hash identity (rather than path/URL) is what makes "the same ruleset" a meaningful, stable lookup key across separate invocations, possibly on different machines or after the ruleset file/URL has moved (FR-014).
+
+**Bundled pre-calculated analysis for the built-in ruleset:** shipped with the package (generated by running Stages 1–3 once over the built-in ruleset at release time and committing the result), so `ruleset-analysis`/`analyse-ruleset-safety` against the built-in ruleset never requires per-rule computation at request time (SC-007), and so the built-in ruleset itself satisfies the "at a minimum the default ruleset" baseline the clarification document calls for.
 
 ---
 
@@ -69,11 +96,11 @@ UNSAFE_RULE_ID_PREFIXES = [
 
 FOR EACH rule IN ruleset.rules:
   FOR EACH prefix IN SAFE_RULE_ID_PREFIXES:
-    IF rule.id.startsWith(prefix): RETURN { riskLevel: "safe", confidenceLevel: "high", rationale: "rule id matched curated safe-prefix table" }
+    IF rule.id.startsWith(prefix): RETURN { riskLevel: "safe", confidenceLevel: "high", rationale: "rule id matched curated safe-prefix table", source: "curated" }
   FOR EACH prefix IN HUMANREVIEW_RULE_ID_PREFIXES:
-    IF rule.id.startsWith(prefix): RETURN { riskLevel: "humanreview", confidenceLevel: "high", rationale: "rule id matched curated humanreview-prefix table" }
+    IF rule.id.startsWith(prefix): RETURN { riskLevel: "humanreview", confidenceLevel: "high", rationale: "rule id matched curated humanreview-prefix table", source: "curated" }
   FOR EACH prefix IN UNSAFE_RULE_ID_PREFIXES:
-    IF rule.id.startsWith(prefix): RETURN { riskLevel: "unsafe", confidenceLevel: "high", rationale: "rule id matched curated unsafe-prefix table" }
+    IF rule.id.startsWith(prefix): RETURN { riskLevel: "unsafe", confidenceLevel: "high", rationale: "rule id matched curated unsafe-prefix table", source: "curated" }
 ```
 
 **Rationale:** identical justification to the quick-fixes algorithm's Stage 1 — these rule IDs are curated from the built-in rulesets and the curators have direct knowledge of what each rule actually validates, making the rule ID itself an authoritative signal that outranks any generic path heuristic.
@@ -84,11 +111,36 @@ FOR EACH rule IN ruleset.rules:
 
 ## Stage 2: Path-Segment Heuristic on the Rule's `given`
 
-Runs only when Stage 1 doesn't match. Inspects the rule's `given` JSONPath expression(s) — the schema location(s) the rule applies to — against three tiered, disjoint keyword sets, **most conservative checked first**:
+Runs only when Stage 1 doesn't match. Two checks, in order: a structural **key-selector check** (2a), then the **segment-membership heuristic** (2b). Both operate on the rule's `given` JSONPath expression(s) — the schema location(s) the rule applies to — and are format-aware, covering both OpenAPI's and AsyncAPI's contract-surface ontologies per `clarification-algorithm.md`'s "Build a format-aware contract-surface ontology" guidance.
+
+### Stage 2a: Key-Selector Check
 
 ```
-UNSAFE_SEGMENTS = { "required", "type", "format", "parameters" }
-HUMANREVIEW_SEGMENTS = { "enum", "default", "security", "servers", "operationId", "additionalProperties", "responses" }
+IS_KEY_SELECTOR(given) = given matches a JSONPath Plus object-key selector
+                          (the trailing "~" modifier, e.g. "$.paths[*]~", "$.channels[*]~")
+
+FOR EACH given_expr IN rule.given:
+  IF IS_KEY_SELECTOR(given_expr) AND given_expr contains "paths" or "channels" as the selected collection:
+    RETURN { riskLevel: "unsafe", confidenceLevel: "high", rationale: "given path selects path/channel object keys directly — any satisfying edit renames a public path or channel", source: "heuristic" }
+```
+
+**Rationale:** a rule targeting the *keys* of `paths`/`channels` (e.g. a kebab-case naming convention, `clarification-algorithm.md`'s Example B) cannot be satisfied without renaming a real, public path or channel — by construction this is the riskiest, highest-confidence case the heuristic can recognize, and it would otherwise be missed by segment-membership matching alone (`paths`/`channels` are deliberately *not* included as bare segments in 2b, since most rules with `paths`/`channels` somewhere in their `given` — e.g. `operation-description`, which reaches `$.paths[*][*].description` — are not targeting the key itself and must not be over-classified as unsafe).
+
+### Stage 2b: Segment-Membership Heuristic
+
+```
+UNSAFE_SEGMENTS = {
+  // OpenAPI: request/response validity and parameter surface
+  "required", "type", "format", "parameters",
+  // AsyncAPI: channel address and message/payload surface
+  "address", "action", "messages", "payload"
+}
+HUMANREVIEW_SEGMENTS = {
+  // OpenAPI: additive-but-operationally-significant
+  "enum", "default", "security", "servers", "operationId", "additionalProperties", "responses",
+  // AsyncAPI: broader/ambiguous operation and channel-level surfaces
+  "channels", "operations", "reply"
+}
 SAFE_SEGMENTS = {
   "description", "summary", "title", "contact", "license",
   "termsOfService", "externalDocs", "example", "examples", "tags", "info"
@@ -113,10 +165,10 @@ classify_by_path(rule):
   rationale ← (tiers.size == 1)
     ? "given path matched the " + level + " segment set"
     : "given path matched multiple tiers (" + tiers.join(", ") + ") — conservative match, ambiguous"
-  RETURN { riskLevel: level, confidenceLevel: confidence, rationale }
+  RETURN { riskLevel: level, confidenceLevel: confidence, rationale, source: "heuristic" }
 ```
 
-**Rationale for tier contents:** `UNSAFE_SEGMENTS` and `SAFE_SEGMENTS` are carried over unchanged from the quick-fixes algorithm's `BREAKING_SEGMENTS`/`NON_BREAKING_SEGMENTS` (same justification: `required`/`type`/`format`/`parameters` affect contract validity; documentation/metadata fields and `x-` vendor extensions never do). `HUMANREVIEW_SEGMENTS` is new: `enum`/`default` change what values are considered valid or assumed without removing existing valid values outright; `security`/`servers` change where/how requests are authenticated or routed — operationally significant but rarely rejected by a contract test; `operationId`/`responses`/`additionalProperties` affect generated-client method names or extensibility, plausible to need a human's confirmation but not a breaking validation change in the way `required`/`type` are.
+**Rationale for tier contents:** the OpenAPI portions of `UNSAFE_SEGMENTS` and `SAFE_SEGMENTS` are carried over unchanged from the quick-fixes algorithm's `BREAKING_SEGMENTS`/`NON_BREAKING_SEGMENTS` (same justification: `required`/`type`/`format`/`parameters` affect contract validity; documentation/metadata fields and `x-` vendor extensions never do). The AsyncAPI additions mirror `clarification-algorithm.md`'s ontology directly: channel `address` and operation `action` are AsyncAPI's equivalent of an OpenAPI path/HTTP-method — changing either changes where/how a consumer connects, so they sit in `UNSAFE_SEGMENTS` alongside `parameters`; `messages`/`payload` are AsyncAPI's equivalent of request/response bodies, so they join `required`/`type`/`format`. `HUMANREVIEW_SEGMENTS` covers fields that are typically additive or operationally significant without invalidating an existing consumer outright: `enum`/`default` change what values are considered valid or assumed without removing existing valid values outright; `security`/`servers` change where/how requests are authenticated or routed; `operationId`/`responses`/`additionalProperties` affect generated-client method names or extensibility; `channels`/`operations`/`reply`, matched only here (not in `UNSAFE_SEGMENTS`), cover rules that reach the channel/operation collections broadly without the Stage 2a key-selector shape — plausible to need a human's confirmation but not unambiguously a breaking validation change.
 
 **Rationale for ambiguity downgrade:** a rule whose `given` spans multiple tiers (e.g. applies broadly to a schema with both `description` and `required` reachable beneath it) genuinely could not be classified with confidence by this heuristic alone — picking the conservative level avoids a false "safe", but the confidence MUST still reflect that the match itself was ambiguous, so a ruleset maintainer reviewing the analyser's output knows to look closer.
 
@@ -124,17 +176,34 @@ classify_by_path(rule):
 
 ## Stage 3: Fallback
 
-Runs only when neither Stage 1 nor Stage 2 produced a result (e.g. a custom rule with an unrecognized id and a `given` of `"$"` or another pattern with no matching segment).
+Runs only when neither Stage 0, Stage 1, nor Stage 2 produced a result (e.g. a custom rule with an unrecognized id and a `given` of `"$"` or another pattern with no matching segment, and no persisted/bundled entry for it).
 
 ```
-RETURN { riskLevel: "unsafe", confidenceLevel: "low", rationale: "no recognizable rule-id or path signal" }
+RETURN { riskLevel: "unsafe", confidenceLevel: "low", rationale: "no recognizable rule-id or path signal", source: "fallback" }
 ```
 
-**Rationale:** conservative-by-default — an unanalyzable rule is never assumed safe to auto-remediate. This also guarantees SC-005 (100% of rules in any ruleset receive a classification): every rule reaches Stage 3 if Stages 1–2 don't match, so no rule is ever left unclassified.
+**Rationale:** conservative-by-default — an unanalyzable rule is never assumed safe to auto-remediate. This also guarantees SC-005 (100% of rules in any ruleset receive a classification): every rule reaches Stage 3 if Stages 0–2 don't match, so no rule is ever left unclassified.
 
 ---
 
-## Stage 4: Per-Violation Lookup (Remediation Safety)
+## Stage 4: Persisting a Correction
+
+Not part of the per-rule classification pipeline — an explicit, user-initiated action (FR-013) that writes into the store Stage 0 reads from:
+
+```
+persist_rule_analysis_override(rulesetIdentity, ruleId, riskLevel, scope):
+  confidenceLevel ← "high"   // a human has explicitly confirmed this level
+  rationale ← "user-confirmed override"
+  entry ← { ruleId, riskLevel, confidenceLevel, rationale, source: "persisted" }
+  write entry into the (workspace | global) persisted-analysis store, keyed by (rulesetIdentity, ruleId)
+  // last-write-wins per ruleId; does not require re-submitting other rules' entries (FR-015)
+```
+
+**Rationale:** this is the mechanism `clarification-algorithm.md` describes as letting "the user perform this review once and then encode the correct safety level for this rule in this ruleset" — turning a one-time `humanreview`/`unsafe`, low-confidence determination into a durable `high`-confidence one for every future run against that same ruleset content.
+
+---
+
+## Stage 5: Per-Violation Lookup (Remediation Safety)
 
 Used at grading time, not during ruleset analysis. Given a `Diagnostic` and a previously-computed `RulesetAnalysis`:
 
@@ -145,7 +214,7 @@ get_remediation_safety(diagnostic, rulesetAnalysis):
   RETURN { riskLevel: "unsafe", confidenceLevel: "low" }   // FR-009: rule unanalysed at lookup time
 ```
 
-**Rationale:** keeps grading O(1) per violation (a map lookup) instead of re-running the analyser per diagnostic, and preserves the conservative-default guarantee even in the edge case where the ruleset changed between analysis and grading (e.g. a remote ruleset URL was re-fetched and gained a rule).
+**Rationale:** keeps grading O(1) per violation (a map lookup) instead of re-running the analyser per diagnostic, and preserves the conservative-default guarantee even in the edge case where the ruleset changed between analysis and grading (e.g. a remote ruleset URL was re-fetched and gained a rule, or a persisted analysis only covered some of the ruleset's rules).
 
 ---
 
@@ -157,7 +226,11 @@ rules = [
   { id: "operation-operationId",  given: "$.paths[*][*]" },
   { id: "oas3-schema",            given: "$" },
   { id: "custom-required-header", given: "$.paths[*][*].parameters[?(@.in=='header')].required" },
-  { id: "custom-naming-convention", given: "$.paths[*]" }
+  { id: "custom-naming-convention", given: "$.paths[*]~" },
+  { id: "custom-channel-rename",  given: "$.channels[*]~" },
+  { id: "custom-channel-address", given: "$.channels[*].address" },
+  { id: "custom-no-signal",       given: "$.x-custom-thing" },
+  { id: "previously-reviewed-rule", given: "$.unrecognizedExtension" }
 ]
 ```
 
@@ -166,8 +239,12 @@ rules = [
 | `operation-description` | Stage 1 (safe table) | `safe` | `high` | Rule id matched curated safe-prefix table |
 | `operation-operationId` | Stage 1 (humanreview table) | `humanreview` | `high` | Rule id matched curated humanreview-prefix table |
 | `oas3-schema` | Stage 1 (unsafe table) | `unsafe` | `high` | Rule id matched curated unsafe-prefix table |
-| `custom-required-header` | Stage 2 (`required` segment) | `unsafe` | `medium` | `given` path matched the unsafe segment set only |
-| `custom-naming-convention` | Stage 3 (fallback) | `unsafe` | `low` | No recognizable rule-id or path signal |
+| `custom-required-header` | Stage 2b (`required` segment) | `unsafe` | `medium` | `given` path matched the unsafe segment set only |
+| `custom-naming-convention` | Stage 2a (path key-selector) | `unsafe` | `high` | `given` selects path object keys directly |
+| `custom-channel-rename` | Stage 2a (channel key-selector) | `unsafe` | `high` | `given` selects channel object keys directly |
+| `custom-channel-address` | Stage 2b (`address` segment) | `unsafe` | `medium` | `given` path matched the unsafe segment set only (AsyncAPI channel address) |
+| `custom-no-signal` | Stage 3 (fallback) | `unsafe` | `low` | No recognizable rule-id or path signal |
+| `previously-reviewed-rule` | Stage 0 (persisted) | *(whatever the user set)* | `high` | User-confirmed override from a prior run against this same ruleset content |
 
 ---
 
@@ -176,19 +253,21 @@ rules = [
 | Component | Logic |
 |---|---|
 | **Classification granularity** | Per rule, not per violation instance — one `RuleAnalysis` per `ruleId` in the ruleset |
-| **Stage priority** | Curated rule-id table (Stage 1) → path heuristic on `given` (Stage 2) → fallback (Stage 3) |
+| **Stage priority** | Persisted/bundled lookup (Stage 0) → curated rule-id table (Stage 1) → key-selector + path heuristic on `given` (Stage 2) → fallback (Stage 3) |
+| **Ruleset identity** | Content hash over normalized rule definitions (`ruleId`, `given`, `then.function`, `severity`, `description`) — never the supplied path/URL |
 | **Tier priority (Stage 1 and Stage 2)** | `unsafe` checked/preferred over `humanreview` over `safe` whenever ambiguity exists |
-| **Confidence assignment** | `high` = curated table match; `medium` = single-tier path match; `low` = fallback or multi-tier path match |
+| **Confidence assignment** | `high` = persisted/curated/key-selector match; `medium` = single-tier path-segment match; `low` = fallback or multi-tier path match |
 | **Default when unanalysable** | `unsafe` / `low` confidence — never `safe` |
 | **Per-violation lookup miss** | Defaults to `unsafe` / `low`, same as an unanalysable rule (FR-009) |
-| **Caching** | Computed once per loaded ruleset; reused for every diagnostic in a grading run that shares that ruleset |
+| **Caching** | Computed once per distinct ruleset content (by identity); persisted across invocations, not just cached for one process (FR-012) |
+| **Partial persisted coverage** | A persisted/bundled analysis covering only some `ruleId`s short-circuits just those rules; the rest proceed through Stages 1–3 normally (FR-015) |
 
 ---
 
 ## Implementation Notes
 
-- **Deterministic:** no randomization, timestamps, or external state; re-analysing the same ruleset always yields the same `RulesetAnalysis`.
+- **Deterministic for a given input state:** re-analysing the same ruleset content with the same persisted-analysis store always yields the same `RulesetAnalysis`. Stage 0 deliberately introduces store-dependence by design — a user's persisted correction is *supposed* to change the outcome on later runs; it does not undermine determinism, since the store itself is also keyed by content and changes only on an explicit user action (Stage 4).
 - **Total coverage:** every rule key present in the input ruleset produces exactly one `RuleAnalysis` (Stage 3 guarantees this) — satisfies SC-005.
-- **Spec-format agnostic:** operates on ruleset rule metadata, which is uniform across the OpenAPI and AsyncAPI built-in rulesets and any custom Spectral-compatible ruleset; no spec-type branching required.
+- **Spec-format agnostic:** operates on ruleset rule metadata, which is uniform across the OpenAPI and AsyncAPI built-in rulesets and any custom Spectral-compatible ruleset; Stage 2's segment sets and key-selector check are explicitly format-aware (covering both OpenAPI and AsyncAPI contract-surface terms) but require no spec-type branching in the algorithm itself.
 - **Conservative by design:** `unsafe`/`low` is the universal fallback, not an error condition.
 - **Relationship to grading:** does not affect score, letter grade, or diagnostic ordering — it is consulted only when building remediation-safety-specific output (CLI `--remediation-safety`, MCP `grade-api-remediation-safety` and `analyse-ruleset-safety`).
