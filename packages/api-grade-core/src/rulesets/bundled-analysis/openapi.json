@@ -1,169 +1,620 @@
 {
   "rules": {
-    "operation-description": {
-      "ruleId": "operation-description",
-      "riskLevel": null,
+    "operation-success-response": {
+      "ruleId": "operation-success-response",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasOpSuccessResponse` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "61fd168d9bd22c73ec4f5a8b1b0c3b7cef34953e54fe968d2bfcf652e15b9035"
+    },
+    "oas2-operation-formData-consume-check": {
+      "ruleId": "oas2-operation-formData-consume-check",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasOpFormDataConsumeCheck` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "031f30e3251314ff995ec48893ac7bb71f2cd1ea501aa99206f4835e96efd905"
+    },
+    "operation-operationId-unique": {
+      "ruleId": "operation-operationId-unique",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasOpIdUnique` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "193b1b016bbb37d15bb9cea1a27551b57e17d9e40144c2b7cbe43746dcc2564a"
+    },
+    "operation-parameters": {
+      "ruleId": "operation-parameters",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasOpParams` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "b19bdf139c3a32e2216b0ef46ab992fccaba72810530d778dc14ffab59a1c6cf"
+    },
+    "operation-tag-defined": {
+      "ruleId": "operation-tag-defined",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasTagDefined` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "8d46785b548305e07643e22ed832b2cce697964b3e24edabce26427f203a4642"
+    },
+    "path-params": {
+      "ruleId": "path-params",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasPathParam` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "3e1ede2366a6dbfac8d8bb13681255e89ec40881316ddf844ace566bb46f9499"
+    },
+    "contact-properties": {
+      "ruleId": "contact-properties",
+      "riskLevel": "low",
       "confidenceLevel": "high",
       "remediationSafetyLevel": "safe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "rationale": "`truthy` function (additive — add/populate a field) on a target matching the low tier",
       "source": "bundled-default",
-      "fingerprint": "0305ec86216b7eefa356cc733bc9d7569aec013ba372cd4c571e8583aded08ec"
+      "fingerprint": "d59768d6529d4838dd2ea7ef0e9ff6527c897b12acffc53b949c22ebfaa1c923"
+    },
+    "duplicated-entry-in-enum": {
+      "ruleId": "duplicated-entry-in-enum",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasSchema` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "81a9374e76a50934f9c77375cfcd8af39454642a446e7ff0a68d94a5d98a5691"
     },
     "info-contact": {
       "ruleId": "info-contact",
-      "riskLevel": null,
+      "riskLevel": "low",
       "confidenceLevel": "high",
       "remediationSafetyLevel": "safe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "rationale": "`truthy` function (additive — add/populate a field) on a target matching the low tier",
       "source": "bundled-default",
-      "fingerprint": "72e1580b37bf865c7918de14a114f28ea64b852e8cbae51ffad2351783bf9100"
+      "fingerprint": "bfd79d377660294e00adc373539b65c8e6b03a4c6cb29033758e421ce4f5557d"
     },
     "info-description": {
       "ruleId": "info-description",
-      "riskLevel": null,
+      "riskLevel": "low",
       "confidenceLevel": "high",
       "remediationSafetyLevel": "safe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "rationale": "`truthy` function (additive — add/populate a field) on a target matching the low tier",
       "source": "bundled-default",
-      "fingerprint": "a93095e4601bcadb3ab69e44d3208cdf08f870032b30c18140fcce99905bad7a"
+      "fingerprint": "f898530e669aaddf554b30a434a28412d61f3f47e196e4093cf73acfcde645e6"
     },
     "info-license": {
       "ruleId": "info-license",
-      "riskLevel": null,
+      "riskLevel": "low",
       "confidenceLevel": "high",
       "remediationSafetyLevel": "safe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "rationale": "`truthy` function (additive — add/populate a field) on a target matching the low tier",
       "source": "bundled-default",
-      "fingerprint": "f265560911a15d556ded4d9c321dbc40cbcae30680021591fda50ab0d1b34114"
+      "fingerprint": "23d1efd67b85ecf0f54155777e27c019d4cb2a29bb0cff11efd849cc386c379f"
     },
-    "oas3-examples-value-or-externalValue": {
-      "ruleId": "oas3-examples-value-or-externalValue",
-      "riskLevel": null,
+    "license-url": {
+      "ruleId": "license-url",
+      "riskLevel": "low",
       "confidenceLevel": "high",
       "remediationSafetyLevel": "safe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "rationale": "`truthy` function (additive — add/populate a field) on a target matching the low tier",
       "source": "bundled-default",
-      "fingerprint": "7628f3c64ad0fb1e3b5791edb30e002eda5e0629e0cc432c8bb286f5363dd0aa"
+      "fingerprint": "735eb6f03143a91473b9573ab7e1526c94c10543ced941a88183a65b4d6c8d82"
     },
-    "tag-description": {
-      "ruleId": "tag-description",
-      "riskLevel": null,
+    "no-eval-in-markdown": {
+      "ruleId": "no-eval-in-markdown",
+      "riskLevel": "low",
       "confidenceLevel": "high",
       "remediationSafetyLevel": "safe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "rationale": "`pattern` function (rename/reformat) on a target matching the low tier",
       "source": "bundled-default",
-      "fingerprint": "69087f9af752a6b57dd7f3e0b7aeaa12a3262f2abe6e41d796c3234627947034"
+      "fingerprint": "d3ca7e2f67d2e957e30655eb4c6d567998bdbbdcbf390a12e71a23fdce3157fd"
+    },
+    "no-script-tags-in-markdown": {
+      "ruleId": "no-script-tags-in-markdown",
+      "riskLevel": "low",
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "`pattern` function (rename/reformat) on a target matching the low tier",
+      "source": "bundled-default",
+      "fingerprint": "be2229ebfd803a42d313318291544db932781c34973e60620fffda348fd0f394"
+    },
+    "openapi-tags-alphabetical": {
+      "ruleId": "openapi-tags-alphabetical",
+      "riskLevel": "low",
+      "confidenceLevel": "medium",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "given path matched the safe segment set",
+      "source": "bundled-default",
+      "fingerprint": "4403fea510bcccabfa5c4c1154134a92b2c61acc1421668162e163f4791790d4"
+    },
+    "openapi-tags-uniqueness": {
+      "ruleId": "openapi-tags-uniqueness",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `uniquenessTags` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "dfaddcf0cbfe5b642ebcdaaeb580a9020a1db9ed6d484744e0a9088da0132aae"
+    },
+    "openapi-tags": {
+      "ruleId": "openapi-tags",
+      "riskLevel": "low",
+      "confidenceLevel": "medium",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "given path matched the safe segment set",
+      "source": "bundled-default",
+      "fingerprint": "995a098be9924c375e7b258224804477fe7b175f2cc70e785782672b1e3c72a7"
+    },
+    "operation-description": {
+      "ruleId": "operation-description",
+      "riskLevel": "low",
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "`truthy` function (additive — add/populate a field) on a target matching the low tier",
+      "source": "bundled-default",
+      "fingerprint": "163bd18a22ce5304b12d4d35f4c12b430d66147a04a3cd27505a9a61ddaa9dc8"
     },
     "operation-operationId": {
       "ruleId": "operation-operationId",
-      "riskLevel": null,
+      "riskLevel": "medium",
       "confidenceLevel": "high",
       "remediationSafetyLevel": "humanreview",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "rationale": "`truthy` function (additive — add/populate a field) on a target matching the medium tier",
       "source": "bundled-default",
-      "fingerprint": "5a4634a447eeeb9f2ce5d4f01ca7c95ed5e5249c27da82bac592abcf85759b30"
+      "fingerprint": "d4a660a6541790935065ad7a944cb0b3abf3a347e616d9737944fd1277065a88"
     },
-    "operation-success-response": {
-      "ruleId": "operation-success-response",
-      "riskLevel": null,
+    "operation-operationId-valid-in-url": {
+      "ruleId": "operation-operationId-valid-in-url",
+      "riskLevel": "medium",
       "confidenceLevel": "high",
       "remediationSafetyLevel": "humanreview",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
       "source": "bundled-default",
-      "fingerprint": "7b9badb6a9e915bc586c7fb2b77c9ef9fd2b415bf10e0ce6bd4049f0198668e8"
+      "fingerprint": "e66dd1ecb7649ac12ae77fcf35f033f4d7bffc423d43e8f1ad4a3e08470d3d10"
     },
-    "oas3-server-not-example.com": {
-      "ruleId": "oas3-server-not-example.com",
-      "riskLevel": null,
-      "confidenceLevel": "high",
-      "remediationSafetyLevel": "humanreview",
+    "operation-singular-tag": {
+      "ruleId": "operation-singular-tag",
+      "riskLevel": "low",
+      "confidenceLevel": "medium",
+      "remediationSafetyLevel": "safe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "rationale": "given path matched the safe segment set",
       "source": "bundled-default",
-      "fingerprint": "f6b1052227e31afd8ba10018ea2a3073fd8093e18db7d0994d5d8b484a1803ea"
+      "fingerprint": "dba7be8211664f594c6467645bea5fb72955f15e009e96808fc3d37b997627ef"
     },
-    "oas3-server-trailing-slash": {
-      "ruleId": "oas3-server-trailing-slash",
-      "riskLevel": null,
-      "confidenceLevel": "high",
-      "remediationSafetyLevel": "humanreview",
+    "operation-tags": {
+      "ruleId": "operation-tags",
+      "riskLevel": "low",
+      "confidenceLevel": "medium",
+      "remediationSafetyLevel": "safe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "rationale": "given path matched the safe segment set",
       "source": "bundled-default",
-      "fingerprint": "f75935967e02e5c13a00c31220e4a33645b248b1078c6574384caded25877ec7"
+      "fingerprint": "eaf01c3f7f1b15840d54fe8dd6e238795022e175776ee4e71e5c039d46aff1ac"
     },
-    "oas3-operation-security-defined": {
-      "ruleId": "oas3-operation-security-defined",
-      "riskLevel": null,
+    "path-declarations-must-exist": {
+      "ruleId": "path-declarations-must-exist",
+      "riskLevel": "medium",
       "confidenceLevel": "high",
       "remediationSafetyLevel": "humanreview",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
       "source": "bundled-default",
-      "fingerprint": "8b717395498dd587200620a21dd258dce0573157c683f118faa08c1b9268c5dd"
+      "fingerprint": "f43a9d6a968dc24d5717f606028c828be8ea73057afcfdcb173d6f2528335408"
+    },
+    "path-keys-no-trailing-slash": {
+      "ruleId": "path-keys-no-trailing-slash",
+      "riskLevel": "medium",
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "source": "bundled-default",
+      "fingerprint": "ea8d153efe6ac9cc8942c5f0292402751fa472ee5776e8a9a8dcafa7f99826a4"
+    },
+    "path-not-include-query": {
+      "ruleId": "path-not-include-query",
+      "riskLevel": "medium",
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "source": "bundled-default",
+      "fingerprint": "e2738a25c076ae7f0ef2187431847d76fcab2f3e3d9f543b392f1ab9fa7138c6"
+    },
+    "tag-description": {
+      "ruleId": "tag-description",
+      "riskLevel": "low",
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "`truthy` function (additive — add/populate a field) on a target matching the low tier",
+      "source": "bundled-default",
+      "fingerprint": "5119c1fc513d486764bfe8f50d2479aaee0d096de0e79cee023e63848df5f71c"
+    },
+    "no-$ref-siblings": {
+      "ruleId": "no-$ref-siblings",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `refSiblings` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "908ccb23bbe35f2ea80f23a30cdbb6ddd56f1b62d0df483600c7f94a35a39199"
+    },
+    "array-items": {
+      "ruleId": "array-items",
+      "riskLevel": "high",
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "`truthy` function (additive — add/populate a field) on a target matching the high tier",
+      "source": "bundled-default",
+      "fingerprint": "3aa712ec537da47f9024300f105626c3bd25cad6951981e4f985e89f5c3dbb98"
+    },
+    "typed-enum": {
+      "ruleId": "typed-enum",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `typedEnum` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "ee1665cbcfeb49e3c434e3f04c6adcede44ec1e306f875701236dd747bd27c5e"
+    },
+    "oas2-api-host": {
+      "ruleId": "oas2-api-host",
+      "riskLevel": "low",
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "`truthy` function (additive — add/populate a field) on a target matching the low tier",
+      "source": "bundled-default",
+      "fingerprint": "606618dc6b0cd08c07fbe6aa8cccb58d0126d1ee387a43acb60adae316456d6d"
+    },
+    "oas2-api-schemes": {
+      "ruleId": "oas2-api-schemes",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "no recognizable rule-id, function, or path signal",
+      "source": "bundled-default",
+      "fingerprint": "8341742f2c75ae195b1e699c4625a845827a82db83eca103a900ebe8bb8d220d"
+    },
+    "oas2-discriminator": {
+      "ruleId": "oas2-discriminator",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasDiscriminator` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "4f852c5d830bd5f2b2705ed4f41555099dbab8d164776ecaf03dde7a66a7525d"
+    },
+    "oas2-host-not-example": {
+      "ruleId": "oas2-host-not-example",
+      "riskLevel": "medium",
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "source": "bundled-default",
+      "fingerprint": "411bdde4f2ea237f4c2871f690551e6f5f6de96501448981823681e2b8dc9e5e"
+    },
+    "oas2-host-trailing-slash": {
+      "ruleId": "oas2-host-trailing-slash",
+      "riskLevel": "medium",
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "source": "bundled-default",
+      "fingerprint": "ab7f3cd618bb07568e09911593a5eeab78ee8c22d04a0048696320863d562a16"
+    },
+    "oas2-parameter-description": {
+      "ruleId": "oas2-parameter-description",
+      "riskLevel": "high",
+      "confidenceLevel": "medium",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "`truthy` function (additive — add/populate a field) on a target matching the high tier",
+      "source": "bundled-default",
+      "fingerprint": "a71cf43534a262ed4e89f50f8f68892d376e09e6c7575cdec3d873c58a204aa9"
     },
     "oas2-operation-security-defined": {
       "ruleId": "oas2-operation-security-defined",
-      "riskLevel": null,
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasSecurityDefined` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "099d37d08607e8e42d0548e69312ec7e1499e8566c0d35b7e73e2ae14c7eb8ef"
+    },
+    "oas2-valid-schema-example": {
+      "ruleId": "oas2-valid-schema-example",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasExample` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "0c45706676b8341bb78ab9224b84e55bd7603b459e42c9bfa7a4634707af3f03"
+    },
+    "oas2-valid-media-example": {
+      "ruleId": "oas2-valid-media-example",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasExample` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "aa301d7f693d177527187bad6ab0080c3dbbfec2b1a7e544f72b0a5b8b24b436"
+    },
+    "oas2-anyOf": {
+      "ruleId": "oas2-anyOf",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "no recognizable rule-id, function, or path signal",
+      "source": "bundled-default",
+      "fingerprint": "83239f968899d5a54b93e5f9406fd2ec2d6da0848c6139219e6900aad75ba877"
+    },
+    "oas2-oneOf": {
+      "ruleId": "oas2-oneOf",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "no recognizable rule-id, function, or path signal",
+      "source": "bundled-default",
+      "fingerprint": "482d2dceaa7d6683611a89e9b8408672b68c8e027a99788b35c19ab028ea48e5"
+    },
+    "oas2-schema": {
+      "ruleId": "oas2-schema",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasDocumentSchema` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "b0f746a1d1d1b5f4aca6963162ac4c9d2ca2e7011302be6e03e6ad7e4163f50a"
+    },
+    "oas2-unused-definition": {
+      "ruleId": "oas2-unused-definition",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "no recognizable rule-id, function, or path signal",
+      "source": "bundled-default",
+      "fingerprint": "db2cdd3c98956ad2642445a26bbcbbe616ae5e376b25f765d6646d3bc930ebb7"
+    },
+    "oas3-api-servers": {
+      "ruleId": "oas3-api-servers",
+      "riskLevel": "medium",
+      "confidenceLevel": "medium",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "given path matched the humanreview segment set",
+      "source": "bundled-default",
+      "fingerprint": "2db1e86eb4b72586a0316dc0ca473b738159b3175909eb12064ee62d9097d2a3"
+    },
+    "oas3-examples-value-or-externalValue": {
+      "ruleId": "oas3-examples-value-or-externalValue",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "given path matched multiple tiers (safe, unsafe) — conservative match, ambiguous",
+      "source": "bundled-default",
+      "fingerprint": "9ade61fceb521b0eb63ad4ca568a614cc05eded709048f2da4520116006cfe61"
+    },
+    "oas3-operation-security-defined": {
+      "ruleId": "oas3-operation-security-defined",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasSecurityDefined` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "99c4d02ae16e11a76b219fb92f75c67c4a3ce8150e6574f09c0c49c4c1af85cd"
+    },
+    "oas3-parameter-description": {
+      "ruleId": "oas3-parameter-description",
+      "riskLevel": "high",
+      "confidenceLevel": "medium",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "`truthy` function (additive — add/populate a field) on a target matching the high tier",
+      "source": "bundled-default",
+      "fingerprint": "2c00927d4b0b8bcb9bc3746ca56a9f65dd3bd3f06bc189ae7d51d9d630d01640"
+    },
+    "oas3-server-not-example.com": {
+      "ruleId": "oas3-server-not-example.com",
+      "riskLevel": "medium",
       "confidenceLevel": "high",
       "remediationSafetyLevel": "humanreview",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
       "source": "bundled-default",
-      "fingerprint": "0873339c33c75d41bca58448b9fe29c4e263c21d17dd97309c52d53b054c0722"
+      "fingerprint": "006381a3500034d8448234c9a2bc150b35b8eb1de914cd3d14fa8d83a176e172"
     },
-    "oas3-schema": {
-      "ruleId": "oas3-schema",
-      "riskLevel": null,
+    "oas3-server-trailing-slash": {
+      "ruleId": "oas3-server-trailing-slash",
+      "riskLevel": "medium",
       "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "source": "bundled-default",
+      "fingerprint": "842d08729f0957b1bd259f16efbba29ae28dfa018339113170bde28633a0db7f"
+    },
+    "oas3-valid-media-example": {
+      "ruleId": "oas3-valid-media-example",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
       "remediationSafetyLevel": "unsafe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded unsafe classification (bundled default, not yet human-reviewed)",
+      "rationale": "custom function `oasExample` — mechanics cannot be inferred statically",
       "source": "bundled-default",
-      "fingerprint": "3859ddd4e60b7e4907b17e90f91d676515808af7ea23440350c975c02705a19f"
+      "fingerprint": "d9020856ee9e770f11c51458177ca355c8f96a93877862fbad3dc2d0af38ac54"
     },
     "oas3-valid-schema-example": {
       "ruleId": "oas3-valid-schema-example",
-      "riskLevel": null,
-      "confidenceLevel": "high",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
       "remediationSafetyLevel": "unsafe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded unsafe classification (bundled default, not yet human-reviewed)",
+      "rationale": "custom function `oasExample` — mechanics cannot be inferred statically",
       "source": "bundled-default",
-      "fingerprint": "9aa73f0cdf9afd7ea70998b65471ec31a57c8052dc580a583512edad5dc915dc"
+      "fingerprint": "5c7f466d75908f95e4f652d5adfc7b08d6dd9b1b2bea7c1987a0798c9a3dcd10"
     },
-    "oas2-schema": {
-      "ruleId": "oas2-schema",
-      "riskLevel": null,
-      "confidenceLevel": "high",
+    "oas3-schema": {
+      "ruleId": "oas3-schema",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
       "remediationSafetyLevel": "unsafe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "seeded unsafe classification (bundled default, not yet human-reviewed)",
+      "rationale": "custom function `oasDocumentSchema` — mechanics cannot be inferred statically",
       "source": "bundled-default",
-      "fingerprint": "897ddabf2e24de2b765760eae0a30e6914c10375de18e5d2dc27fe307348d23c"
+      "fingerprint": "2ec6ef11c1e00ad817c6f9b838bcb2739c4c72a699c03a631d1171dc063f4034"
+    },
+    "oas3-unused-component": {
+      "ruleId": "oas3-unused-component",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `oasUnusedComponent` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "c975b2b51bddaa30766251d29190e6a4ae6d99a2a623dcf56a171cb8ce1255a6"
+    },
+    "oas3-server-variables": {
+      "ruleId": "oas3-server-variables",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "custom function `serverVariables` — mechanics cannot be inferred statically",
+      "source": "bundled-default",
+      "fingerprint": "d258d7ca2a322070e5314d24bdf7d8838a42cfab024ff4a3e39e560574ac8dde"
+    },
+    "oas3-callbacks-in-callbacks": {
+      "ruleId": "oas3-callbacks-in-callbacks",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "no recognizable rule-id, function, or path signal",
+      "source": "bundled-default",
+      "fingerprint": "8239e6a7a792354786211a3a29afc4ab82620ae5a15dd5e384a51ed12e265bfe"
+    },
+    "oas3_1-servers-in-webhook": {
+      "ruleId": "oas3_1-servers-in-webhook",
+      "riskLevel": "medium",
+      "confidenceLevel": "medium",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "given path matched the humanreview segment set",
+      "source": "bundled-default",
+      "fingerprint": "557e24a270abf7b2b600bc993949675b105927fb3238b8534c493888cc73b6cd"
+    },
+    "oas3_1-callbacks-in-webhook": {
+      "ruleId": "oas3_1-callbacks-in-webhook",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "no recognizable rule-id, function, or path signal",
+      "source": "bundled-default",
+      "fingerprint": "b806759bcaa2062f1331821f0635ace112d38957a954e967b7308c21b56260c3"
     }
   }
 }

@@ -37,7 +37,10 @@ interface StageResult {
 }
 
 interface SpectralThen {
-  function?: string;
+  // Spectral resolves `then.function` to an actual function reference once a ruleset is
+  // loaded (e.g. via @stoplight/spectral-rulesets); only hand-authored YAML rulesets parsed
+  // before bundling carry it as a plain string. Both forms must be handled.
+  function?: string | { name?: string };
   field?: string;
 }
 
@@ -114,23 +117,77 @@ function givenExprsOf(rule: SpectralRule): string[] {
   return Array.isArray(rule.given) ? rule.given : [rule.given];
 }
 
+// Spectral's built-in rulesets (and many custom ones) express `given` via macro aliases —
+// e.g. "#OperationObject" — rather than literal JSONPath. An alias resolves to one or more
+// JSONPath expressions, declared at the ruleset level either as a plain array or as
+// { targets: [{ given: [...] }] }, and may itself reference other aliases recursively
+// (e.g. "OperationObject" -> "#PathItem[get,put,...]" -> "$.paths[*]"). Without resolving
+// these, segment/key-selector matching never sees a real path for most built-in rules.
+type AliasDefinition = string[] | { targets?: Array<{ given?: string | string[] }> };
+type AliasMap = Record<string, AliasDefinition>;
+
+const ALIAS_REF_RE = /^#([A-Za-z0-9_]+)(.*)$/;
+
+function resolveGivenExpr(expr: string, aliases: AliasMap, depth = 0): string[] {
+  if (depth > 10) return [expr];
+  const match = ALIAS_REF_RE.exec(expr.trim());
+  if (!match) return [expr];
+  const [, aliasName, suffix] = match;
+  const aliasDef = aliases[aliasName];
+  if (!aliasDef) return [expr];
+
+  const bases = Array.isArray(aliasDef)
+    ? aliasDef
+    : (aliasDef.targets ?? []).flatMap((t) => (Array.isArray(t.given) ? t.given : t.given ? [t.given] : []));
+
+  const resolved: string[] = [];
+  for (const base of bases) {
+    resolved.push(...resolveGivenExpr(`${base}${suffix}`, aliases, depth + 1));
+  }
+  return resolved.length > 0 ? resolved : [expr];
+}
+
+function resolvedGivenExprsOf(rule: SpectralRule, aliases: AliasMap): string[] {
+  return givenExprsOf(rule).flatMap((expr) => resolveGivenExpr(expr, aliases));
+}
+
+function functionNameOf(fn: SpectralThen['function']): string | undefined {
+  if (typeof fn === 'string') return fn;
+  if (typeof fn === 'function') return (fn as { name?: string }).name || undefined;
+  if (fn && typeof fn === 'object' && typeof fn.name === 'string') return fn.name;
+  return undefined;
+}
+
 function functionNamesOf(rule: SpectralRule): string[] {
   const then = rule.then;
   if (!then) return [];
   const thens = Array.isArray(then) ? then : [then];
-  return thens.map((t) => t?.function).filter((f): f is string => typeof f === 'string');
+  return thens.map((t) => functionNameOf(t?.function)).filter((f): f is string => typeof f === 'string' && f.length > 0);
 }
 
-function matchedTiers(givenExprs: string[]): Set<Tier> {
+// `then.field` names the specific sub-field a function actually targets (e.g. given
+// "#OperationObject", field "operationId") — segment matching must consider it alongside
+// `given`, since two rules sharing the same `given` (e.g. "operationId" vs "description" on
+// the same OperationObject) are only distinguishable by their field.
+function fieldTokensOf(rule: SpectralRule): string[] {
+  const then = rule.then;
+  if (!then) return [];
+  const thens = Array.isArray(then) ? then : [then];
+  return thens.flatMap((t) => (typeof t?.field === 'string' ? tokenize(t.field) : []));
+}
+
+function matchedTiers(givenExprs: string[], extraSegments: string[] = []): Set<Tier> {
   const tiers = new Set<Tier>();
+  const scan = (segment: string): void => {
+    if (segment.startsWith('x-')) tiers.add('safe');
+    if (UNSAFE_SEGMENTS.has(segment)) tiers.add('unsafe');
+    if (HUMANREVIEW_SEGMENTS.has(segment)) tiers.add('humanreview');
+    if (SAFE_SEGMENTS.has(segment)) tiers.add('safe');
+  };
   for (const given of givenExprs) {
-    for (const segment of tokenize(given)) {
-      if (segment.startsWith('x-')) tiers.add('safe');
-      if (UNSAFE_SEGMENTS.has(segment)) tiers.add('unsafe');
-      if (HUMANREVIEW_SEGMENTS.has(segment)) tiers.add('humanreview');
-      if (SAFE_SEGMENTS.has(segment)) tiers.add('safe');
-    }
+    for (const segment of tokenize(given)) scan(segment);
   }
+  for (const segment of extraSegments) scan(segment);
   return tiers;
 }
 
@@ -164,9 +221,9 @@ function stage1a(givenExprs: string[]): StageResult | null {
 }
 
 // Stage 1b: classify by the rule's `then.function` mechanics.
-function stage1b(givenExprs: string[], functionNames: string[]): StageResult | null {
+function stage1b(givenExprs: string[], functionNames: string[], fieldTokens: string[]): StageResult | null {
   if (functionNames.length === 0) return null;
-  const tiers = matchedTiers(givenExprs);
+  const tiers = matchedTiers(givenExprs, fieldTokens);
 
   for (const fn of functionNames) {
     if (ADDITIVE_FUNCTIONS.has(fn)) {
@@ -206,8 +263,8 @@ function stage1b(givenExprs: string[], functionNames: string[]): StageResult | n
 }
 
 // Stage 1c: generic segment-membership fallback within Stage 1.
-function stage1c(givenExprs: string[]): StageResult | null {
-  const tiers = matchedTiers(givenExprs);
+function stage1c(givenExprs: string[], fieldTokens: string[]): StageResult | null {
+  const tiers = matchedTiers(givenExprs, fieldTokens);
   const tier = mostConservativeTier(tiers);
   if (tier === null) return null;
   const riskLevel = tierToRisk(tier);
@@ -226,14 +283,15 @@ const STAGE2_FALLBACK: StageResult = {
   source: 'fallback',
 };
 
-function classifyRuleStages1And2(rule: SpectralRule): StageResult {
-  const givenExprs = givenExprsOf(rule);
+function classifyRuleStages1And2(rule: SpectralRule, aliases: AliasMap): StageResult {
+  const givenExprs = resolvedGivenExprsOf(rule, aliases);
+  const fieldTokens = fieldTokensOf(rule);
   const a = stage1a(givenExprs);
   if (a) return a;
   const functionNames = functionNamesOf(rule);
-  const b = stage1b(givenExprs, functionNames);
+  const b = stage1b(givenExprs, functionNames, fieldTokens);
   if (b) return b;
-  const c = stage1c(givenExprs);
+  const c = stage1c(givenExprs, fieldTokens);
   if (c) return c;
   return STAGE2_FALLBACK;
 }
@@ -314,6 +372,7 @@ export async function analyseRuleset(
   options?: { auth?: AuthConfig | null }
 ): Promise<RulesetAnalysis> {
   const rulesMap = (loadedRuleset.ruleset?.rules ?? {}) as Record<string, SpectralRule>;
+  const aliases = (loadedRuleset.ruleset?.aliases ?? {}) as AliasMap;
   const ruleIds = Object.keys(rulesMap);
   const isBuiltIn = loadedRuleset.rulesetSource === 'default';
 
@@ -336,7 +395,7 @@ export async function analyseRuleset(
     ]);
     if (stage0) return stage0;
 
-    const { riskLevel, confidenceLevel, rationale, source } = classifyRuleStages1And2(rule);
+    const { riskLevel, confidenceLevel, rationale, source } = classifyRuleStages1And2(rule, aliases);
     return {
       ruleId,
       riskLevel,
