@@ -1,6 +1,6 @@
 # @dawmatt/api-grade-mcp
 
-MCP (Model Context Protocol) server that exposes api-grade capabilities as six AI tools — grade OpenAPI and AsyncAPI specifications directly from Claude Code, GitHub Copilot, or any MCP-compatible AI host.
+MCP (Model Context Protocol) server that exposes api-grade capabilities as seven AI tools — grade OpenAPI and AsyncAPI specifications directly from Claude Code, GitHub Copilot, or any MCP-compatible AI host.
 
 ## Installation
 
@@ -60,7 +60,8 @@ Create `.vscode/mcp.json` in your project root:
 | `grade-api` | Letter grade, score, and summary — token-efficient overview |
 | `grade-api-detailed` | Full grade with all violations and diagnostics |
 | `assert-api-grade` | Pass/fail assertion for a minimum grade threshold |
-| `grade-api-remediation-safety` | Classified list of diagnostics filtered by remediation safety level (`safe`: non-breaking improvements) for AI-assisted correction |
+| `grade-api-remediation-safety` | Classified list of diagnostics filtered by remediation safety level (`safe`, `humanreview`, or `unsafe`), each with a risk/confidence indicator, for AI-assisted correction |
+| `analyse-ruleset-safety` | Per-rule risk, confidence, and remediation-safety analysis for a ruleset, independent of grading any spec |
 | `set-ruleset-config` | Set the default Spectral ruleset at session, workspace, or global scope |
 | `get-ruleset-config` | Get the active Spectral ruleset and which scope is effective |
 

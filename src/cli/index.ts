@@ -11,14 +11,17 @@ import {
   loadWorkspaceConfig,
   loadGlobalConfig,
   buildAssertOutput,
-  buildQuickFixOutput,
-  formatQuickFixesHuman,
+  analyseRuleset,
+  buildRemediationSafetyOutput,
+  formatRemediationSafetyHuman,
+  loadRuleset,
 } from '@dawmatt/api-grade-core';
 import { loadConfig } from './config-loader.js';
 import { resolveCliAuth, isValidAuthType } from './ruleset-resolution.js';
 import { resolveRemoteRuleset } from './ruleset-fetch.js';
 import { registerConfigCommand } from './ruleset-config-cli.js';
-import type { LetterGrade } from '@dawmatt/api-grade-core';
+import { registerRulesetAnalysisCommand } from './ruleset-analysis-cli.js';
+import type { LetterGrade, RemediationSafetyLevel } from '@dawmatt/api-grade-core';
 
 // Returns "source:line:col — " when error carries Spectral location data, else "" or "source — "
 function formatErrorLocation(error: unknown): string {
@@ -77,7 +80,7 @@ program
     return n;
   })
   .option('--url <url>', '(reserved for future use)')
-  .option('--remediation-safety <level>', 'Filter diagnostics to the given remediation safety level (currently: safe)')
+  .option('--remediation-safety <level>', 'Filter diagnostics to the given remediation safety level: safe, humanreview, or unsafe')
   .option('--verbose', 'Print full error stack on failure')
   .action(async (specFile: string, cliOpts: {
     minGrade?: string;
@@ -112,8 +115,12 @@ program
       process.exit(1);
     }
 
-    if (cliOpts.remediationSafety !== undefined && cliOpts.remediationSafety !== 'safe') {
-      console.error(chalk.red(`Error: --remediation-safety must be "safe".`));
+    const REMEDIATION_SAFETY_LEVELS: RemediationSafetyLevel[] = ['safe', 'humanreview', 'unsafe'];
+    if (
+      cliOpts.remediationSafety !== undefined &&
+      !REMEDIATION_SAFETY_LEVELS.includes(cliOpts.remediationSafety as RemediationSafetyLevel)
+    ) {
+      console.error(chalk.red(`Error: --remediation-safety must be one of: safe, humanreview, unsafe.`));
       process.exit(1);
     }
 
@@ -177,11 +184,14 @@ program
         rulesetPath,
       });
 
-      if (cliOpts.remediationSafety === 'safe') {
+      if (cliOpts.remediationSafety !== undefined) {
+        const requestedLevel = cliOpts.remediationSafety as RemediationSafetyLevel;
         const specContent = readFileSync(specFile, 'utf-8');
+        const loadedRuleset = await loadRuleset(result.format, rulesetPath);
+        const rulesetAnalysis = await analyseRuleset(loadedRuleset);
         const output = outputFormat === 'json'
-          ? JSON.stringify(buildQuickFixOutput(result, specContent))
-          : formatQuickFixesHuman(result, specContent);
+          ? JSON.stringify(buildRemediationSafetyOutput(result, specContent, rulesetAnalysis, requestedLevel))
+          : formatRemediationSafetyHuman(result, specContent, rulesetAnalysis, requestedLevel);
         console.log(output);
       } else {
         const output = outputFormat === 'json'
@@ -232,5 +242,6 @@ program
   });
 
 registerConfigCommand(program);
+registerRulesetAnalysisCommand(program);
 
 program.parse();

@@ -151,21 +151,58 @@ interface AssertOutput {
 }
 ```
 
-### `buildQuickFixOutput(result: GradeResult, specContent: string): QuickFixOutput`
+### `analyseRuleset(loadedRuleset: LoadedRuleset, options?: { auth?: AuthConfig | null }): Promise<RulesetAnalysis>`
 
-Shapes the "safely-automatable fixes" subset. Used by MCP's
-`grade-api-remediation-safety` and the CLI's `--remediation-safety safe --format json`.
+Computes a per-rule remediation-safety analysis for a loaded ruleset — risk level,
+confidence level, and the derived remediation safety level for every rule, with
+provenance (`assessedBy`, `source`) and a rationale. Checks persisted/bundled stores
+(workspace override → global override → colocated shared analysis → bundled default for
+the built-in ruleset) before falling through to the automated heuristic. See the
+[Automated Remediation Safety Algorithm Specification](../../specs/algorithms/automated_remediation_safety_algorithm_spec.md)
+for the full algorithm.
 
 ```typescript
-interface QuickFixOutput {
+interface RulesetAnalysis {
+  rulesetSource: 'default' | 'custom';
+  rulesetPath?: string;
+  rules: RuleAnalysis[];
+}
+
+interface RuleAnalysis {
+  ruleId: string;
+  riskLevel: RiskLevel | null;                 // "low" | "medium" | "high"
+  confidenceLevel: ConfidenceLevel;             // "high" | "medium" | "low"
+  remediationSafetyLevel: RemediationSafetyLevel; // "safe" | "humanreview" | "unsafe"
+  assessedBy: AssessmentOrigin;                 // "human" | "automated"
+  staleFingerprintWarning: StaleFingerprintWarning | null;
+  rationale: string;
+  source: AnalysisSource;                       // "persisted" | "bundled-default" | "heuristic" | "fallback"
+}
+```
+
+### `getRemediationSafety(diagnostic: Diagnostic, rulesetAnalysis: RulesetAnalysis)`
+
+Looks up a single violation's remediation safety against a previously computed
+`RulesetAnalysis`, by `ruleId`. Defaults to `{ riskLevel: "high", confidenceLevel: "low",
+remediationSafetyLevel: "unsafe", staleFingerprintWarning: null }` when the rule isn't
+covered by the analysis.
+
+### `buildRemediationSafetyOutput(result: GradeResult, specContent: string, rulesetAnalysis: RulesetAnalysis, requestedLevel: RemediationSafetyLevel): RemediationSafetyOutput`
+
+Shapes the diagnostics matching one remediation-safety level. Used by MCP's
+`grade-api-remediation-safety` and the CLI's `--remediation-safety <level> --format json`.
+
+```typescript
+interface RemediationSafetyOutput {
   specPath: string;
   format: ApiFormat;
   totalViolations: number;
-  quickFixCount: number;
-  quickFixes: QuickFix[];
+  remediationItemCount: number;
+  remediationItems: RemediationItem[];
+  requestedLevel: RemediationSafetyLevel;
 }
 
-interface QuickFix {
+interface RemediationItem {
   ruleId: string;
   message: string;
   severity: string;
@@ -173,21 +210,26 @@ interface QuickFix {
   location: string;              // dot-joined `path`
   currentValue: string | null;
   expectedImprovement: string;
+  riskLevel: RiskLevel | null;
+  confidenceLevel: ConfidenceLevel;
+  remediationSafetyLevel: RemediationSafetyLevel;
+  staleFingerprintWarning: StaleFingerprintWarning | null;
 }
 ```
 
-### `formatQuickFixesHuman(result: GradeResult, specContent: string): string`
+### `formatRemediationSafetyHuman(result: GradeResult, specContent: string, rulesetAnalysis: RulesetAnalysis, requestedLevel: RemediationSafetyLevel): string`
 
-Renders the same filtered `QuickFix[]` list used by `buildQuickFixOutput()` as
-human-readable text. Used by the CLI's `--remediation-safety safe` with `--format human`
-(the default).
+Renders the same filtered `RemediationItem[]` list used by `buildRemediationSafetyOutput()`
+as human-readable text. Used by the CLI's `--remediation-safety <level>` with
+`--format human` (the default).
 
-### `classifyViolation(diagnostic: Diagnostic): ViolationClass`
+### `persistRuleAnalysisCorrection(loadedRuleset, ruleId, remediationSafetyLevel, scope?)`
 
-Classifies a single diagnostic as `'nonBreaking' | 'breaking' | 'unknown'`. The
-classification basis for `buildQuickFixOutput()`'s filtering. See the
-[Quick-Fixes Algorithm Specification](../../specs/algorithms/quick_fixes_algorithm_spec.md)
-for the full rationale behind which violations are classified which way.
+Persists a human-confirmed remediation-safety correction for one rule, written to the
+colocated shared analysis file (default, for a writable local ruleset) or a personal
+override (workspace/global scope, or as a fallback for a non-writable remote/built-in
+ruleset location). Reloaded automatically by `analyseRuleset()` on future runs against the
+same ruleset.
 
 ---
 
@@ -305,8 +347,8 @@ interface RuleMetadata {
 
 - [Usage Guide](usage-guide.md) — common patterns and worked examples
 - [Package Overview](README.md) — installation and minimal usage
-- [MCP Server Tool Reference](api-grade-mcp.md) — all six MCP tools including `recoveryOption`
+- [MCP Server Tool Reference](api-grade-mcp.md) — all MCP tools including `recoveryOption`
 - [CLI Commands](../cli/commands.md#json-output-schema) — CLI-specific usage of the JSON Output Schema above
 - [API Diagnostic Algorithm Specification](../../specs/algorithms/api_diagnostic_algorithm_spec.md) — full scoring/grading/recommendation algorithm
-- [Quick-Fixes Algorithm Specification](../../specs/algorithms/quick_fixes_algorithm_spec.md) — full non-breaking-vs-breaking classification algorithm
+- [Automated Remediation Safety Algorithm Specification](../../specs/algorithms/automated_remediation_safety_algorithm_spec.md) — full risk/confidence/remediation-safety classification algorithm
 - [Documentation Index](../index.md) — full navigation across all docs

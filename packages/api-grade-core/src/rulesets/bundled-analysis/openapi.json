@@ -1,0 +1,169 @@
+{
+  "rules": {
+    "operation-description": {
+      "ruleId": "operation-description",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "0305ec86216b7eefa356cc733bc9d7569aec013ba372cd4c571e8583aded08ec"
+    },
+    "info-contact": {
+      "ruleId": "info-contact",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "72e1580b37bf865c7918de14a114f28ea64b852e8cbae51ffad2351783bf9100"
+    },
+    "info-description": {
+      "ruleId": "info-description",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "a93095e4601bcadb3ab69e44d3208cdf08f870032b30c18140fcce99905bad7a"
+    },
+    "info-license": {
+      "ruleId": "info-license",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "f265560911a15d556ded4d9c321dbc40cbcae30680021591fda50ab0d1b34114"
+    },
+    "oas3-examples-value-or-externalValue": {
+      "ruleId": "oas3-examples-value-or-externalValue",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "7628f3c64ad0fb1e3b5791edb30e002eda5e0629e0cc432c8bb286f5363dd0aa"
+    },
+    "tag-description": {
+      "ruleId": "tag-description",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "69087f9af752a6b57dd7f3e0b7aeaa12a3262f2abe6e41d796c3234627947034"
+    },
+    "operation-operationId": {
+      "ruleId": "operation-operationId",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "5a4634a447eeeb9f2ce5d4f01ca7c95ed5e5249c27da82bac592abcf85759b30"
+    },
+    "operation-success-response": {
+      "ruleId": "operation-success-response",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "7b9badb6a9e915bc586c7fb2b77c9ef9fd2b415bf10e0ce6bd4049f0198668e8"
+    },
+    "oas3-server-not-example.com": {
+      "ruleId": "oas3-server-not-example.com",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "f6b1052227e31afd8ba10018ea2a3073fd8093e18db7d0994d5d8b484a1803ea"
+    },
+    "oas3-server-trailing-slash": {
+      "ruleId": "oas3-server-trailing-slash",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "f75935967e02e5c13a00c31220e4a33645b248b1078c6574384caded25877ec7"
+    },
+    "oas3-operation-security-defined": {
+      "ruleId": "oas3-operation-security-defined",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "8b717395498dd587200620a21dd258dce0573157c683f118faa08c1b9268c5dd"
+    },
+    "oas2-operation-security-defined": {
+      "ruleId": "oas2-operation-security-defined",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "0873339c33c75d41bca58448b9fe29c4e263c21d17dd97309c52d53b054c0722"
+    },
+    "oas3-schema": {
+      "ruleId": "oas3-schema",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded unsafe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "3859ddd4e60b7e4907b17e90f91d676515808af7ea23440350c975c02705a19f"
+    },
+    "oas3-valid-schema-example": {
+      "ruleId": "oas3-valid-schema-example",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded unsafe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "9aa73f0cdf9afd7ea70998b65471ec31a57c8052dc580a583512edad5dc915dc"
+    },
+    "oas2-schema": {
+      "ruleId": "oas2-schema",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded unsafe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "897ddabf2e24de2b765760eae0a30e6914c10375de18e5d2dc27fe307348d23c"
+    }
+  }
+}

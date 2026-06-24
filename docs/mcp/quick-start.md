@@ -175,7 +175,8 @@ Reload Cursor after saving.
 | `grade-api` | Quick grade: letter grade, numeric score, and summary |
 | `grade-api-detailed` | Full grade with all violations, diagnostics, and recommendations |
 | `assert-api-grade` | Pass/fail assertion for a minimum grade threshold |
-| `grade-api-remediation-safety` | Classified list of diagnostics filtered by remediation safety level (`safe`: non-breaking improvements) for AI-assisted correction |
+| `grade-api-remediation-safety` | Classified list of diagnostics filtered by remediation safety level (`safe`, `humanreview`, or `unsafe`), each with a risk/confidence indicator, for AI-assisted correction |
+| `analyse-ruleset-safety` | Per-rule risk, confidence, and remediation-safety analysis for a ruleset, independent of grading any spec |
 | `set-ruleset-config` | Set the default Spectral ruleset at session, workspace, or global scope |
 | `get-ruleset-config` | Get the active Spectral ruleset and which scope is effective |
 
@@ -207,7 +208,7 @@ To confirm the server starts correctly:
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | npx -y @dawmatt/api-grade-mcp
 ```
 
-You should see a JSON response listing all six tools.
+You should see a JSON response listing all the tools above.
 
 ---
 

@@ -1,0 +1,169 @@
+{
+  "rules": {
+    "asyncapi-info-contact": {
+      "ruleId": "asyncapi-info-contact",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "14a8d82b77003a5eee46743da7abe3078cf8a0cfcb6b4278b542c5f7137e0f9f"
+    },
+    "asyncapi-info-description": {
+      "ruleId": "asyncapi-info-description",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "f29927455a85a03534943e6e54e4e109c17fe795ea43ebb516ee5a2785b4eaab"
+    },
+    "asyncapi-info-license": {
+      "ruleId": "asyncapi-info-license",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "e1f25b8df806e73c25c4d0fd59eec7b3d3e19847ea7060d419d471b67b3ef0d4"
+    },
+    "asyncapi-operation-description": {
+      "ruleId": "asyncapi-operation-description",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "4afab5ea1e1eff4077756b1a08e737134a18573f32939331626000ba91ee833c"
+    },
+    "asyncapi-3-operation-description": {
+      "ruleId": "asyncapi-3-operation-description",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "c5b8b035e99fdfe7a8caca6a4cd4db7a1ee538fa91a9ed70e7d02957272a7d46"
+    },
+    "asyncapi-tag-description": {
+      "ruleId": "asyncapi-tag-description",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "a5404f455c18ca7a9e0b06de566c875a1dcdf90dace94ea07d9a89a7b9c3c978"
+    },
+    "asyncapi-3-tag-description": {
+      "ruleId": "asyncapi-3-tag-description",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "9396925fe26ba8c8ae085204e4d48ab0ca2ffc88e677c731192528cd5b70c048"
+    },
+    "asyncapi-parameter-description": {
+      "ruleId": "asyncapi-parameter-description",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "safe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded safe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "2c6ec4c507b68b273f5eb7c9917fba37fd61b8acc1ba4fc5df782bf3c2de8166"
+    },
+    "asyncapi-operation-operationId": {
+      "ruleId": "asyncapi-operation-operationId",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "f607ca3c154f8db8839c2c0913d270d15ee3ea8aa244942f66f9b39e268da486"
+    },
+    "asyncapi-server-not-example-com": {
+      "ruleId": "asyncapi-server-not-example-com",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "03af955c89ab648c2ccfad4f7276d0c41d0a7b8557906723d91b9fc77310b55d"
+    },
+    "asyncapi-3-server-not-example-com": {
+      "ruleId": "asyncapi-3-server-not-example-com",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "979ffad6a6a767b3324a1c288a2fde45513e2fcab0e45f5ff93a3bc2ddb37533"
+    },
+    "asyncapi-operation-security": {
+      "ruleId": "asyncapi-operation-security",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "167a6e72e70912bf806a952b5b7bcc172cfc47f91c9f47e1cfbcfec11921adab"
+    },
+    "asyncapi-3-operation-security": {
+      "ruleId": "asyncapi-3-operation-security",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded humanreview classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "c4b3dffd9fbdeb5970c2f3eceab232ce2ac835d1b61e9c1c4f6d4d873cc670bc"
+    },
+    "asyncapi-schema": {
+      "ruleId": "asyncapi-schema",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded unsafe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "2447324def94a87a5cd8a6ce78b8674b0dd401c06d8f6cf48a4fee7c5547a15f"
+    },
+    "asyncapi-payload": {
+      "ruleId": "asyncapi-payload",
+      "riskLevel": null,
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "automated",
+      "staleFingerprintWarning": null,
+      "rationale": "seeded unsafe classification (bundled default, not yet human-reviewed)",
+      "source": "bundled-default",
+      "fingerprint": "58be623c3acad195a9cafe9026928924f2701753c2ce5d4c2e94105aeb93668a"
+    }
+  }
+}

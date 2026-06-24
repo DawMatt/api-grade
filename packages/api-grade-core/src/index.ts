@@ -3,7 +3,20 @@ export { formatHuman, formatJson } from './formatter.js';
 export { computeScore, LETTER_GRADE_ORDER, gradeToNumber } from './scorer.js';
 export { extractCategory } from './types.js';
 export { buildCommonGradeOutput, buildAssertOutput } from './json-output.js';
-export { classifyViolation, buildQuickFix, buildQuickFixOutput, formatQuickFixesHuman } from './quick-fixes.js';
+export {
+  analyseRuleset,
+  getRemediationSafety,
+  buildRemediationItem,
+  buildRemediationSafetyOutput,
+  formatRemediationSafetyHuman,
+  decisionMatrix,
+  computeRuleFingerprint,
+  persistRuleAnalysisCorrection,
+} from './remediation-safety.js';
+export type {
+  PersistRulesetAnalysisCorrectionScope,
+  PersistRulesetAnalysisCorrectionResult,
+} from './remediation-safety.js';
 
 export type {
   ApiFormat,
@@ -19,11 +32,22 @@ export type {
   ImpactLevel,
   LetterGrade,
   RuleMetadata,
-  QuickFix,
-  ViolationClass,
+  RemediationItem,
+  RemediationSafetyLevel,
+  RiskLevel,
+  ConfidenceLevel,
+  AssessmentOrigin,
+  AnalysisSource,
+  RuleAnalysis,
+  RulesetAnalysis,
+  StaleFingerprintWarning,
   CommonGradeOutput,
   AssertOutput,
-  QuickFixOutput,
+  RemediationSafetyOutput,
+  PersistedRuleEntry,
+  SharedRulesetAnalysis,
+  PersonalRulesetAnalysisOverride,
+  BundledRulesetAnalysis,
 } from './types.js';
 
 export type {
@@ -53,3 +77,22 @@ export {
 } from './config/ruleset-config.js';
 
 export { resolveRuleset } from './config/resolve-ruleset.js';
+
+export { loadRuleset, loadRulesetFromUrl, getDefaultRuleset } from './rulesets/loader.js';
+export type { LoadedRuleset } from './rulesets/loader.js';
+
+export {
+  deriveSharedAnalysisLocation,
+  loadLocalSharedRulesetAnalysis,
+  saveLocalSharedRulesetAnalysis,
+  loadRemoteSharedRulesetAnalysis,
+  loadSharedRulesetAnalysis,
+} from './config/shared-ruleset-analysis.js';
+
+export {
+  getWorkspaceOverridePath,
+  getGlobalOverridePath,
+  loadWorkspaceRulesetAnalysisOverride,
+  loadGlobalRulesetAnalysisOverride,
+  saveRulesetAnalysisOverride,
+} from './config/personal-ruleset-override.js';

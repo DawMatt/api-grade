@@ -1,9 +1,8 @@
-import { statSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { statSync, writeFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
 import {
-  GradeEngine,
   loadWorkspaceConfig,
   loadGlobalConfig,
   resolveRuleset,
@@ -12,33 +11,21 @@ import {
   INITIAL_FETCH_TIMEOUT_MS,
   RETRY_FETCH_TIMEOUT_MS,
   analyseRuleset,
-  buildRemediationSafetyOutput,
   loadRuleset,
 } from '@dawmatt/api-grade-core';
-import type { RemediationSafetyLevel } from '@dawmatt/api-grade-core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { mcpError, buildRulesetFetchFailureResponse, describeFetchFailureReason, ERROR_CODES } from '../utils/errors.js';
 import type { SessionState } from '@dawmatt/api-grade-core';
 
-const LARGE_SPEC_THRESHOLD_BYTES = 500_000;
-
-export function registerRemediationSafetyTool(server: McpServer, sessionState: SessionState): void {
+export function registerAnalyseRulesetSafetyTool(server: McpServer, sessionState: SessionState): void {
   server.tool(
-    'grade-api-remediation-safety',
-    'Return a classified, AI-actionable list of diagnostics filtered by remediation safety level: `safe` (non-breaking, safe to auto-apply), `humanreview` (typically additive/clarifying but should be confirmed by a human before applying at scale), or `unsafe` (could change request/response validation, required fields, types, or the parameter surface — requires human or explicitly-confirmed-agent review). Each returned item also carries a confidence indicator (riskLevel/confidenceLevel) explaining how sure the analyser is in its classification. Use this tool (not grade-api-detailed) when the goal is for the AI to safely resolve violations; the AI generates the corrected specification content and the MCP server does not modify files.',
+    'analyse-ruleset-safety',
+    "Inspect a Spectral ruleset's per-rule remediation-safety analysis (riskLevel, confidenceLevel, remediationSafetyLevel, assessedBy, rationale) without grading any specific API specification. Use this to understand how risky it would be to auto-remediate violations of each rule in a ruleset before running grade-api-remediation-safety against a real spec.",
     {
-      specPath: z
-        .string()
-        .describe(
-          'Absolute or relative path to the OpenAPI or AsyncAPI specification file (YAML or JSON)'
-        ),
-      level: z
-        .enum(['safe', 'humanreview', 'unsafe'])
-        .describe('Remediation safety level to filter diagnostics by.'),
       rulesetPath: z
         .string()
         .optional()
-        .describe('Optional path to a custom Spectral-compatible ruleset file'),
+        .describe('Optional path to a custom Spectral-compatible ruleset file; omit to analyse the configured default or built-in ruleset'),
       recoveryOption: z
         .enum(['retry', 'use-builtin-once', 'use-builtin-session', 'cancel'])
         .optional()
@@ -46,9 +33,9 @@ export function registerRemediationSafetyTool(server: McpServer, sessionState: S
           'Recovery action when the configured default ruleset is inaccessible. Only supply in response to a RULESET_AUTH_FAILED response. On receiving that response, present its recoveryOptions to the user verbatim and wait for their explicit choice before setting this field — do not select use-builtin-once or use-builtin-session on the user’s behalf.'
         ),
     },
-    async ({ specPath, level, rulesetPath, recoveryOption }) => {
+    async ({ rulesetPath, recoveryOption }) => {
       if (recoveryOption === 'cancel') {
-        return mcpError(ERROR_CODES.REQUEST_CANCELLED, 'Grading request cancelled by user.', { specPath });
+        return mcpError(ERROR_CODES.REQUEST_CANCELLED, 'Ruleset analysis cancelled by user.', {});
       }
 
       if (recoveryOption === 'use-builtin-session') {
@@ -100,45 +87,16 @@ export function registerRemediationSafetyTool(server: McpServer, sessionState: S
         }
       }
 
-      let largeSpecWarning: string | undefined;
-      let specContent: string;
-
       try {
-        const stat = statSync(specPath);
-        if (stat.size > LARGE_SPEC_THRESHOLD_BYTES) {
-          largeSpecWarning = `Specification exceeds 500KB (${stat.size} bytes); diagnostic results may be truncated`;
-        }
-        specContent = readFileSync(specPath, 'utf-8');
-      } catch {
-        if (tempRulesetFile) try { unlinkSync(tempRulesetFile); } catch { /* ignore */ }
-        return mcpError(
-          ERROR_CODES.SPEC_NOT_FOUND,
-          `The specification file '${specPath}' does not exist. Check the path and try again.`,
-          { specPath }
-        );
-      }
-
-      try {
-        const engine = new GradeEngine();
-        const result = await engine.grade({ specPath, rulesetPath: effectiveRulesetPath });
-        const loadedRuleset = await loadRuleset(result.format, effectiveRulesetPath);
-        const rulesetAnalysis = await analyseRuleset(loadedRuleset);
-
-        const response: Record<string, unknown> = {
-          ...buildRemediationSafetyOutput(result, specContent, rulesetAnalysis, level as RemediationSafetyLevel),
-        };
-
-        if (largeSpecWarning) {
-          response.largeSpecWarning = largeSpecWarning;
-        }
-
-        return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+        const loadedRuleset = await loadRuleset('openapi-3', effectiveRulesetPath);
+        const analysis = await analyseRuleset(loadedRuleset);
+        return { content: [{ type: 'text', text: JSON.stringify(analysis) }] };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return mcpError(
           ERROR_CODES.GRADE_ENGINE_ERROR,
-          `GradeEngine error: ${message}`,
-          { specPath }
+          `Ruleset analysis error: ${message}`,
+          { rulesetPath: effectiveRulesetPath }
         );
       } finally {
         if (tempRulesetFile) try { unlinkSync(tempRulesetFile); } catch { /* ignore */ }

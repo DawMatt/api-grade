@@ -15,9 +15,9 @@
 | [Package Usage Guide](package/usage-guide.md) | Common integration patterns and worked examples |
 | [Package API Reference](package/api-reference.md) | All exported functions, classes, and types |
 | [API Diagnostic Algorithm Specification](../specs/algorithms/api_diagnostic_algorithm_spec.md) | How scores, grades, and recommendations are computed |
-| [Quick-Fixes Algorithm Specification](../specs/algorithms/quick_fixes_algorithm_spec.md) | How non-breaking, safely-automatable violations are identified |
+| [Automated Remediation Safety Algorithm Specification](../specs/algorithms/automated_remediation_safety_algorithm_spec.md) | How risk, confidence, and remediation safety are determined per rule |
 | [MCP Server](mcp/README.md) | Grade specs from AI tools via MCP |
-| [MCP Server Overview](package/api-grade-mcp.md) | All six MCP tools and their inputs/outputs |
+| [MCP Server Overview](package/api-grade-mcp.md) | All MCP tools and their inputs/outputs |
 | [MCP Quick Start](mcp/quick-start.md) | Install and configure the MCP server in minutes |
 | [MCP Configuration Reference](mcp/configuration.md) | Default rulesets, auth, and scope precedence |
 | [MCP GitHub Token Setup](mcp/github-pat-setup.md) | One-time GitHub PAT creation for `github-pat` ruleset auth |

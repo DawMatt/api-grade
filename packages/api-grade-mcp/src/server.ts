@@ -5,9 +5,10 @@ import { resolve, dirname } from 'node:path';
 import { registerGradeTool } from './tools/grade.js';
 import { registerAssertGradeTool } from './tools/assert-grade.js';
 import { registerGradeDetailedTool } from './tools/grade-detailed.js';
-import { registerQuickFixesOnlyTool } from './tools/quick-fixes-only.js';
+import { registerRemediationSafetyTool } from './tools/remediation-safety.js';
 import { registerSetRulesetConfigTool } from './tools/set-ruleset-config.js';
 import { registerGetRulesetConfigTool } from './tools/get-ruleset-config.js';
+import { registerAnalyseRulesetSafetyTool } from './tools/analyse-ruleset-safety.js';
 import type { SessionState } from './types.js';
 
 function getVersion(): string {
@@ -27,8 +28,9 @@ export function createServer(): McpServer {
   registerGradeTool(server, sessionState);
   registerAssertGradeTool(server, sessionState);
   registerGradeDetailedTool(server, sessionState);
-  registerQuickFixesOnlyTool(server, sessionState);
+  registerRemediationSafetyTool(server, sessionState);
   registerSetRulesetConfigTool(server, sessionState);
   registerGetRulesetConfigTool(server, sessionState);
+  registerAnalyseRulesetSafetyTool(server, sessionState);
   return server;
 }
