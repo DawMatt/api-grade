@@ -155,6 +155,7 @@ export interface RemediationItem {
   riskLevel: RiskLevel | null;
   confidenceLevel: ConfidenceLevel;
   remediationSafetyLevel: RemediationSafetyLevel;
+  safetyRationale: string;
   staleFingerprintWarning: StaleFingerprintWarning | null;
 }
 
@@ -162,6 +163,7 @@ export interface DiagnosticWithSafety extends Diagnostic {
   riskLevel: RiskLevel | null;
   confidenceLevel: ConfidenceLevel;
   remediationSafetyLevel: RemediationSafetyLevel;
+  safetyRationale: string;
   staleFingerprintWarning: StaleFingerprintWarning | null;
 }
 

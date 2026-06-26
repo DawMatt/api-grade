@@ -566,17 +566,18 @@ export async function persistRuleAnalysisCorrection(
 export function getRemediationSafety(
   diagnostic: Diagnostic,
   rulesetAnalysis: RulesetAnalysis
-): Pick<RuleAnalysis, 'riskLevel' | 'confidenceLevel' | 'remediationSafetyLevel' | 'staleFingerprintWarning'> {
+): Pick<RuleAnalysis, 'riskLevel' | 'confidenceLevel' | 'remediationSafetyLevel' | 'staleFingerprintWarning'> & { safetyRationale: string } {
   const entry = rulesetAnalysis.rules.find((r) => r.ruleId === diagnostic.ruleId);
   if (entry) {
     return {
       riskLevel: entry.riskLevel,
       confidenceLevel: entry.confidenceLevel,
       remediationSafetyLevel: entry.remediationSafetyLevel,
+      safetyRationale: entry.rationale,
       staleFingerprintWarning: entry.staleFingerprintWarning,
     };
   }
-  return { riskLevel: 'high', confidenceLevel: 'low', remediationSafetyLevel: 'unsafe', staleFingerprintWarning: null };
+  return { riskLevel: 'high', confidenceLevel: 'low', remediationSafetyLevel: 'unsafe', safetyRationale: 'no recognizable rule-id, function, or path signal', staleFingerprintWarning: null };
 }
 
 function deriveExpectedImprovement(
@@ -652,6 +653,7 @@ export function buildRemediationItem(
     riskLevel: safety.riskLevel,
     confidenceLevel: safety.confidenceLevel,
     remediationSafetyLevel: safety.remediationSafetyLevel,
+    safetyRationale: safety.safetyRationale,
     staleFingerprintWarning: safety.staleFingerprintWarning,
   };
 }
