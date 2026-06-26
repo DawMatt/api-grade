@@ -270,12 +270,24 @@ function stage1b(
   if (functionNames.length === 0) return null;
   const tiers = matchedTiers(givenExprs, fieldTokens);
 
+  // When then.field names a token that is exclusively in SAFE_SEGMENTS (e.g. `description`,
+  // `summary`), the field's tier overrides the parent path context for additive-style
+  // operations. Adding a documentation field is safe regardless of the parent object it
+  // lives in — `$.operations.*.description` is no riskier than `$.info.description`.
+  const fieldOnlyTiers = fieldTokens.length > 0 ? matchedTiers([], fieldTokens) : new Set<Tier>();
+  const fieldIsExclusivelySafe =
+    fieldOnlyTiers.size > 0 &&
+    fieldOnlyTiers.has('safe') &&
+    !fieldOnlyTiers.has('unsafe') &&
+    !fieldOnlyTiers.has('humanreview');
+
   for (const fn of functionNames) {
     if (ADDITIVE_FUNCTIONS.has(fn)) {
+      const effectiveTiers = fieldIsExclusivelySafe ? fieldOnlyTiers : tiers;
       let riskLevel: RiskLevel = 'low';
-      if (tiers.has('unsafe')) riskLevel = 'high';
-      else if (tiers.has('humanreview')) riskLevel = 'medium';
-      const confidenceLevel: ConfidenceLevel = tiers.size <= 1 ? 'high' : 'medium';
+      if (effectiveTiers.has('unsafe')) riskLevel = 'high';
+      else if (effectiveTiers.has('humanreview')) riskLevel = 'medium';
+      const confidenceLevel: ConfidenceLevel = effectiveTiers.size <= 1 ? 'high' : 'medium';
       return {
         riskLevel,
         confidenceLevel,
@@ -287,10 +299,11 @@ function stage1b(
       // notMatch-only pattern: existence/validity check, not rename/reformat. Risk escalates the
       // same as additive on recognized tiers; falls back to medium (not low) on an unrecognized
       // target so that e.g. `pattern` on a bare `$` with `field: host` stays conservative.
-      let riskLevel: RiskLevel = tiers.size === 0 ? 'medium' : 'low';
-      if (tiers.has('unsafe')) riskLevel = 'high';
-      else if (tiers.has('humanreview')) riskLevel = 'medium';
-      const confidenceLevel: ConfidenceLevel = tiers.size <= 1 ? 'high' : 'medium';
+      const effectiveTiers = fieldIsExclusivelySafe ? fieldOnlyTiers : tiers;
+      let riskLevel: RiskLevel = effectiveTiers.size === 0 ? 'medium' : 'low';
+      if (effectiveTiers.has('unsafe')) riskLevel = 'high';
+      else if (effectiveTiers.has('humanreview')) riskLevel = 'medium';
+      const confidenceLevel: ConfidenceLevel = effectiveTiers.size <= 1 ? 'high' : 'medium';
       return {
         riskLevel,
         confidenceLevel,

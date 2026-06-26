@@ -192,7 +192,34 @@ matched_tiers(rule):
     IF segment IN SAFE_SEGMENTS: tiers.add("safe")
   RETURN tiers
 
+field_only_tiers(rule):
+  // Tier membership for the then.field value alone, independent of the parent path.
+  tiers ← {}
+  IF rule.then.field is defined:
+    FOR EACH token IN tokenize(rule.then.field):
+      IF token IN SAFE_SEGMENTS: tiers.add("safe")
+      IF token IN HUMANREVIEW_SEGMENTS: tiers.add("humanreview")
+      IF token IN UNSAFE_SEGMENTS: tiers.add("unsafe")
+  RETURN tiers
+
+field_is_exclusively_safe(rule):
+  // True when then.field names a token that is exclusively in SAFE_SEGMENTS.
+  // In this case the field-tier OVERRIDES the parent path context for additive-style
+  // operations — adding a documentation field (e.g. `description`, `summary`) is safe
+  // regardless of the parent object it lives in. `$.operations.*.description` carries
+  // no more remediation risk than `$.info.description`.
+  ft ← field_only_tiers(rule)
+  RETURN ft.size > 0 AND "safe" IN ft AND "unsafe" NOT IN ft AND "humanreview" NOT IN ft
+
+classify_by_function(rule, tiers):
+  // Used by Stage 1b. For additive and existence-check functions, applies the
+  // field-override rule before falling back to the combined tiers.
+  effective_tiers ← field_is_exclusively_safe(rule) ? field_only_tiers(rule) : tiers
+  ...   // same tier-to-risk logic as classify_by_path, applied to effective_tiers
+
 classify_by_path(rule):
+  // Used by Stage 1c (generic fallback — no function-override applied here since
+  // we cannot determine the function's additive/rename semantics).
   tiers ← matched_tiers(rule)
   IF tiers is empty: RETURN null   // Stage 3 fallback
   level ← most conservative tier in tiers   // unsafe > humanreview > safe
@@ -204,6 +231,8 @@ classify_by_path(rule):
 ```
 
 **Rationale for tier contents:** the OpenAPI portions of `UNSAFE_SEGMENTS` and `SAFE_SEGMENTS` are carried over unchanged from the quick-fixes algorithm's `BREAKING_SEGMENTS`/`NON_BREAKING_SEGMENTS` (same justification: `required`/`type`/`format`/`parameters` affect contract validity; documentation/metadata fields and `x-` vendor extensions never do). The AsyncAPI additions mirror `clarification-algorithm.md`'s ontology directly: channel `address` and operation `action` are AsyncAPI's equivalent of an OpenAPI path/HTTP-method — changing either changes where/how a consumer connects, so they sit in `UNSAFE_SEGMENTS` alongside `parameters`; `messages`/`payload` are AsyncAPI's equivalent of request/response bodies, so they join `required`/`type`/`format`. `HUMANREVIEW_SEGMENTS` covers fields that are typically additive or operationally significant without invalidating an existing consumer outright: `enum`/`default` change what values are considered valid or assumed without removing existing valid values outright; `security`/`servers` change where/how requests are authenticated or routed; `operationId`/`responses`/`additionalProperties` affect generated-client method names or extensibility; `channels`/`operations`/`reply`, matched only here (not in `UNSAFE_SEGMENTS`), cover rules that reach the channel/operation collections broadly without the Stage 2a key-selector shape — plausible to need a human's confirmation but not unambiguously a breaking validation change.
+
+**Rationale for field-override rule:** the parent path context (e.g. `operations`) captures where in the spec the rule applies, but for additive and existence-check functions the *field being added or validated* (`then.field`) is the more precise signal for remediation risk. A rule adding `description` to an operation is semantically identical to one adding `description` to `$.info` — both add documentation-only content. Without the field-override, the `operations` segment would cause the combined tier set to include `humanreview`, and the conservative tier selection would incorrectly classify the rule as medium risk. The field-override only applies when `then.field` resolves exclusively to `SAFE_SEGMENTS` (no unsafe or humanreview tokens), so it never suppresses a genuine risk signal. Rename/reformat functions (`casing`, `pattern` with `match`) and the Stage 1c generic fallback do not apply this override — their risk is determined by the full path context, not just the leaf field.
 
 **Rationale for ambiguity downgrade:** a rule whose `given` spans multiple tiers (e.g. applies broadly to a schema with both `description` and `required` reachable beneath it) genuinely could not be classified with confidence by this heuristic alone — picking the conservative level avoids a false "safe", but the confidence MUST still reflect that the match itself was ambiguous, so a ruleset maintainer reviewing the analyser's output knows to look closer.
 
@@ -268,16 +297,18 @@ get_remediation_safety(diagnostic, rulesetAnalysis):
 
 ```
 rules = [
-  { id: "operation-description",     given: "$.paths[*][*]",                       then: { field: "description", function: "truthy" } },
-  { id: "operation-operationId",     given: "$.paths[*][*]",                       then: { field: "operationId",  function: "truthy" } },
-  { id: "oas3-schema",               given: "$" },
-  { id: "custom-required-header",    given: "$.paths[*][*].parameters[*].required", then: { function: "schema" } },
-  { id: "custom-naming-convention",  given: "$.paths[*]~",                         then: { function: "casing" } },
-  { id: "custom-channel-rename",     given: "$.channels[*]~",                      then: { function: "casing" } },
-  { id: "asyncapi-channel-no-empty-parameter", given: "$.channels",               then: { field: "@key", function: "pattern" } },
-  { id: "custom-channel-address",    given: "$.channels[*].address",               then: { function: "pattern" } },
-  { id: "custom-no-signal",          given: "$.x-custom-thing" },
-  { id: "previously-reviewed-rule",  given: "$.unrecognizedExtension" }
+  { id: "operation-description",        given: "$.paths[*][*]",                        then: { field: "description", function: "truthy" } },
+  { id: "operation-operationId",        given: "$.paths[*][*]",                        then: { field: "operationId",  function: "truthy" } },
+  { id: "oas3-schema",                  given: "$" },
+  { id: "custom-required-header",       given: "$.paths[*][*].parameters[*].required", then: { function: "schema" } },
+  { id: "custom-naming-convention",     given: "$.paths[*]~",                          then: { function: "casing" } },
+  { id: "custom-channel-rename",        given: "$.channels[*]~",                       then: { function: "casing" } },
+  { id: "asyncapi-channel-no-empty-parameter", given: "$.channels",                   then: { field: "@key", function: "pattern" } },
+  { id: "custom-channel-address",       given: "$.channels[*].address",                then: { function: "pattern" } },
+  { id: "asyncapi-3-op-description",    given: "$.operations.*",                       then: { field: "description", function: "truthy" } },
+  { id: "asyncapi-param-description",   given: "$.channels.*.parameters.*",            then: { field: "description", function: "truthy" } },
+  { id: "custom-no-signal",             given: "$.x-custom-thing" },
+  { id: "previously-reviewed-rule",     given: "$.unrecognizedExtension" }
 ]
 ```
 
@@ -289,8 +320,10 @@ rules = [
 | `custom-required-header` | Stage 2b (`required` segment) | `unsafe` | `medium` | `given` path matched the unsafe segment set only |
 | `custom-naming-convention` | Stage 2a (`~` key-selector on paths) | `unsafe` | `high` | `given` selects path object keys directly via JSONPath `~` |
 | `custom-channel-rename` | Stage 2a (`~` key-selector on channels) | `unsafe` | `high` | `given` selects channel object keys directly via JSONPath `~` |
-| `asyncapi-channel-no-empty-parameter` | Stage 2a (`@key` field on channels) | `unsafe` | `high` | `then.field "@key"` on `$.channels` — equivalent to a channel key-selector; used by AsyncAPI 2.x rules where the channel key is the routing address |
+| `asyncapi-channel-no-empty-parameter` | Stage 2a (`@key` field on channels) | `unsafe` | `high` | `then.field "@key"` on `$.channels` — equivalent to a channel key-selector |
 | `custom-channel-address` | Stage 2b (`address` segment) | `unsafe` | `medium` | `given` path matched the unsafe segment set only (AsyncAPI channel address) |
+| `asyncapi-3-op-description` | Stage 2b (field-override) | `safe` | `high` | `then.field "description"` is exclusively safe — field overrides `operations` humanreview parent |
+| `asyncapi-param-description` | Stage 2b (field-override) | `safe` | `high` | `then.field "description"` is exclusively safe — field overrides `parameters` unsafe parent |
 | `custom-no-signal` | Stage 3 (fallback) | `unsafe` | `low` | No recognizable rule-id or path signal |
 | `previously-reviewed-rule` | Stage 0 (persisted) | *(whatever was set)* | `high` | Matched a shared or personal override for this exact rule definition, from a prior run against this same ruleset |
 
@@ -305,7 +338,7 @@ rules = [
 | **Stage 0 lookup order** | Personal override (workspace, then global) → Shared Ruleset Analysis colocated with the ruleset → bundled default (built-in ruleset only) |
 | **Rule identity** | Per-rule Fingerprint (hash of `ruleId`, `given`, `then.function`, `severity`, `description`) — never a whole-ruleset hash, and never the supplied path/URL |
 | **Sharing mechanism** | Shared Ruleset Analysis is colocated with the ruleset via a naming convention (local sibling file, or same-repo-path fetch for GitHub-hosted) — not a per-user store (FR-016/FR-017) |
-| **Tier priority (Stage 1 and Stage 2)** | `unsafe` checked/preferred over `humanreview` over `safe` whenever ambiguity exists |
+| **Tier priority (Stage 1 and Stage 2)** | `unsafe` checked/preferred over `humanreview` over `safe` whenever ambiguity exists; for additive and existence-check functions in Stage 2b, `then.field` overrides parent path tiers when the field resolves exclusively to `SAFE_SEGMENTS` |
 | **Confidence assignment** | `high` = persisted/curated/key-selector match; `medium` = single-tier path-segment match; `low` = fallback or multi-tier path match |
 | **Default when unanalysable** | `unsafe` / `low` confidence — never `safe` |
 | **Per-violation lookup miss** | Defaults to `unsafe` / `low`, same as an unanalysable rule (FR-009) |

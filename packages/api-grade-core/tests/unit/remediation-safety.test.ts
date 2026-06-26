@@ -134,6 +134,43 @@ describe('analyseRuleset() — Stage 1b function-mechanics classification', () =
     expect(rules[0].remediationSafetyLevel).toBe('unsafe');
   });
 
+  it('additive function targeting a safe field within a humanreview parent => low risk (field overrides parent)', async () => {
+    // $.operations.* has `operations` in HUMANREVIEW_SEGMENTS, but then.field=description is
+    // exclusively in SAFE_SEGMENTS — adding a description is safe regardless of parent.
+    const ruleset = makeRuleset({
+      'asyncapi-3-operation-description': { given: '$.operations.*', then: { field: 'description', function: 'truthy' } },
+    });
+    const { rules } = await analyseRuleset(ruleset);
+    expect(rules[0].riskLevel).toBe('low');
+    expect(rules[0].confidenceLevel).toBe('high');
+    expect(rules[0].remediationSafetyLevel).toBe('safe');
+  });
+
+  it('additive function targeting a safe field within an unsafe parent => low risk (field overrides parent)', async () => {
+    // $.channels.*.parameters.* has `parameters` in UNSAFE_SEGMENTS, but then.field=description
+    // is exclusively safe — describing a parameter does not alter the contract.
+    const ruleset = makeRuleset({
+      'asyncapi-parameter-description': {
+        given: ['$.components.parameters.*', '$.channels.*.parameters.*'],
+        then: { field: 'description', function: 'truthy' },
+      },
+    });
+    const { rules } = await analyseRuleset(ruleset);
+    expect(rules[0].riskLevel).toBe('low');
+    expect(rules[0].confidenceLevel).toBe('high');
+    expect(rules[0].remediationSafetyLevel).toBe('safe');
+  });
+
+  it('additive function targeting a humanreview field is NOT overridden (operationId in operations parent)', async () => {
+    // then.field=operationId is in HUMANREVIEW_SEGMENTS itself, so field-override does not apply.
+    const ruleset = makeRuleset({
+      'asyncapi-operation-operationId': { given: '$.operations.*', then: { field: 'operationId', function: 'truthy' } },
+    });
+    const { rules } = await analyseRuleset(ruleset);
+    expect(rules[0].riskLevel).toBe('medium');
+    expect(rules[0].remediationSafetyLevel).toBe('humanreview');
+  });
+
   it('rename function (pattern/casing) on default target => medium risk', async () => {
     const ruleset = makeRuleset({
       'custom-pattern-rule': { given: '$.components.schemas', then: { function: 'pattern' } },
