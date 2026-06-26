@@ -2,12 +2,12 @@
   "rules": {
     "asyncapi-channel-no-empty-parameter": {
       "ruleId": "asyncapi-channel-no-empty-parameter",
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "confidenceLevel": "high",
-      "remediationSafetyLevel": "humanreview",
+      "remediationSafetyLevel": "unsafe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "rationale": "then.field \"@key\" on paths/channels collection — equivalent to a path/channel key-selector; any satisfying edit renames a public path or channel",
       "source": "bundled-default",
       "fingerprint": "faef5a6495551bbb7fa3f2d0d85ba9e4703ba0fe0cbccf3c40a8c502ba81f98b"
     },
@@ -24,12 +24,12 @@
     },
     "asyncapi-channel-no-query-nor-fragment": {
       "ruleId": "asyncapi-channel-no-query-nor-fragment",
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "confidenceLevel": "high",
-      "remediationSafetyLevel": "humanreview",
+      "remediationSafetyLevel": "unsafe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "rationale": "then.field \"@key\" on paths/channels collection — equivalent to a path/channel key-selector; any satisfying edit renames a public path or channel",
       "source": "bundled-default",
       "fingerprint": "73eff0af4d20d3818101af39362816099cd3a524492d55d905d50b2a3c3cbff5"
     },
@@ -46,12 +46,12 @@
     },
     "asyncapi-channel-no-trailing-slash": {
       "ruleId": "asyncapi-channel-no-trailing-slash",
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "confidenceLevel": "high",
-      "remediationSafetyLevel": "humanreview",
+      "remediationSafetyLevel": "unsafe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "rationale": "then.field \"@key\" on paths/channels collection — equivalent to a path/channel key-selector; any satisfying edit renames a public path or channel",
       "source": "bundled-default",
       "fingerprint": "6e35de3017f8bd11b0aeefee5728c0a7d1d31af3765c0345f79c89c6d87a2953"
     },

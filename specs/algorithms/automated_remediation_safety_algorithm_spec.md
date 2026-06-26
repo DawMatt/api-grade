@@ -118,16 +118,31 @@ Runs only when Stage 1 doesn't match. Two checks, in order: a structural **key-s
 
 ### Stage 2a: Key-Selector Check
 
+Catches rules that target the *key* of a `paths` or `channels` collection — any such rule cannot be satisfied without renaming a public route or channel. Two equivalent spellings exist in Spectral: the JSONPath `~` key-selector on the `given` expression, and `then.field: "@key"` on a `given` that targets the collection itself. Both are checked here; neither appears in the segment-membership set in 2b.
+
 ```
-IS_KEY_SELECTOR(given) = given matches a JSONPath Plus object-key selector
-                          (the trailing "~" modifier, e.g. "$.paths[*]~", "$.channels[*]~")
+IS_KEY_SELECTOR(given) = given ends with the JSONPath "~" modifier
+                          (e.g. "$.paths[*]~", "$.channels[*]~")
+
+IS_KEY_FIELD(rule) = rule.then.field == "@key"
+                     (Spectral's function-based equivalent of the "~" key-selector,
+                      used e.g. by AsyncAPI 2.x channel rules such as asyncapi-channel-no-empty-parameter)
 
 FOR EACH given_expr IN rule.given:
-  IF IS_KEY_SELECTOR(given_expr) AND given_expr contains "paths" or "channels" as the selected collection:
-    RETURN { riskLevel: "unsafe", confidenceLevel: "high", rationale: "given path selects path/channel object keys directly — any satisfying edit renames a public path or channel", source: "heuristic" }
+  IF IS_KEY_SELECTOR(given_expr) AND given_expr contains "paths" or "channels":
+    RETURN { riskLevel: "high", confidenceLevel: "high",
+             rationale: "given path selects path/channel object keys directly — any satisfying edit renames a public path or channel",
+             source: "heuristic" }
+
+IF IS_KEY_FIELD(rule) AND (rule.given tokens include "paths" or "channels"):
+  RETURN { riskLevel: "high", confidenceLevel: "high",
+           rationale: "then.field \"@key\" on paths/channels collection — equivalent to a path/channel key-selector; any satisfying edit renames a public path or channel",
+           source: "heuristic" }
 ```
 
-**Rationale:** a rule targeting the *keys* of `paths`/`channels` (e.g. a kebab-case naming convention, `clarification-algorithm.md`'s Example B) cannot be satisfied without renaming a real, public path or channel — by construction this is the riskiest, highest-confidence case the heuristic can recognize, and it would otherwise be missed by segment-membership matching alone (`paths`/`channels` are deliberately *not* included as bare segments in 2b, since most rules with `paths`/`channels` somewhere in their `given` — e.g. `operation-description`, which reaches `$.paths[*][*].description` — are not targeting the key itself and must not be over-classified as unsafe).
+**Rationale for `~` check:** a rule targeting the *keys* of `paths`/`channels` (e.g. a kebab-case naming convention) cannot be satisfied without renaming a real, public path or channel — by construction the riskiest, highest-confidence case the heuristic can recognize.
+
+**Rationale for `@key` check:** Spectral's built-in rulesets often use `given: "$.paths"` or `given: "$.channels"` with `then.field: "@key"` rather than `given: "$.paths[*]~"` — these are semantically identical (both select the collection key), but the `~` check above would miss them. In AsyncAPI 2.x the channel key *is* the routing address; in OpenAPI the path key *is* the route. Both target the same renaming risk. `paths` and `channels` are deliberately *not* included as bare segments in 2b, since most rules with those tokens in their `given` reach into the collection's content (e.g. `operation-description` → `$.paths[*][*].description`) and must not be over-classified as unsafe.
 
 ### Stage 2b: Segment-Membership Heuristic
 
@@ -236,15 +251,16 @@ get_remediation_safety(diagnostic, rulesetAnalysis):
 
 ```
 rules = [
-  { id: "operation-description",  given: "$.paths[*][*]" },
-  { id: "operation-operationId",  given: "$.paths[*][*]" },
-  { id: "oas3-schema",            given: "$" },
-  { id: "custom-required-header", given: "$.paths[*][*].parameters[?(@.in=='header')].required" },
-  { id: "custom-naming-convention", given: "$.paths[*]~" },
-  { id: "custom-channel-rename",  given: "$.channels[*]~" },
-  { id: "custom-channel-address", given: "$.channels[*].address" },
-  { id: "custom-no-signal",       given: "$.x-custom-thing" },
-  { id: "previously-reviewed-rule", given: "$.unrecognizedExtension" }
+  { id: "operation-description",     given: "$.paths[*][*]",                       then: { field: "description", function: "truthy" } },
+  { id: "operation-operationId",     given: "$.paths[*][*]",                       then: { field: "operationId",  function: "truthy" } },
+  { id: "oas3-schema",               given: "$" },
+  { id: "custom-required-header",    given: "$.paths[*][*].parameters[*].required", then: { function: "schema" } },
+  { id: "custom-naming-convention",  given: "$.paths[*]~",                         then: { function: "casing" } },
+  { id: "custom-channel-rename",     given: "$.channels[*]~",                      then: { function: "casing" } },
+  { id: "asyncapi-channel-no-empty-parameter", given: "$.channels",               then: { field: "@key", function: "pattern" } },
+  { id: "custom-channel-address",    given: "$.channels[*].address",               then: { function: "pattern" } },
+  { id: "custom-no-signal",          given: "$.x-custom-thing" },
+  { id: "previously-reviewed-rule",  given: "$.unrecognizedExtension" }
 ]
 ```
 
@@ -254,8 +270,9 @@ rules = [
 | `operation-operationId` | Stage 1 (humanreview table) | `humanreview` | `high` | Rule id matched curated humanreview-prefix table |
 | `oas3-schema` | Stage 1 (unsafe table) | `unsafe` | `high` | Rule id matched curated unsafe-prefix table |
 | `custom-required-header` | Stage 2b (`required` segment) | `unsafe` | `medium` | `given` path matched the unsafe segment set only |
-| `custom-naming-convention` | Stage 2a (path key-selector) | `unsafe` | `high` | `given` selects path object keys directly |
-| `custom-channel-rename` | Stage 2a (channel key-selector) | `unsafe` | `high` | `given` selects channel object keys directly |
+| `custom-naming-convention` | Stage 2a (`~` key-selector on paths) | `unsafe` | `high` | `given` selects path object keys directly via JSONPath `~` |
+| `custom-channel-rename` | Stage 2a (`~` key-selector on channels) | `unsafe` | `high` | `given` selects channel object keys directly via JSONPath `~` |
+| `asyncapi-channel-no-empty-parameter` | Stage 2a (`@key` field on channels) | `unsafe` | `high` | `then.field "@key"` on `$.channels` — equivalent to a channel key-selector; used by AsyncAPI 2.x rules where the channel key is the routing address |
 | `custom-channel-address` | Stage 2b (`address` segment) | `unsafe` | `medium` | `given` path matched the unsafe segment set only (AsyncAPI channel address) |
 | `custom-no-signal` | Stage 3 (fallback) | `unsafe` | `low` | No recognizable rule-id or path signal |
 | `previously-reviewed-rule` | Stage 0 (persisted) | *(whatever was set)* | `high` | Matched a shared or personal override for this exact rule definition, from a prior run against this same ruleset |

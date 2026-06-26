@@ -176,6 +176,13 @@ function fieldTokensOf(rule: SpectralRule): string[] {
   return thens.flatMap((t) => (typeof t?.field === 'string' ? tokenize(t.field) : []));
 }
 
+function fieldNamesOf(rule: SpectralRule): string[] {
+  const then = rule.then;
+  if (!then) return [];
+  const thens = Array.isArray(then) ? then : [then];
+  return thens.map((t) => t?.field).filter((f): f is string => typeof f === 'string');
+}
+
 function matchedTiers(givenExprs: string[], extraSegments: string[] = []): Set<Tier> {
   const tiers = new Set<Tier>();
   const scan = (segment: string): void => {
@@ -202,8 +209,12 @@ function tierToRisk(tier: Tier): RiskLevel {
   return tier === 'unsafe' ? 'high' : tier === 'humanreview' ? 'medium' : 'low';
 }
 
-// Stage 1a: a `given` expression that selects path/channel object keys directly.
-function stage1a(givenExprs: string[]): StageResult | null {
+// Stage 1a: a `given` expression that selects path/channel object keys directly (via the JSONPath
+// `~` key-selector), OR a rule using Spectral's `then.field: "@key"` on a paths/channels
+// collection — the function-based equivalent of the `~` key-selector. In AsyncAPI 2.x the channel
+// key IS the routing address; in OpenAPI the path key is the route. Both forms carry identical
+// semantic risk: any satisfying edit renames a public path or channel.
+function stage1a(givenExprs: string[], fieldNames: string[] = []): StageResult | null {
   for (const given of givenExprs) {
     if (!isKeySelector(given)) continue;
     const tokens = tokenize(given);
@@ -213,6 +224,18 @@ function stage1a(givenExprs: string[]): StageResult | null {
         confidenceLevel: 'high',
         rationale:
           'given path selects path/channel object keys directly — any satisfying edit renames a public path or channel',
+        source: 'heuristic',
+      };
+    }
+  }
+  if (fieldNames.includes('@key')) {
+    const givenTokens = givenExprs.flatMap(tokenize);
+    if (givenTokens.includes('paths') || givenTokens.includes('channels')) {
+      return {
+        riskLevel: 'high',
+        confidenceLevel: 'high',
+        rationale:
+          'then.field "@key" on paths/channels collection — equivalent to a path/channel key-selector; any satisfying edit renames a public path or channel',
         source: 'heuristic',
       };
     }
@@ -285,8 +308,9 @@ const STAGE2_FALLBACK: StageResult = {
 
 function classifyRuleStages1And2(rule: SpectralRule, aliases: AliasMap): StageResult {
   const givenExprs = resolvedGivenExprsOf(rule, aliases);
+  const fieldNames = fieldNamesOf(rule);
   const fieldTokens = fieldTokensOf(rule);
-  const a = stage1a(givenExprs);
+  const a = stage1a(givenExprs, fieldNames);
   if (a) return a;
   const functionNames = functionNamesOf(rule);
   const b = stage1b(givenExprs, functionNames, fieldTokens);

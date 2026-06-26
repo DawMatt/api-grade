@@ -72,6 +72,47 @@ describe('analyseRuleset() — Stage 1a key-selector check', () => {
     expect(rules[0].riskLevel).toBe('high');
     expect(rules[0].confidenceLevel).toBe('high');
   });
+
+  it('classifies then.field "@key" on $.channels as unsafe/high (AsyncAPI 2.x pattern)', async () => {
+    const ruleset = makeRuleset({
+      'asyncapi-channel-no-empty-parameter': {
+        given: '$.channels',
+        then: { field: '@key', function: 'pattern' },
+      },
+    });
+    const { rules } = await analyseRuleset(ruleset);
+    expect(rules[0].riskLevel).toBe('high');
+    expect(rules[0].confidenceLevel).toBe('high');
+    expect(rules[0].remediationSafetyLevel).toBe('unsafe');
+    expect(rules[0].source).toBe('heuristic');
+  });
+
+  it('classifies then.field "@key" on $.paths as unsafe/high', async () => {
+    const ruleset = makeRuleset({
+      'custom-path-key-rule': {
+        given: '$.paths',
+        then: { field: '@key', function: 'pattern' },
+      },
+    });
+    const { rules } = await analyseRuleset(ruleset);
+    expect(rules[0].riskLevel).toBe('high');
+    expect(rules[0].confidenceLevel).toBe('high');
+    expect(rules[0].remediationSafetyLevel).toBe('unsafe');
+  });
+
+  it('does NOT apply @key check when given does not target paths/channels', async () => {
+    const ruleset = makeRuleset({
+      'custom-schema-key-rule': {
+        given: '$.components.schemas',
+        then: { field: '@key', function: 'pattern' },
+      },
+    });
+    const { rules } = await analyseRuleset(ruleset);
+    // @key on $.components.schemas → not paths/channels → falls through to Stage 1b
+    // pattern fn, schemas has no tier match → medium risk, high confidence (single tier)
+    expect(rules[0].riskLevel).toBe('medium');
+    expect(rules[0].remediationSafetyLevel).toBe('humanreview');
+  });
 });
 
 describe('analyseRuleset() — Stage 1b function-mechanics classification', () => {

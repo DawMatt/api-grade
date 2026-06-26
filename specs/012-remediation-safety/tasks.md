@@ -152,6 +152,28 @@ sections for the corrected contract.
 
 ---
 
+---
+
+## Phase 8: Heuristic correctness — `then.field "@key"` on paths/channels (post-Phase 7)
+
+**Purpose**: Stage 2a of the heuristic only recognised the JSONPath `~` key-selector form (e.g.
+`$.channels[*]~`) as targeting path/channel keys. Spectral's built-in rulesets also express the
+same semantics via `then.field: "@key"` on `given: "$.channels"` or `given: "$.paths"` (the
+function-based equivalent). Without this check, those rules were falling into Stage 1b's
+`pattern`/`casing` default logic and receiving `medium/high` risk (humanreview) instead of the
+correct `high/high` (unsafe) — e.g. `asyncapi-channel-no-empty-parameter` and its siblings, and
+the OpenAPI `path-keys-no-trailing-slash` / `path-not-include-query` /
+`path-declarations-must-exist` rules.
+
+- [X] T048 Extend Stage 1a in `packages/api-grade-core/src/remediation-safety.ts`: add `fieldNamesOf()` helper (raw `then.field` strings, not tokenized), pass field names to `stage1a()`, and check for `then.field: "@key"` on a `given` that tokenizes to include `"paths"` or `"channels"` — returning `high/high/unsafe` with the key-selector-equivalent rationale; update `classifyRuleStages1And2()` to pass `fieldNames` — depends on T006
+- [X] T049 [P] Add three unit tests to `packages/api-grade-core/tests/unit/remediation-safety.test.ts` in the Stage 1a describe block: `$.channels` + `field: "@key"` → `high/high/unsafe`; `$.paths` + `field: "@key"` → `high/high/unsafe`; `$.components.schemas` + `field: "@key"` → still `medium` (control, no paths/channels) — depends on T048
+- [X] T050 [P] Update `specs/algorithms/automated_remediation_safety_algorithm_spec.md` Stage 2a: document both the `~` and the `@key` checks, add rationale for why `@key` carries identical risk in AsyncAPI 2.x (channel key IS the routing address) and OpenAPI (path key IS the route); update the Example table to include `asyncapi-channel-no-empty-parameter` — depends on T048
+- [X] T051 Rebuild `packages/api-grade-core` (`npm run build`) and regenerate the bundled analysis (`node scripts/generate-bundled-analysis.mjs`): 6 AsyncAPI 2.x channel rules and 3 OpenAPI path-key rules are upgraded from `medium/high/humanreview` to `high/high/unsafe` in `src/rulesets/bundled-analysis/{asyncapi,openapi}.json` — depends on T048, T050
+
+**Checkpoint**: `vitest run` (all workspaces) passes; bundled analysis reflects corrected `@key` classifications for all 9 affected rules.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
