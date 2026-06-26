@@ -146,11 +146,19 @@ export interface RulesetAnalysis {
 export interface RemediationItem {
   ruleId: string;
   message: string;
-  severity: string;
+  severity: DiagnosticSeverity;
   path: string[];
   location: string;
+  range: Diagnostic['range'];
   currentValue: string | null;
   expectedImprovement: string;
+  riskLevel: RiskLevel | null;
+  confidenceLevel: ConfidenceLevel;
+  remediationSafetyLevel: RemediationSafetyLevel;
+  staleFingerprintWarning: StaleFingerprintWarning | null;
+}
+
+export interface DiagnosticWithSafety extends Diagnostic {
   riskLevel: RiskLevel | null;
   confidenceLevel: ConfidenceLevel;
   remediationSafetyLevel: RemediationSafetyLevel;
@@ -164,7 +172,7 @@ export interface CommonGradeOutput {
   gradeLabel: GradeLabel;
   numericScore: number;
   summary: DiagnosticSummary;
-  diagnostics: Diagnostic[];
+  diagnostics: Diagnostic[] | DiagnosticWithSafety[];
   truncated?: boolean;
   rulesetSource: 'default' | 'custom';
   rulesetPath?: string;

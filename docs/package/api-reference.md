@@ -67,38 +67,47 @@ console.log(result.numericScore); // 74
 
 ---
 
-## `formatJson(result: GradeResult): string`
+## `formatJson(result: GradeResult, top?: number, rulesetAnalysis?: RulesetAnalysis): string`
 
-Serialises a `GradeResult` to a JSON string suitable for machine-readable output. The output shape matches the `--format json` CLI output.
+Serialises a `GradeResult` to a **pretty-printed** (two-space indented) JSON string suitable
+for both machine-readable and human-readable output — every JSON document this package emits
+is pretty-printed, never minified. The output shape matches the `--format json` CLI output.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `result` | `GradeResult` | Yes | The result returned by `grade()` or `gradeContent()` |
+| `top` | `number` | No | Truncate `diagnostics` to the first N entries (sets `truncated: true` if entries were dropped) |
+| `rulesetAnalysis` | `RulesetAnalysis` | No | When supplied (see `analyseRuleset()` below), each diagnostic is decorated in place with `riskLevel`, `confidenceLevel`, `remediationSafetyLevel`, and `staleFingerprintWarning` — the same remediation-safety signals `buildRemediationSafetyOutput()` filters on, but applied to every diagnostic, not just one level |
 
-**Returns:** `string` — a formatted JSON string
+**Returns:** `string` — a pretty-printed JSON string
 
 **Example:**
 
 ```typescript
-import { GradeEngine, formatJson } from '@dawmatt/api-grade-core';
+import { GradeEngine, formatJson, analyseRuleset, loadRuleset } from '@dawmatt/api-grade-core';
 const engine = new GradeEngine();
 const result = await engine.grade({ specPath: './openapi.yaml' });
-console.log(formatJson(result));
+const rulesetAnalysis = await analyseRuleset(await loadRuleset(result.format, result.rulesetPath));
+console.log(formatJson(result, undefined, rulesetAnalysis)); // diagnostics include safety info
 ```
 
 ---
 
-## `formatHuman(result: GradeResult): string`
+## `formatHuman(result: GradeResult, top?: number, rulesetAnalysis?: RulesetAnalysis): string`
 
-Serialises a `GradeResult` to a human-readable text string. The output matches the default CLI output.
+Serialises a `GradeResult` to a human-readable text string. The output matches the default CLI
+output. When `rulesetAnalysis` is supplied, a `safety=... risk=... confidence=...` line is
+printed under each diagnostic, same as `formatJson`'s decoration.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `result` | `GradeResult` | Yes | The result returned by `grade()` or `gradeContent()` |
+| `top` | `number` | No | Show only the first N diagnostics |
+| `rulesetAnalysis` | `RulesetAnalysis` | No | When supplied, annotates each printed diagnostic with its remediation-safety signals |
 
 **Returns:** `string` — a formatted human-readable report
 
@@ -112,7 +121,7 @@ Serialises a `GradeResult` to a human-readable text string. The output matches t
 > these exact field names — see [CLI Commands](../cli/commands.md#json-output-schema)
 > and [MCP Server Tool Reference](api-grade-mcp.md) for where each shape is used.
 
-### `buildCommonGradeOutput(result: GradeResult, options?: { top?: number }): CommonGradeOutput`
+### `buildCommonGradeOutput(result: GradeResult, options?: { top?: number; rulesetAnalysis?: RulesetAnalysis }): CommonGradeOutput`
 
 Shapes a `GradeResult` for "grade a spec, give me everything" output. Used by the
 CLI's `--format json`, MCP's `grade-api`, and MCP's `grade-api-detailed`.
@@ -125,12 +134,26 @@ interface CommonGradeOutput {
   gradeLabel: GradeLabel;
   numericScore: number;
   summary: DiagnosticSummary;
-  diagnostics: Diagnostic[];
+  diagnostics: Diagnostic[] | DiagnosticWithSafety[];
   truncated?: boolean;            // present only when `options.top` actually dropped entries
   rulesetSource: 'default' | 'custom';
   rulesetPath?: string;           // present only when a custom ruleset was used
 }
+
+interface DiagnosticWithSafety extends Diagnostic {
+  riskLevel: RiskLevel | null;
+  confidenceLevel: ConfidenceLevel;
+  remediationSafetyLevel: RemediationSafetyLevel;
+  staleFingerprintWarning: StaleFingerprintWarning | null;
+}
 ```
+
+`diagnostics` is `DiagnosticWithSafety[]` whenever `options.rulesetAnalysis` is supplied —
+each entry is the original `Diagnostic` plus the four remediation-safety fields, looked up via
+`getRemediationSafety()` (below) — and plain `Diagnostic[]` otherwise. Callers that always
+want safety info on regular grade output (not just the `--remediation-safety`-filtered view)
+should always pass `rulesetAnalysis`; the CLI's `--format json`/`--format human` paths do this
+unconditionally.
 
 Tool-specific data (e.g. MCP's `largeSpecWarning`, `recoveryOptions`) is layered
 additively on top of this shape by the consuming package — it is never renamed or
@@ -205,9 +228,10 @@ interface RemediationSafetyOutput {
 interface RemediationItem {
   ruleId: string;
   message: string;
-  severity: string;
+  severity: DiagnosticSeverity;  // "error" | "warn" | "info" | "hint" — the diagnostic's actual severity
   path: string[];
   location: string;              // dot-joined `path`
+  range: Diagnostic['range'];    // line/character location, carried over from the source diagnostic
   currentValue: string | null;
   expectedImprovement: string;
   riskLevel: RiskLevel | null;
@@ -217,11 +241,20 @@ interface RemediationItem {
 }
 ```
 
+`severity` and `range` are carried over unchanged from the underlying `Diagnostic` — a
+`RemediationItem` is never missing the line-number/severity context a regular diagnostic has,
+even though it's filtered down to one remediation-safety level and reshaped with
+remediation-specific fields (`location`, `currentValue`, `expectedImprovement`).
+
+The JSON returned by `buildRemediationSafetyOutput()` is pretty-printed by every caller
+(`JSON.stringify(output, null, 2)`), matching `formatJson()`'s output style — it is not
+minified.
+
 ### `formatRemediationSafetyHuman(result: GradeResult, specContent: string, rulesetAnalysis: RulesetAnalysis, requestedLevel: RemediationSafetyLevel): string`
 
 Renders the same filtered `RemediationItem[]` list used by `buildRemediationSafetyOutput()`
-as human-readable text. Used by the CLI's `--remediation-safety <level>` with
-`--format human` (the default).
+as human-readable text, including each item's line number (`Line N`) when `range` is present.
+Used by the CLI's `--remediation-safety <level>` with `--format human` (the default).
 
 ### `persistRuleAnalysisCorrection(loadedRuleset, ruleId, remediationSafetyLevel, scope?)`
 
@@ -323,6 +356,11 @@ interface Diagnostic {
   };
 }
 ```
+
+See `DiagnosticWithSafety` (under `buildCommonGradeOutput` above) for the shape a `Diagnostic`
+takes on once decorated with remediation-safety fields, and `RemediationItem` (under
+`buildRemediationSafetyOutput` above) for the shape it takes on once filtered to one
+remediation-safety level — both preserve `severity` and `range` unchanged from this base type.
 
 ---
 

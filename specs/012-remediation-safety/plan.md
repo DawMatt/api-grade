@@ -66,20 +66,26 @@ specs/algorithms/
 
 ```text
 packages/api-grade-core/src/
-├── remediation-safety.ts                      # NEW — replaces quick-fixes.ts: analyseRuleset(), getRemediationSafety(), buildRemediationItem(), buildRemediationSafetyOutput(), formatRemediationSafetyHuman()
+├── remediation-safety.ts                      # NEW — replaces quick-fixes.ts: analyseRuleset(), getRemediationSafety(), buildRemediationItem(), buildRemediationSafetyOutput(), formatRemediationSafetyHuman(); buildRemediationItem() carries severity/range over from Diagnostic unchanged (FR-022)
 ├── rulesets/loader.ts                          # unchanged — analyser consumes its LoadedRuleset.ruleset.rules
-├── types.ts                                    # add RemediationSafetyLevel, ConfidenceLevel, RuleAnalysis, RulesetAnalysis, RemediationItem, RemediationSafetyOutput; remove ViolationClass, QuickFix, QuickFixOutput
+├── types.ts                                    # add RemediationSafetyLevel, ConfidenceLevel, RuleAnalysis, RulesetAnalysis, RemediationItem (incl. range), RemediationSafetyOutput, DiagnosticWithSafety; remove ViolationClass, QuickFix, QuickFixOutput
+├── json-output.ts                               # buildCommonGradeOutput() accepts options.rulesetAnalysis; decorates diagnostics via getRemediationSafety() when supplied (FR-024)
+├── formatter.ts                                 # formatJson()/formatHuman() accept an optional rulesetAnalysis param, threaded into buildCommonGradeOutput()/per-diagnostic safety annotation; JSON output remains pretty-printed (FR-023)
 └── index.ts                                    # export new remediation-safety.ts symbols/types in place of quick-fixes.ts ones
 
 packages/api-grade-core/tests/unit/
-└── remediation-safety.test.ts                  # replaces quick-fixes.test.ts; adds analyseRuleset()/getRemediationSafety() coverage for all 3 levels + confidence + SC-005 total-coverage check
+├── remediation-safety.test.ts                  # replaces quick-fixes.test.ts; adds analyseRuleset()/getRemediationSafety() coverage for all 3 levels + confidence + SC-005 total-coverage check
+├── json-output.test.ts                          # buildCommonGradeOutput() with/without rulesetAnalysis
+└── formatter.test.ts                            # formatJson()/formatHuman() with/without rulesetAnalysis
 
 src/cli/
-├── index.ts                                     # extend --remediation-safety to accept safe|humanreview|unsafe; call renamed core functions
-└── ruleset-analysis-cli.ts                      # NEW — `ruleset-analysis` subcommand (mirrors ruleset-config-cli.ts pattern)
+├── index.ts                                     # extend --remediation-safety to accept safe|humanreview|unsafe; call renamed core functions; always compute rulesetAnalysis and pass to formatJson()/formatHuman() on the regular (non-filtered) path too (FR-024); all printed JSON pretty-printed (FR-023)
+├── ruleset-analysis-cli.ts                      # NEW — `ruleset-analysis` subcommand (mirrors ruleset-config-cli.ts pattern); JSON output pretty-printed
+└── ruleset-config-cli.ts                        # JSON output pretty-printed for consistency (FR-023)
 
 tests/integration/
-└── cli-remediation-safety.test.ts               # replaces cli-quick-fixes.test.ts; covers all 3 levels + ruleset-analysis subcommand
+├── cli-remediation-safety.test.ts               # replaces cli-quick-fixes.test.ts; covers all 3 levels + ruleset-analysis subcommand
+└── cli-json-output.test.ts                      # updated to parse multiple back-to-back pretty-printed JSON documents from stdout (brace-depth split) instead of one compact JSON object per line
 
 packages/api-grade-mcp/src/
 ├── server.ts                                    # register renamed tool + new analyse-ruleset-safety tool

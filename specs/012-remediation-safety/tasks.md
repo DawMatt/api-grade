@@ -127,6 +127,31 @@ No new project scaffolding is required — this feature extends the existing `pa
 
 ---
 
+## Phase 7: Output-shape regression fix (post-T040)
+
+**Purpose**: T009's initial `--remediation-safety` implementation regressed the output shape
+relative to the regular `--format json`/`--format human` diagnostics: every `RemediationItem`
+reported `severity: "warn"` regardless of actual severity (a stale numeric-severity assumption
+left over from before `Diagnostic.severity` became a string enum), `range` was dropped
+entirely, and the safety JSON/`ruleset-analysis` JSON output regressed to compact (non-pretty)
+formatting, unlike the main `formatJson()` output. Separately, regular (unfiltered) grading
+output never surfaced the per-violation safety signals this feature computes, so a user had to
+make a second, `--remediation-safety`-filtered request just to see how risky a finding was to
+fix. See `data-model.md` "Output formatting contract (all surfaces)" and "DiagnosticWithSafety"
+sections for the corrected contract.
+
+- [X] T041 Fix `buildRemediationItem()` in `packages/api-grade-core/src/remediation-safety.ts`: assign `severity: diagnostic.severity` directly (remove the `SEVERITY_LABELS`/numeric-severity lookup) and add `range: diagnostic.range` to the returned `RemediationItem` — depends on T005
+- [X] T042 Add `range: Diagnostic['range']` to the `RemediationItem` type (`packages/api-grade-core/src/types.ts`) and render it (`Line N`) in `formatRemediationSafetyHuman()` — depends on T041
+- [X] T043 Pretty-print every CLI-printed JSON document with `JSON.stringify(value, null, 2)`: `buildRemediationSafetyOutput()`/`ruleset-analysis`/`ruleset-analysis correct` output in `src/cli/index.ts` and `src/cli/ruleset-analysis-cli.ts` (and, for consistency across all CLI JSON output, `src/cli/ruleset-config-cli.ts`'s `config`/`set-ruleset`/`get-ruleset` JSON payloads) — MCP tool JSON responses are explicitly exempt (kept compact for AI-agent token efficiency) — depends on T041
+- [X] T044 Add `DiagnosticWithSafety` to `packages/api-grade-core/src/types.ts` (extends `Diagnostic` with `riskLevel`/`confidenceLevel`/`remediationSafetyLevel`/`staleFingerprintWarning`); extend `buildCommonGradeOutput()` (`json-output.ts`), `formatJson()`, and `formatHuman()` (`formatter.ts`) to accept an optional `rulesetAnalysis` and, when supplied, decorate each diagnostic via `getRemediationSafety()` — depends on T004
+- [X] T045 Wire `src/cli/index.ts`'s default (non-`--remediation-safety`) `--format json`/`--format human` path to always compute `rulesetAnalysis` (via the same `loadRuleset()`/`analyseRuleset()` call already made for `--remediation-safety`) and pass it to `formatJson()`/`formatHuman()`, so regular grading output always includes per-violation safety info — depends on T044
+- [X] T046 Update `tests/integration/cli-json-output.test.ts`'s `--min-grade --format json` test to parse multiple back-to-back pretty-printed JSON documents from stdout (brace-depth splitting) instead of assuming one compact JSON object per line — depends on T043
+- [X] T047 [P] Update docs to match: `docs/cli/commands.md` (pretty-print note, `range`/safety fields in both JSON Output Schema and Remediation Safety examples), `docs/package/api-reference.md` (`formatJson`/`formatHuman`/`buildCommonGradeOutput` signatures, `DiagnosticWithSafety`, `RemediationItem.range`/`severity` correction), `docs/package/api-grade-mcp.md` (`grade-api-remediation-safety` description mentions `severity`/`range`), `data-model.md` (this file) — depends on T041-T045
+
+**Checkpoint**: `vitest run` (all workspaces) and `tsc --noEmit` pass; a manual CLI run confirms `severity` reflects true diagnostic severity, `range`/line numbers appear in `--remediation-safety` output, all CLI JSON is pretty-printed, and regular (non-filtered) `--format json`/`--format human` output includes per-diagnostic `riskLevel`/`confidenceLevel`/`remediationSafetyLevel`/`staleFingerprintWarning`.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

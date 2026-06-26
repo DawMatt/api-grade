@@ -115,15 +115,50 @@ A store entry is used "until one matches a current `RuleFingerprint`" only for `
 |---|---|---|
 | `ruleId` | string | Unchanged from today's `QuickFix.ruleId`. |
 | `message` | string | Unchanged. |
-| `severity` | string | Unchanged. |
+| `severity` | `DiagnosticSeverity` (`"error"` \| `"warn"` \| `"info"` \| `"hint"`) | The violation's actual severity, carried over unchanged from `Diagnostic.severity`. **Regression note**: an earlier implementation derived this from a numeric-severity assumption (`typeof diagnostic.severity === 'number'`) that no longer held once `Diagnostic.severity` became a string enum, so every item silently reported `"warn"` regardless of true severity. `buildRemediationItem()` MUST assign `severity: diagnostic.severity` directly — never re-derive it via a numeric lookup table. |
 | `path` | string[] | Unchanged. |
 | `location` | string | Unchanged. |
+| `range` | `Diagnostic['range']` | **Restored** — carried over unchanged from `Diagnostic.range` (line/character start/end). Without it, a `RemediationItem` cannot be located in the source file by line number, which defeats the "actionable" requirement (FR-008/Principle VI) once a violation has been filtered out of the regular diagnostics list. `formatRemediationSafetyHuman()` MUST render it (`Line N`) the same way `formatHuman()` does for plain diagnostics. |
 | `currentValue` | string \| null | Unchanged. |
 | `expectedImprovement` | string | Unchanged. |
 | `riskLevel` | `RiskLevel` \| `null` | **New** — the violation's rule-level estimated risk (`low`/`medium`/`high`), looked up from the rule's `RuleAnalysis`. `null` when the lookup hit a Stage 0 entry that has no `riskLevel` of its own (see `RuleAnalysis`). |
 | `confidenceLevel` | `ConfidenceLevel` | **New** — confidence behind `riskLevel`, from the same lookup. |
 | `remediationSafetyLevel` | `RemediationSafetyLevel` | **New** — a field in its own right, distinct from `riskLevel` both in name and in type/values (`safe`/`humanreview`/`unsafe`, not `low`/`medium`/`high`). The violation's computed remediation safety, looked up from the rule's `RuleAnalysis.remediationSafetyLevel`. This is the field `--remediation-safety`/`level` filtering matches against. |
 | `staleFingerprintWarning` | `{ storedFingerprint: string; currentFingerprint: string; message: string }` \| `null` | **New** — carried over verbatim from the rule's `RuleAnalysis.staleFingerprintWarning`, so a CI pipeline or human reading per-violation output sees the same "this rule changed since a human reviewed it" warning without needing to separately inspect the ruleset analysis. |
+
+## DiagnosticWithSafety (regular grade output, additive)
+
+| Field | Type | Description |
+|---|---|---|
+| *(all `Diagnostic` fields)* | — | Unchanged — `ruleId`, `message`, `severity`, `path`, `range`, `source`. |
+| `riskLevel` | `RiskLevel` \| `null` | Looked up via `getRemediationSafety(diagnostic, rulesetAnalysis)`, same as `RemediationItem.riskLevel`. |
+| `confidenceLevel` | `ConfidenceLevel` | Same lookup. |
+| `remediationSafetyLevel` | `RemediationSafetyLevel` | Same lookup. |
+| `staleFingerprintWarning` | same shape as `RemediationItem.staleFingerprintWarning` | Same lookup. |
+
+`CommonGradeOutput.diagnostics` is `DiagnosticWithSafety[]` whenever the caller supplies a
+`RulesetAnalysis` to `buildCommonGradeOutput(result, { top, rulesetAnalysis })` (equivalently,
+to `formatJson`/`formatHuman`'s `rulesetAnalysis` parameter), and plain `Diagnostic[]`
+otherwise. This is **independent of `--remediation-safety`/`level` filtering** — it is the
+mechanism by which a *regular* (unfiltered) grading request also surfaces per-violation
+remediation-safety information, so a user does not have to make a second, filtered request
+just to learn how risky each finding is to fix. The CLI's default (non-`--remediation-safety`)
+`--format json` and `--format human` paths MUST always supply `rulesetAnalysis`, computed via
+the same `loadRuleset()`/`analyseRuleset()` call already made for `--remediation-safety`, so
+this is not an opt-in flag — it is the default shape of regular grading output going forward.
+
+## Output formatting contract (all surfaces)
+
+Every JSON document any tool in this project prints to an end user — CLI (`--format json`,
+`ruleset-analysis [correct]`, `config`/`set-ruleset`/`get-ruleset` error and success payloads)
+and any future surface reusing these core functions — MUST be pretty-printed
+(`JSON.stringify(value, null, 2)`), never minified. This was already true of the main
+`formatJson()` grade output; `buildRemediationSafetyOutput()`'s JSON and the
+`ruleset-analysis`/`ruleset-analysis correct` JSON output regressed to compact, single-line
+JSON when first implemented, which is the specific regression this note exists to prevent.
+MCP tool responses (`grade-api`, `grade-api-detailed`, `grade-api-remediation-safety`,
+`analyse-ruleset-safety`, etc.) are explicitly exempt — their JSON stays compact/minified by
+design, for token efficiency in an AI-agent context, not for end-user reading.
 
 ## RemediationSafetyOutput (was `QuickFixOutput`)
 

@@ -319,9 +319,10 @@ api-grade openapi.yaml --ruleset my-rules.yaml
 > `diagnosticCounts` wrapper. See [CHANGELOG.md](../../CHANGELOG.md) for the
 > old → new field mapping.
 
-When using `--format json`, the output is a JSON object with the same flat field
-names used by the MCP server's `grade-api` / `grade-api-detailed` tools — one
-parser works for both:
+When using `--format json`, the output is **pretty-printed** (two-space indented, like every
+other end-user-visible JSON document this CLI prints — no compact/minified output) and is a
+JSON object with the same flat field names used by the MCP server's `grade-api` /
+`grade-api-detailed` tools — one parser works for both:
 
 ```json
 {
@@ -351,12 +352,28 @@ parser works for both:
       "message": "\"version\" property must be string.",
       "severity": "error",
       "path": ["info", "version"],
-      "range": { "start": { "line": 3, "character": 0 }, "end": { "line": 3, "character": 5 } }
+      "range": { "start": { "line": 3, "character": 0 }, "end": { "line": 3, "character": 5 } },
+      "source": "openapi.yaml",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "staleFingerprintWarning": null
     }
   ],
   "rulesetSource": "default"
 }
 ```
+
+Every diagnostic always carries `riskLevel`, `confidenceLevel`, `remediationSafetyLevel`, and
+`staleFingerprintWarning` — the same per-violation remediation-safety signals described below
+under [Remediation Safety](#remediation-safety---remediation-safety-level) — computed from the
+ruleset analyser against the spec's effective ruleset. This is **not** gated behind
+`--remediation-safety`; it is present on every `--format json` (and, as a one-line
+`safety=... risk=... confidence=...` annotation under each finding, every `--format human`)
+grading run, so a regular user can see at a glance how risky each fix is without requesting a
+separate filtered view. `--remediation-safety <level>` (below) additionally *filters* the
+diagnostics down to one level and reshapes them into `remediationItems`; absent that flag, the
+full, unfiltered diagnostic list is annotated in place instead.
 
 `truncated: true` is added only when `--top` actually drops entries from `diagnostics`.
 `rulesetPath` is added only when a custom ruleset was used.
@@ -385,6 +402,8 @@ humanreview, unsafe.` and a non-zero exit code.
 api-grade openapi.yaml --remediation-safety humanreview --format json
 ```
 
+This output is pretty-printed the same as the regular `--format json` output above:
+
 ```json
 {
   "specPath": "openapi.yaml",
@@ -399,6 +418,7 @@ api-grade openapi.yaml --remediation-safety humanreview --format json
       "severity": "warn",
       "path": ["paths", "/pets", "get"],
       "location": "paths./pets.get",
+      "range": { "start": { "line": 11, "character": 2 }, "end": { "line": 11, "character": 5 } },
       "currentValue": null,
       "expectedImprovement": "Fix: Operation must have \"operationId\". Add or update `operationId` as required",
       "riskLevel": "medium",
@@ -414,7 +434,10 @@ Each item carries `riskLevel` (`low`/`medium`/`high`) and `confidenceLevel`
 (`high`/`medium`/`low`) alongside `remediationSafetyLevel` — the field
 `--remediation-safety`/`requestedLevel` filters against — and a `staleFingerprintWarning`
 that is non-null only when a human-assessed rule classification's underlying rule
-definition has since changed (see `ruleset-analysis` below).
+definition has since changed (see `ruleset-analysis` below). `severity` is the diagnostic's
+actual severity (`error`/`warn`/`info`/`hint`, not a fixed placeholder), and `range` carries
+the same line/character location as the regular diagnostics output — both are required to
+act on a remediation item without losing the line-number context a linter normally provides.
 
 **Human-readable** (default, or with `--format human`):
 

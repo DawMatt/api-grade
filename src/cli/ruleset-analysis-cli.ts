@@ -17,7 +17,7 @@ export interface RulesetAnalysisCorrectOptions {
 
 function fail(message: string, format: string | undefined): never {
   if (format === 'json') {
-    console.log(JSON.stringify({ error: 'RULESET_ANALYSIS_FAILED', message }));
+    console.log(JSON.stringify({ error: 'RULESET_ANALYSIS_FAILED', message }, null, 2));
   } else {
     console.error(chalk.red(`Error: ${message}`));
   }
@@ -51,7 +51,7 @@ export async function runRulesetAnalysis(opts: RulesetAnalysisOptions): Promise<
     const analysis = await analyseRuleset(loadedRuleset);
 
     if (format === 'json') {
-      console.log(JSON.stringify(analysis));
+      console.log(JSON.stringify(analysis, null, 2));
     } else {
       console.log(formatHuman(analysis));
     }
@@ -84,7 +84,7 @@ export async function runRulesetAnalysisCorrect(opts: RulesetAnalysisCorrectOpti
     );
 
     if (format === 'json') {
-      console.log(JSON.stringify({ ruleId: opts.ruleId, level: opts.level, ...result }));
+      console.log(JSON.stringify({ ruleId: opts.ruleId, level: opts.level, ...result }, null, 2));
     } else {
       console.log(`Persisted '${opts.ruleId}' as ${opts.level} (${result.written}).`);
       if (result.sharedFileContent) {

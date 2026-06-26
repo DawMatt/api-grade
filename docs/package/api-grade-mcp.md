@@ -121,7 +121,7 @@ Assert that an API specification meets a minimum grade threshold (A > B > C > D 
 
 ### `grade-api-remediation-safety`
 
-Return a classified, AI-actionable list of diagnostics filtered by remediation safety level: `safe` (non-breaking, safe to auto-apply), `humanreview` (typically additive/clarifying but should be confirmed by a human before applying at scale), or `unsafe` (could change request/response validation, required fields, types, or the parameter surface — requires human or explicitly-confirmed-agent review). Each result includes `ruleId`, `path`, `location`, `currentValue`, `expectedImprovement`, and a confidence indicator (`riskLevel`, `confidenceLevel`, `remediationSafetyLevel`, `staleFingerprintWarning`).
+Return a classified, AI-actionable list of diagnostics filtered by remediation safety level: `safe` (non-breaking, safe to auto-apply), `humanreview` (typically additive/clarifying but should be confirmed by a human before applying at scale), or `unsafe` (could change request/response validation, required fields, types, or the parameter surface — requires human or explicitly-confirmed-agent review). Each result includes `ruleId`, `severity`, `path`, `location`, `range`, `currentValue`, `expectedImprovement`, and a confidence indicator (`riskLevel`, `confidenceLevel`, `remediationSafetyLevel`, `staleFingerprintWarning`) — `severity` and `range` are carried over unchanged from the underlying diagnostic, so no line-number/severity context is lost relative to `grade-api-detailed`.
 
 **Input**: `specPath` (required), `level` (required: `safe`/`humanreview`/`unsafe`), `rulesetPath` (optional), `recoveryOption` (optional)
 

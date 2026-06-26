@@ -144,7 +144,7 @@ program
     if (authTypeOption !== undefined && !isValidAuthType(authTypeOption)) {
       const message = `Invalid --auth-type value '${authTypeOption}'. Must be one of: none, github-pat.`;
       if (outputFormat === 'json') {
-        console.log(JSON.stringify({ error: 'RULESET_BAD_CONFIG', message }));
+        console.log(JSON.stringify({ error: 'RULESET_BAD_CONFIG', message }, null, 2));
       } else {
         console.error(chalk.red(`Error: ${message}`));
       }
@@ -168,7 +168,7 @@ program
     const fetchOutcome = await resolveRemoteRuleset(authResult);
     if (fetchOutcome.failure) {
       if (outputFormat === 'json') {
-        console.log(JSON.stringify(fetchOutcome.failure));
+        console.log(JSON.stringify(fetchOutcome.failure, null, 2));
       } else {
         console.error(chalk.red(`Error: ${fetchOutcome.failure.message}`));
       }
@@ -184,25 +184,26 @@ program
         rulesetPath,
       });
 
+      const loadedRuleset = await loadRuleset(result.format, rulesetPath);
+      const rulesetAnalysis = await analyseRuleset(loadedRuleset);
+
       if (cliOpts.remediationSafety !== undefined) {
         const requestedLevel = cliOpts.remediationSafety as RemediationSafetyLevel;
         const specContent = readFileSync(specFile, 'utf-8');
-        const loadedRuleset = await loadRuleset(result.format, rulesetPath);
-        const rulesetAnalysis = await analyseRuleset(loadedRuleset);
         const output = outputFormat === 'json'
-          ? JSON.stringify(buildRemediationSafetyOutput(result, specContent, rulesetAnalysis, requestedLevel))
+          ? JSON.stringify(buildRemediationSafetyOutput(result, specContent, rulesetAnalysis, requestedLevel), null, 2)
           : formatRemediationSafetyHuman(result, specContent, rulesetAnalysis, requestedLevel);
         console.log(output);
       } else {
         const output = outputFormat === 'json'
-          ? formatJson(result, topN)
-          : formatHuman(result, topN);
+          ? formatJson(result, topN, rulesetAnalysis)
+          : formatHuman(result, topN, rulesetAnalysis);
         console.log(output);
       }
 
       if (minGrade !== undefined) {
         if (outputFormat === 'json') {
-          console.log(JSON.stringify(buildAssertOutput(result, minGrade)));
+          console.log(JSON.stringify(buildAssertOutput(result, minGrade), null, 2));
         }
 
         const resultIdx = gradeToNumber(result.letterGrade);

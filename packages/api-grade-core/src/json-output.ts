@@ -1,13 +1,19 @@
-import type { GradeResult, CommonGradeOutput, AssertOutput, LetterGrade } from './types.js';
+import type { GradeResult, CommonGradeOutput, AssertOutput, LetterGrade, RulesetAnalysis } from './types.js';
 import { gradeToNumber } from './scorer.js';
+import { getRemediationSafety } from './remediation-safety.js';
 
 export function buildCommonGradeOutput(
   result: GradeResult,
-  options?: { top?: number }
+  options?: { top?: number; rulesetAnalysis?: RulesetAnalysis }
 ): CommonGradeOutput {
   const top = options?.top;
-  const diagnostics = top !== undefined ? result.diagnostics.slice(0, top) : result.diagnostics;
-  const truncated = top !== undefined && diagnostics.length < result.diagnostics.length;
+  const sourceDiagnostics = top !== undefined ? result.diagnostics.slice(0, top) : result.diagnostics;
+  const truncated = top !== undefined && sourceDiagnostics.length < result.diagnostics.length;
+
+  const rulesetAnalysis = options?.rulesetAnalysis;
+  const diagnostics = rulesetAnalysis
+    ? sourceDiagnostics.map((d) => ({ ...d, ...getRemediationSafety(d, rulesetAnalysis) }))
+    : sourceDiagnostics;
 
   const output: CommonGradeOutput = {
     specPath: result.specPath,

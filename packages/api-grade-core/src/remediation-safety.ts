@@ -504,13 +504,6 @@ export function getRemediationSafety(
   return { riskLevel: 'high', confidenceLevel: 'low', remediationSafetyLevel: 'unsafe', staleFingerprintWarning: null };
 }
 
-const SEVERITY_LABELS: Record<number, string> = {
-  0: 'error',
-  1: 'warn',
-  2: 'info',
-  3: 'hint',
-};
-
 function deriveExpectedImprovement(
   ruleId: string,
   message: string,
@@ -570,16 +563,15 @@ export function buildRemediationItem(
   const lastSegment = path[path.length - 1] ?? 'field';
   const expectedImprovement = deriveExpectedImprovement(diagnostic.ruleId, diagnostic.message, lastSegment, path);
 
-  const severityNum = typeof diagnostic.severity === 'number' ? diagnostic.severity : 1;
-
   const safety = getRemediationSafety(diagnostic, rulesetAnalysis);
 
   return {
     ruleId: diagnostic.ruleId,
     message: diagnostic.message,
-    severity: SEVERITY_LABELS[severityNum] ?? 'warn',
+    severity: diagnostic.severity,
     path,
     location,
+    range: diagnostic.range,
     currentValue,
     expectedImprovement,
     riskLevel: safety.riskLevel,
@@ -628,7 +620,8 @@ export function formatRemediationSafetyHuman(
   for (const item of remediationItems) {
     lines.push('');
     const location = item.location || '(root)';
-    lines.push(`  ${item.severity.padEnd(5)}  ${item.ruleId.padEnd(42)}  ${location}`);
+    const lineNum = item.range?.start?.line !== undefined ? `  Line ${item.range.start.line + 1}` : '';
+    lines.push(`  ${item.severity.padEnd(5)}  ${item.ruleId.padEnd(42)}  ${location}${lineNum}`);
     lines.push(`             risk=${item.riskLevel ?? 'n/a'} confidence=${item.confidenceLevel} safety=${item.remediationSafetyLevel}`);
     lines.push(`             ${item.message}`);
     lines.push(`             ${item.expectedImprovement}`);
