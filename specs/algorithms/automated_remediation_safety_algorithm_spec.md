@@ -144,6 +144,23 @@ IF IS_KEY_FIELD(rule) AND (rule.given tokens include "paths" or "channels"):
 
 **Rationale for `@key` check:** Spectral's built-in rulesets often use `given: "$.paths"` or `given: "$.channels"` with `then.field: "@key"` rather than `given: "$.paths[*]~"` — these are semantically identical (both select the collection key), but the `~` check above would miss them. In AsyncAPI 2.x the channel key *is* the routing address; in OpenAPI the path key *is* the route. Both target the same renaming risk. `paths` and `channels` are deliberately *not* included as bare segments in 2b, since most rules with those tokens in their `given` reach into the collection's content (e.g. `operation-description` → `$.paths[*][*].description`) and must not be over-classified as unsafe.
 
+### Stage 2a(ii): `pattern` Function-Mode Distinction
+
+Before applying the rename/reformat classification to a `pattern` function, the implementation checks `then.functionOptions` to distinguish two semantically different uses of `pattern`:
+
+```
+IS_EXISTENCE_CHECK(rule) =
+  rule.then.function == "pattern"
+  AND "notMatch" in rule.then.functionOptions
+  AND "match" NOT in rule.then.functionOptions
+```
+
+- **`notMatch`-only** (`IS_EXISTENCE_CHECK` = true): the rule asserts that the field does NOT contain a bad value (empty object `{}`, trailing slash, `example.com`, `<script>`, etc.). The satisfying fix adds or corrects content, not reformats it — semantically equivalent to `falsy`/`truthy`. Risk escalates by target tier exactly as an additive function does, **except when no recognizable tier is matched** (empty tiers), where the classification conservatively stays at `medium` rather than dropping to `low`, since the target is unknown.
+- **`match` present** (with or without `notMatch`): format/naming-convention enforcement. Treated as rename/reformat (the original classification). When both options are present the intent is ambiguous so this path is also taken.
+- **No `functionOptions`**: same as `match` — rename/reformat default.
+
+**Rationale:** `casing` and format-`pattern` rules enforce a specific naming shape that requires renaming the value to fix; `notMatch` rules assert the field is not empty or doesn't contain a forbidden substring, which is existence validation and carries the same additive risk profile as `truthy`/`falsy`. This distinction does not change risk levels for the built-in rulesets (because their `notMatch` pattern rules all target segments that dominate via tier lookup), but produces accurate rationale text and correctly classifies custom rules using `notMatch`-only `pattern` on safe or unknown targets.
+
 ### Stage 2b: Segment-Membership Heuristic
 
 ```

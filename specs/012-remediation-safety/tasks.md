@@ -174,6 +174,20 @@ the OpenAPI `path-keys-no-trailing-slash` / `path-not-include-query` /
 
 ---
 
+## Phase 9: Heuristic correctness — `pattern` `notMatch`-only is existence check, not rename (post-Phase 8)
+
+**Purpose**: Stage 1b classified all `pattern` uses as "rename/reformat", defaulting to `medium` risk. But `pattern` with `notMatch`-only in `functionOptions` is semantically an existence/validity check (closer to `falsy`/`truthy`) — the fix adds content, not reformats it. This produced accurate risk levels for the built-in rulesets (target tiers dominate) but incorrect rationale text ("rename/reformat" for emptiness checks like `notMatch: '{}'`). It also mis-classified custom `pattern`+`notMatch` rules on SAFE_SEGMENTS targets as `medium` (rename default) instead of `low` (additive).
+
+- [X] T052 Add `functionOptions` field to `SpectralThen` interface in `packages/api-grade-core/src/remediation-safety.ts`; add `isPatternExistenceCheck()` helper (true when any `then.function: "pattern"` has `notMatch` in `functionOptions` and no `match`) — depends on T048
+- [X] T053 Update `stage1b()` in `packages/api-grade-core/src/remediation-safety.ts`: add `patternIsExistenceCheck` parameter; for `pattern` when that flag is set, apply additive-style tier escalation with a conservative `medium` fallback on empty tiers (unknown target); update `classifyRuleStages1And2()` to compute and pass the flag — depends on T052
+- [X] T054 [P] Add five unit tests to `packages/api-grade-core/tests/unit/remediation-safety.test.ts` in the Stage 1b describe block: `pattern`+`match` → rename rationale; `pattern`+`notMatch` on unsafe segment → high/unsafe with existence-check rationale; `pattern`+`notMatch` on safe segment → low/safe; `pattern`+`notMatch` on unknown target → conservative medium; `pattern`+both `match`+`notMatch` → rename rationale — depends on T053
+- [X] T055 [P] Update `specs/algorithms/automated_remediation_safety_algorithm_spec.md` Stage 2: add Stage 2a(ii) documenting the `pattern` function-mode distinction (`notMatch`-only vs `match`/no-options) with rationale; no risk-level changes in built-in rulesets (tier lookup dominates), but rationale text and custom-rule handling are corrected — depends on T053
+- [X] T056 Rebuild `packages/api-grade-core` and regenerate bundled analysis: rationale text updated for all `notMatch`-only `pattern` rules (no risk-level changes); risk levels confirmed stable via test suite — depends on T053, T055
+
+**Checkpoint**: `vitest run` (all workspaces) passes (376 tests); bundled analysis shows "existence/validity check" rationale for `notMatch`-only `pattern` rules; risk levels unchanged.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

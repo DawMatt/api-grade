@@ -42,6 +42,7 @@ interface SpectralThen {
   // before bundling carry it as a plain string. Both forms must be handled.
   function?: string | { name?: string };
   field?: string;
+  functionOptions?: Record<string, unknown>;
 }
 
 interface SpectralRule {
@@ -183,6 +184,22 @@ function fieldNamesOf(rule: SpectralRule): string[] {
   return thens.map((t) => t?.field).filter((f): f is string => typeof f === 'string');
 }
 
+// `pattern` with `notMatch`-only (no `match`) is an existence/validity check — it asserts the
+// field does NOT contain a bad value (empty object, trailing slash, example.com, etc.) rather
+// than enforcing a specific format or naming convention. Semantically closer to `falsy`/`truthy`
+// than to `casing` or a format-match pattern. When `match` is also present the intent is
+// ambiguous so we fall through to the rename/reformat classification.
+function isPatternExistenceCheck(rule: SpectralRule): boolean {
+  const then = rule.then;
+  if (!then) return false;
+  const thens = Array.isArray(then) ? then : [then];
+  return thens.some((t) => {
+    if (functionNameOf(t?.function) !== 'pattern') return false;
+    const opts = t?.functionOptions;
+    return typeof opts === 'object' && opts !== null && 'notMatch' in opts && !('match' in opts);
+  });
+}
+
 function matchedTiers(givenExprs: string[], extraSegments: string[] = []): Set<Tier> {
   const tiers = new Set<Tier>();
   const scan = (segment: string): void => {
@@ -244,7 +261,12 @@ function stage1a(givenExprs: string[], fieldNames: string[] = []): StageResult |
 }
 
 // Stage 1b: classify by the rule's `then.function` mechanics.
-function stage1b(givenExprs: string[], functionNames: string[], fieldTokens: string[]): StageResult | null {
+function stage1b(
+  givenExprs: string[],
+  functionNames: string[],
+  fieldTokens: string[],
+  patternIsExistenceCheck: boolean,
+): StageResult | null {
   if (functionNames.length === 0) return null;
   const tiers = matchedTiers(givenExprs, fieldTokens);
 
@@ -258,6 +280,21 @@ function stage1b(givenExprs: string[], functionNames: string[], fieldTokens: str
         riskLevel,
         confidenceLevel,
         rationale: `\`${fn}\` function (additive — add/populate a field) on a target matching the ${riskLevel} tier`,
+        source: 'heuristic',
+      };
+    }
+    if (fn === 'pattern' && patternIsExistenceCheck) {
+      // notMatch-only pattern: existence/validity check, not rename/reformat. Risk escalates the
+      // same as additive on recognized tiers; falls back to medium (not low) on an unrecognized
+      // target so that e.g. `pattern` on a bare `$` with `field: host` stays conservative.
+      let riskLevel: RiskLevel = tiers.size === 0 ? 'medium' : 'low';
+      if (tiers.has('unsafe')) riskLevel = 'high';
+      else if (tiers.has('humanreview')) riskLevel = 'medium';
+      const confidenceLevel: ConfidenceLevel = tiers.size <= 1 ? 'high' : 'medium';
+      return {
+        riskLevel,
+        confidenceLevel,
+        rationale: `\`pattern\` function (existence/validity check — \`notMatch\` validates content is present and correctly formed) on a target matching the ${riskLevel} tier`,
         source: 'heuristic',
       };
     }
@@ -313,7 +350,8 @@ function classifyRuleStages1And2(rule: SpectralRule, aliases: AliasMap): StageRe
   const a = stage1a(givenExprs, fieldNames);
   if (a) return a;
   const functionNames = functionNamesOf(rule);
-  const b = stage1b(givenExprs, functionNames, fieldTokens);
+  const patternIsExistenceCheck = isPatternExistenceCheck(rule);
+  const b = stage1b(givenExprs, functionNames, fieldTokens, patternIsExistenceCheck);
   if (b) return b;
   const c = stage1c(givenExprs, fieldTokens);
   if (c) return c;

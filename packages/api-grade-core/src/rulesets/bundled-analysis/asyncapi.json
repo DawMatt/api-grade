@@ -18,7 +18,7 @@
       "remediationSafetyLevel": "unsafe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "`pattern` function (rename/reformat) on a target matching the high tier",
+      "rationale": "`pattern` function (existence/validity check — `notMatch` validates content is present and correctly formed) on a target matching the high tier",
       "source": "bundled-default",
       "fingerprint": "7f20f52e4806ac9b686d5530ed6e7ff83965a6fc3afb47a2391ffad96d227031"
     },
@@ -40,7 +40,7 @@
       "remediationSafetyLevel": "unsafe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "`pattern` function (rename/reformat) on a target matching the high tier",
+      "rationale": "`pattern` function (existence/validity check — `notMatch` validates content is present and correctly formed) on a target matching the high tier",
       "source": "bundled-default",
       "fingerprint": "fbcc987e5a67e86b9220fee87b3226bd0b6d923fec9eb169c4aaad7d31b611ac"
     },
@@ -62,7 +62,7 @@
       "remediationSafetyLevel": "unsafe",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "`pattern` function (rename/reformat) on a target matching the high tier",
+      "rationale": "`pattern` function (existence/validity check — `notMatch` validates content is present and correctly formed) on a target matching the high tier",
       "source": "bundled-default",
       "fingerprint": "f3bc3a732e2ceb56f9ab5cfd9b75a12399480b456916d70cc609661a49c5868a"
     },
@@ -392,7 +392,7 @@
       "remediationSafetyLevel": "humanreview",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "rationale": "`pattern` function (existence/validity check — `notMatch` validates content is present and correctly formed) on a target matching the medium tier",
       "source": "bundled-default",
       "fingerprint": "995dd4127b0111b66a8ccd95296c472a7ea005236c7bfb64abfdb9938dfaa45e"
     },
@@ -403,7 +403,7 @@
       "remediationSafetyLevel": "humanreview",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "rationale": "`pattern` function (existence/validity check — `notMatch` validates content is present and correctly formed) on a target matching the medium tier",
       "source": "bundled-default",
       "fingerprint": "c03357aacd4594dd77bd6823adeb8d811b559a59eb591c242ce499ec68064cd7"
     },
@@ -414,7 +414,7 @@
       "remediationSafetyLevel": "humanreview",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "rationale": "`pattern` function (existence/validity check — `notMatch` validates content is present and correctly formed) on a target matching the medium tier",
       "source": "bundled-default",
       "fingerprint": "73217cc58744bd1271f647e40904a6b5f65919124927e109532cf19cb540d2a2"
     },
@@ -425,7 +425,7 @@
       "remediationSafetyLevel": "humanreview",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "rationale": "`pattern` function (existence/validity check — `notMatch` validates content is present and correctly formed) on a target matching the medium tier",
       "source": "bundled-default",
       "fingerprint": "dbd318934d060020a4b9dd9ca039da253d8a9f5c5803c29997461ec59407c12d"
     },
@@ -436,7 +436,7 @@
       "remediationSafetyLevel": "humanreview",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "rationale": "`pattern` function (existence/validity check — `notMatch` validates content is present and correctly formed) on a target matching the medium tier",
       "source": "bundled-default",
       "fingerprint": "6d16fc8ff55cfbbd2bce5a0ea27a6f480ef42bb7b3affe275bcabd86bd7d7b9c"
     },
@@ -447,7 +447,7 @@
       "remediationSafetyLevel": "humanreview",
       "assessedBy": "automated",
       "staleFingerprintWarning": null,
-      "rationale": "`pattern` function (rename/reformat) on a target matching the medium tier",
+      "rationale": "`pattern` function (existence/validity check — `notMatch` validates content is present and correctly formed) on a target matching the medium tier",
       "source": "bundled-default",
       "fingerprint": "4ee30c83abcb62482873a1ce7892a7b20fc10af9f6b05fb7d542701bd3297eb1"
     },

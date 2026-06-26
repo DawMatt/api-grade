@@ -142,6 +142,68 @@ describe('analyseRuleset() — Stage 1b function-mechanics classification', () =
     expect(rules[0].riskLevel).toBe('medium');
   });
 
+  it('pattern with match functionOption => rename/reformat classification (not existence check)', async () => {
+    const ruleset = makeRuleset({
+      'custom-format-rule': {
+        given: '$.paths[*][*]',
+        then: { field: 'operationId', function: 'pattern', functionOptions: { match: '^[a-z-]+$' } },
+      },
+    });
+    const { rules } = await analyseRuleset(ruleset);
+    expect(rules[0].riskLevel).toBe('medium');
+    expect(rules[0].rationale).toContain('rename/reformat');
+  });
+
+  it('pattern with notMatch-only => existence/validity check classification', async () => {
+    const ruleset = makeRuleset({
+      'asyncapi-3-channel-no-empty-parameter': {
+        given: '$.channels.*',
+        then: { field: 'address', function: 'pattern', functionOptions: { notMatch: '{}' } },
+      },
+    });
+    const { rules } = await analyseRuleset(ruleset);
+    // address in UNSAFE_SEGMENTS → high risk regardless of function mode
+    expect(rules[0].riskLevel).toBe('high');
+    expect(rules[0].remediationSafetyLevel).toBe('unsafe');
+    expect(rules[0].rationale).toContain('existence/validity check');
+  });
+
+  it('pattern with notMatch-only on safe segment => low risk (additive)', async () => {
+    const ruleset = makeRuleset({
+      'custom-no-script-in-description': {
+        given: '$.paths[*][*]',
+        then: { field: 'description', function: 'pattern', functionOptions: { notMatch: '<script' } },
+      },
+    });
+    const { rules } = await analyseRuleset(ruleset);
+    expect(rules[0].riskLevel).toBe('low');
+    expect(rules[0].remediationSafetyLevel).toBe('safe');
+  });
+
+  it('pattern with notMatch-only on unknown target => conservative medium (not low)', async () => {
+    const ruleset = makeRuleset({
+      'custom-host-check': {
+        given: '$',
+        then: { field: 'host', function: 'pattern', functionOptions: { notMatch: 'example\\.com' } },
+      },
+    });
+    const { rules } = await analyseRuleset(ruleset);
+    // host has no tier match; empty tiers → conservative medium, not low
+    expect(rules[0].riskLevel).toBe('medium');
+    expect(rules[0].remediationSafetyLevel).toBe('humanreview');
+  });
+
+  it('pattern with both match and notMatch => rename/reformat (not existence check)', async () => {
+    const ruleset = makeRuleset({
+      'custom-ambiguous-pattern': {
+        given: '$.paths[*][*]',
+        then: { field: 'operationId', function: 'pattern', functionOptions: { match: '^[a-z]', notMatch: '__' } },
+      },
+    });
+    const { rules } = await analyseRuleset(ruleset);
+    expect(rules[0].rationale).toContain('rename/reformat');
+  });
+
   it('custom (unrecognized) function => high risk, low confidence', async () => {
     const ruleset = makeRuleset({
       'my-custom-rule': { given: '$.info', then: { function: 'myCustomFn' } },
