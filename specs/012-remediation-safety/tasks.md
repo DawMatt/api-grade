@@ -7,7 +7,7 @@ description: "Task list for Feature 12: Remediation Safety (Ruleset Analyser & M
 
 **Input**: Design documents from `/specs/012-remediation-safety/`
 
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/remediation-safety-surfaces.md, quickstart.md, `specs/algorithms/automated_remediation_safety_algorithm_spec.md`
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/remediation-safety-surfaces.md, quickstart.md, `specs/algorithms/automated_remediation_safety_algorithm_spec.md` *(authored during the `/speckit-plan` phase — not a task output; see plan.md Scale/Scope note)*
 
 **Tests**: Included — Constitution Principle IV (Test-Driven Quality) and plan.md's Technical Context both mandate test coverage written alongside this feature's implementation.
 
