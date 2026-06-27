@@ -25,11 +25,11 @@
     "operation-operationId-unique": {
       "ruleId": "operation-operationId-unique",
       "riskLevel": "high",
-      "confidenceLevel": "low",
+      "confidenceLevel": "medium",
       "remediationSafetyLevel": "unsafe",
-      "assessedBy": "automated",
+      "assessedBy": "human",
       "staleFingerprintWarning": null,
-      "rationale": "custom function `oasOpIdUnique` — mechanics cannot be inferred statically",
+      "rationale": "operationId uniqueueness is a breaking change as impacts contract surface, and code generation tooling",
       "source": "bundled-default",
       "fingerprint": "193b1b016bbb37d15bb9cea1a27551b57e17d9e40144c2b7cbe43746dcc2564a"
     },
@@ -201,11 +201,11 @@
     "operation-operationId": {
       "ruleId": "operation-operationId",
       "riskLevel": "medium",
-      "confidenceLevel": "high",
-      "remediationSafetyLevel": "humanreview",
-      "assessedBy": "automated",
+      "confidenceLevel": "medium",
+      "remediationSafetyLevel": "unsafe",
+      "assessedBy": "human",
       "staleFingerprintWarning": null,
-      "rationale": "`truthy` function (additive — add/populate a field) on a target matching the medium tier",
+      "rationale": "Adding operationId is a breaking change as impacts contract surface, and code generation tooling",
       "source": "bundled-default",
       "fingerprint": "d4a660a6541790935065ad7a944cb0b3abf3a347e616d9737944fd1277065a88"
     },
