@@ -126,6 +126,9 @@ No new project scaffolding is required — this feature extends the existing `pa
 - [X] T038 [P] Add a new `CHANGELOG.md` entry for this feature (do not modify historical entries)
 - [X] T039 Run `vitest run` across all workspaces, `tsc --noEmit`, and lint; fix any failures
 - [X] T040 Manually walk through `quickstart.md` end-to-end (all 4 sections) against a real local ruleset and a GitHub-hosted ruleset to confirm SC-001 through SC-009
+- [ ] T057 Verify `analyse-ruleset-safety` and the extended `grade-api-remediation-safety` function correctly when invoked from **Claude Code** (CLI) and **GitHub Copilot VS Code Agent mode** — the two primary MCP targets required by the constitution's AI Integration Requirements. At minimum: call `analyse-ruleset-safety` (no args, built-in ruleset) and `grade-api-remediation-safety` (`level: "humanreview"`) from each client and confirm a valid response is returned with no tool-call errors. Record pass/fail per client in a brief comment on this task before marking `[X]`.
+  - **Claude Code** ✅ PASS (2026-06-27) — `analyse-ruleset-safety` returned full `RulesetAnalysis` (57 rules, all with `riskLevel`/`confidenceLevel`/`remediationSafetyLevel`/`assessedBy`/`rationale`/`staleFingerprintWarning`). `grade-api-remediation-safety` (`level: "humanreview"`, `poor-quality.yaml`) returned 2 items each with `severity`, `range`, and all safety fields populated correctly. No tool-call errors.
+  - **GitHub Copilot VS Code Agent mode** — ⏳ PENDING manual verification by user.
 
 ---
 

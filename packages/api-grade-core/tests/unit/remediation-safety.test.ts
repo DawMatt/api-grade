@@ -327,6 +327,7 @@ describe('getRemediationSafety()', () => {
       riskLevel: 'high',
       confidenceLevel: 'low',
       remediationSafetyLevel: 'unsafe',
+      safetyRationale: 'no recognizable rule-id, function, or path signal',
       staleFingerprintWarning: null,
     });
   });

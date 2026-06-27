@@ -119,3 +119,19 @@ CONTRIBUTING.md                                    # package/tool table correcti
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
 No violations — section not applicable.
+
+## Post-implementation Corrections
+
+Three issues were discovered during the Phase 6 manual walkthrough (T040) and corrected in subsequent phases. They are documented here so the plan remains an accurate record of what was built.
+
+### Phase 7 — Output-shape regression fix
+
+`buildRemediationItem()` inherited a stale numeric-severity assumption from before `Diagnostic.severity` became a string enum, causing every `RemediationItem` to report `severity: "warn"` regardless of actual severity. `range` was also dropped from `RemediationItem`. Separately, `--remediation-safety` and `ruleset-analysis` JSON output regressed to compact (single-line) formatting, and regular (unfiltered) grading output never surfaced per-violation safety signals (FR-024/SC-012). Corrections: assign `severity: diagnostic.severity` directly; add `range` to `RemediationItem`; pretty-print all CLI JSON via `JSON.stringify(value, null, 2)`; decorate `CommonGradeOutput.diagnostics` with safety signals on the unfiltered path (new `DiagnosticWithSafety` type, `buildCommonGradeOutput()` / `formatJson()` / `formatHuman()` accept optional `rulesetAnalysis`).
+
+### Phase 8 — Heuristic correctness: `then.field "@key"` on paths/channels
+
+Stage 1a of the heuristic only recognised the JSONPath `~` key-selector form (e.g. `$.channels[*]~`) as targeting path/channel keys. Spectral's built-in rulesets also express the same semantics via `then.field: "@key"` on `given: "$.channels"` or `given: "$.paths"`. Without this check, those rules fell into Stage 1b's `pattern`/`casing` default and received `medium/high` risk (humanreview) instead of the correct `high/high` (unsafe) — affecting 6 AsyncAPI channel rules and 3 OpenAPI path-key rules. Correction: added `fieldNamesOf()` helper and a `then.field: "@key"` branch to `stage1a()`; regenerated bundled analysis; updated `automated_remediation_safety_algorithm_spec.md` Stage 2a.
+
+### Phase 9 — Heuristic correctness: `pattern notMatch`-only is an existence check
+
+Stage 1b classified all `pattern` function uses as "rename/reformat", defaulting to `medium` risk. `pattern` with `notMatch`-only in `functionOptions` is semantically an existence/validity check (closer to `falsy`/`truthy`), producing incorrect rationale text ("rename/reformat" for emptiness checks) and mis-classifying custom `pattern`+`notMatch` rules on `SAFE_SEGMENTS` targets as `medium` instead of `low`. Correction: added `isPatternExistenceCheck()` helper; `stage1b()` applies additive-style tier escalation when the flag is set; rationale text updated in bundled analysis; no risk-level changes to built-in rulesets (tier lookup dominates).
