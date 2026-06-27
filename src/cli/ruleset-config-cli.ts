@@ -24,7 +24,7 @@ export interface SetRulesetOptions {
 
 function fail(message: string, format: string | undefined, errorCode = 'RULESET_BAD_CONFIG'): never {
   if (format === 'json') {
-    console.log(JSON.stringify({ error: errorCode, message }));
+    console.log(JSON.stringify({ error: errorCode, message }, null, 2));
   } else {
     console.error(chalk.red(`Error: ${message}`));
   }
@@ -70,7 +70,7 @@ export async function runSetRuleset(opts: SetRulesetOptions): Promise<void> {
   }
 
   if (opts.format === 'json') {
-    console.log(JSON.stringify({ scope: opts.scope, rulesetPath, configFile }));
+    console.log(JSON.stringify({ scope: opts.scope, rulesetPath, configFile }, null, 2));
   } else {
     const scopeLabel = opts.scope!.charAt(0).toUpperCase() + opts.scope!.slice(1);
     console.log(
@@ -146,7 +146,7 @@ export async function runGetRuleset(opts: { format?: string }): Promise<void> {
         : null,
       builtIn: 'default',
     };
-    console.log(JSON.stringify(response));
+    console.log(JSON.stringify(response, null, 2));
     return;
   }
 

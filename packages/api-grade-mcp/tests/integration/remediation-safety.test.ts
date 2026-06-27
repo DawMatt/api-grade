@@ -18,23 +18,24 @@ async function callTool(server: ReturnType<typeof createServer>, toolName: strin
 }
 
 describe('grade-api-remediation-safety tool', () => {
-  it('returns non-empty quickFixes for a spec with documentation gaps (quick fix opportunities)', async () => {
+  it.each(['safe', 'humanreview', 'unsafe'])('returns the RemediationSafetyOutput shape for level=%s', async (level) => {
     const server = createServer();
-    const result = await callTool(server, 'grade-api-remediation-safety', { specPath: OPENAPI_POOR, level: 'safe' });
+    const result = await callTool(server, 'grade-api-remediation-safety', { specPath: OPENAPI_POOR, level });
     expect(result.isError).toBeFalsy();
     const body = JSON.parse(result.content[0].text);
-    expect(body).toHaveProperty('quickFixes');
-    expect(body).toHaveProperty('quickFixCount');
+    expect(body).toHaveProperty('remediationItems');
+    expect(body).toHaveProperty('remediationItemCount');
     expect(body).toHaveProperty('totalViolations');
+    expect(body).toHaveProperty('requestedLevel', level);
   });
 
-  it('each violation has all required fields', async () => {
+  it('each remediation item has all required fields', async () => {
     const server = createServer();
     const result = await callTool(server, 'grade-api-remediation-safety', { specPath: OPENAPI_POOR, level: 'safe' });
     expect(result.isError).toBeFalsy();
     const body = JSON.parse(result.content[0].text);
-    if (body.quickFixes.length > 0) {
-      const v = body.quickFixes[0];
+    if (body.remediationItems.length > 0) {
+      const v = body.remediationItems[0];
       expect(v).toHaveProperty('ruleId');
       expect(v).toHaveProperty('message');
       expect(v).toHaveProperty('severity');
@@ -42,29 +43,33 @@ describe('grade-api-remediation-safety tool', () => {
       expect(v).toHaveProperty('location');
       expect(v).toHaveProperty('currentValue');
       expect(v).toHaveProperty('expectedImprovement');
+      expect(v).toHaveProperty('riskLevel');
+      expect(v).toHaveProperty('confidenceLevel');
+      expect(v).toHaveProperty('remediationSafetyLevel', 'safe');
+      expect(v).toHaveProperty('staleFingerprintWarning', null);
       expect(typeof v.expectedImprovement).toBe('string');
       expect(v.expectedImprovement.length).toBeGreaterThan(0);
     }
   });
 
-  it('no violation in quickFixes is a breaking change', async () => {
+  it('no violation in the safe level is a breaking change', async () => {
     const server = createServer();
     const result = await callTool(server, 'grade-api-remediation-safety', { specPath: OPENAPI_POOR, level: 'safe' });
     expect(result.isError).toBeFalsy();
     const body = JSON.parse(result.content[0].text);
-    for (const v of body.quickFixes) {
+    for (const v of body.remediationItems) {
       expect(v.path).not.toContain('required');
       expect(v.path).not.toContain('type');
     }
   });
 
-  it('quickFixCount matches quickFixes length', async () => {
+  it('remediationItemCount matches remediationItems length', async () => {
     const server = createServer();
     const result = await callTool(server, 'grade-api-remediation-safety', { specPath: OPENAPI_MUSEUM, level: 'safe' });
     expect(result.isError).toBeFalsy();
     const body = JSON.parse(result.content[0].text);
-    expect(typeof body.quickFixCount).toBe('number');
-    expect(body.quickFixCount).toBe(body.quickFixes.length);
+    expect(typeof body.remediationItemCount).toBe('number');
+    expect(body.remediationItemCount).toBe(body.remediationItems.length);
   });
 
   it('returns RULESET_NOT_FOUND for non-existent local ruleset', async () => {
@@ -91,6 +96,6 @@ describe('grade-api-remediation-safety tool', () => {
     const server = createServer();
     const tools = (server as unknown as { _registeredTools: ToolRegistry })._registeredTools;
     const tool = tools['grade-api-remediation-safety'] as unknown as { inputSchema: { parse: (v: unknown) => unknown } };
-    expect(() => tool.inputSchema.parse({ specPath: OPENAPI_POOR, level: 'unsafe' })).toThrow();
+    expect(() => tool.inputSchema.parse({ specPath: OPENAPI_POOR, level: 'breaking' })).toThrow();
   });
 });

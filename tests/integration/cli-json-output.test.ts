@@ -14,6 +14,28 @@ function runCli(args: string[]): { status: number | null; stdout: string; stderr
   return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
 }
 
+// stdout may contain multiple pretty-printed (multi-line) JSON documents printed back-to-back
+// (one per console.log call) — split them by tracking brace depth rather than by line.
+function splitJsonDocuments(stdout: string): unknown[] {
+  const docs: unknown[] = [];
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < stdout.length; i++) {
+    const ch = stdout[i];
+    if (ch === '{') {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === '}') {
+      depth--;
+      if (depth === 0 && start !== -1) {
+        docs.push(JSON.parse(stdout.slice(start, i + 1)));
+        start = -1;
+      }
+    }
+  }
+  return docs;
+}
+
 describe('CLI --format json output shape', () => {
   it('matches the CommonGradeOutput shape with no old wrapper fields', () => {
     const { status, stdout } = runCli([
@@ -49,18 +71,11 @@ describe('CLI --format json output shape', () => {
       '--format', 'json',
     ]);
     expect(status).toBe(0);
-    const lines = stdout.trim().split('\n');
-    const assertLine = lines.find((l) => {
-      try {
-        const parsed = JSON.parse(l);
-        return 'passed' in parsed;
-      } catch {
-        return false;
-      }
-    });
-    expect(assertLine).toBeDefined();
-    const assertOutput = JSON.parse(assertLine as string);
-    expect(assertOutput).toHaveProperty('passed');
+    const documents = splitJsonDocuments(stdout);
+    const assertOutput = documents.find(
+      (d): d is Record<string, unknown> => typeof d === 'object' && d !== null && 'passed' in d
+    );
+    expect(assertOutput).toBeDefined();
     expect(assertOutput).toHaveProperty('actual');
     expect(assertOutput).toHaveProperty('minimum');
     expect(assertOutput).toHaveProperty('specPath');

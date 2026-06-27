@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A ruleset analyser (`analyseRuleset()`) that assigns every rule in a loaded
+  ruleset a risk level (`low`/`medium`/`high`), a confidence level
+  (`high`/`medium`/`low`), and a derived remediation safety level
+  (`safe`/`humanreview`/`unsafe`), with provenance and a human-readable
+  rationale. See
+  [automated_remediation_safety_algorithm_spec.md](specs/algorithms/automated_remediation_safety_algorithm_spec.md).
+- `--remediation-safety <level>` (CLI) and the `grade-api-remediation-safety`
+  MCP tool's `level` parameter now accept all three levels — `safe`,
+  `humanreview`, and `unsafe` — instead of only `safe`. Every returned item now
+  also carries `riskLevel`, `confidenceLevel`, `remediationSafetyLevel`, and
+  `staleFingerprintWarning`. `safe` membership is unchanged from prior
+  behavior.
+- A new CLI subcommand, `ruleset-analysis [--ruleset-path <path>] [--format
+  json|human]`, and a new MCP tool, `analyse-ruleset-safety`, expose the
+  analyser's output independent of grading any specific spec.
+- `ruleset-analysis correct --rule-id <id> --level <level>` persists a
+  human-confirmed correction for one rule, colocated with the ruleset (or as a
+  personal override when the ruleset's location isn't locally writable), and
+  reloaded automatically on future runs against the same ruleset — including by
+  teammates pointed at the same shared ruleset.
+
 ### Changed
 
 - **Breaking**: the CLI's `--quick-fixes-only` flag is renamed to

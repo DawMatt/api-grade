@@ -67,38 +67,47 @@ console.log(result.numericScore); // 74
 
 ---
 
-## `formatJson(result: GradeResult): string`
+## `formatJson(result: GradeResult, top?: number, rulesetAnalysis?: RulesetAnalysis): string`
 
-Serialises a `GradeResult` to a JSON string suitable for machine-readable output. The output shape matches the `--format json` CLI output.
+Serialises a `GradeResult` to a **pretty-printed** (two-space indented) JSON string suitable
+for both machine-readable and human-readable output — every JSON document this package emits
+is pretty-printed, never minified. The output shape matches the `--format json` CLI output.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `result` | `GradeResult` | Yes | The result returned by `grade()` or `gradeContent()` |
+| `top` | `number` | No | Truncate `diagnostics` to the first N entries (sets `truncated: true` if entries were dropped) |
+| `rulesetAnalysis` | `RulesetAnalysis` | No | When supplied (see `analyseRuleset()` below), each diagnostic is decorated in place with `riskLevel`, `confidenceLevel`, `remediationSafetyLevel`, and `staleFingerprintWarning` — the same remediation-safety signals `buildRemediationSafetyOutput()` filters on, but applied to every diagnostic, not just one level |
 
-**Returns:** `string` — a formatted JSON string
+**Returns:** `string` — a pretty-printed JSON string
 
 **Example:**
 
 ```typescript
-import { GradeEngine, formatJson } from '@dawmatt/api-grade-core';
+import { GradeEngine, formatJson, analyseRuleset, loadRuleset } from '@dawmatt/api-grade-core';
 const engine = new GradeEngine();
 const result = await engine.grade({ specPath: './openapi.yaml' });
-console.log(formatJson(result));
+const rulesetAnalysis = await analyseRuleset(await loadRuleset(result.format, result.rulesetPath));
+console.log(formatJson(result, undefined, rulesetAnalysis)); // diagnostics include safety info
 ```
 
 ---
 
-## `formatHuman(result: GradeResult): string`
+## `formatHuman(result: GradeResult, top?: number, rulesetAnalysis?: RulesetAnalysis): string`
 
-Serialises a `GradeResult` to a human-readable text string. The output matches the default CLI output.
+Serialises a `GradeResult` to a human-readable text string. The output matches the default CLI
+output. When `rulesetAnalysis` is supplied, a `safety=... risk=... confidence=...` line is
+printed under each diagnostic, same as `formatJson`'s decoration.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `result` | `GradeResult` | Yes | The result returned by `grade()` or `gradeContent()` |
+| `top` | `number` | No | Show only the first N diagnostics |
+| `rulesetAnalysis` | `RulesetAnalysis` | No | When supplied, annotates each printed diagnostic with its remediation-safety signals |
 
 **Returns:** `string` — a formatted human-readable report
 
@@ -112,7 +121,7 @@ Serialises a `GradeResult` to a human-readable text string. The output matches t
 > these exact field names — see [CLI Commands](../cli/commands.md#json-output-schema)
 > and [MCP Server Tool Reference](api-grade-mcp.md) for where each shape is used.
 
-### `buildCommonGradeOutput(result: GradeResult, options?: { top?: number }): CommonGradeOutput`
+### `buildCommonGradeOutput(result: GradeResult, options?: { top?: number; rulesetAnalysis?: RulesetAnalysis }): CommonGradeOutput`
 
 Shapes a `GradeResult` for "grade a spec, give me everything" output. Used by the
 CLI's `--format json`, MCP's `grade-api`, and MCP's `grade-api-detailed`.
@@ -125,12 +134,26 @@ interface CommonGradeOutput {
   gradeLabel: GradeLabel;
   numericScore: number;
   summary: DiagnosticSummary;
-  diagnostics: Diagnostic[];
+  diagnostics: Diagnostic[] | DiagnosticWithSafety[];
   truncated?: boolean;            // present only when `options.top` actually dropped entries
   rulesetSource: 'default' | 'custom';
   rulesetPath?: string;           // present only when a custom ruleset was used
 }
+
+interface DiagnosticWithSafety extends Diagnostic {
+  riskLevel: RiskLevel | null;
+  confidenceLevel: ConfidenceLevel;
+  remediationSafetyLevel: RemediationSafetyLevel;
+  staleFingerprintWarning: StaleFingerprintWarning | null;
+}
 ```
+
+`diagnostics` is `DiagnosticWithSafety[]` whenever `options.rulesetAnalysis` is supplied —
+each entry is the original `Diagnostic` plus the four remediation-safety fields, looked up via
+`getRemediationSafety()` (below) — and plain `Diagnostic[]` otherwise. Callers that always
+want safety info on regular grade output (not just the `--remediation-safety`-filtered view)
+should always pass `rulesetAnalysis`; the CLI's `--format json`/`--format human` paths do this
+unconditionally.
 
 Tool-specific data (e.g. MCP's `largeSpecWarning`, `recoveryOptions`) is layered
 additively on top of this shape by the consuming package — it is never renamed or
@@ -151,43 +174,95 @@ interface AssertOutput {
 }
 ```
 
-### `buildQuickFixOutput(result: GradeResult, specContent: string): QuickFixOutput`
+### `analyseRuleset(loadedRuleset: LoadedRuleset, options?: { auth?: AuthConfig | null }): Promise<RulesetAnalysis>`
 
-Shapes the "safely-automatable fixes" subset. Used by MCP's
-`grade-api-remediation-safety` and the CLI's `--remediation-safety safe --format json`.
+Computes a per-rule remediation-safety analysis for a loaded ruleset — risk level,
+confidence level, and the derived remediation safety level for every rule, with
+provenance (`assessedBy`, `source`) and a rationale. Checks persisted/bundled stores
+(workspace override → global override → colocated shared analysis → bundled default for
+the built-in ruleset) before falling through to the automated heuristic. See the
+[Automated Remediation Safety Algorithm Specification](../../specs/algorithms/automated_remediation_safety_algorithm_spec.md)
+for the full algorithm.
 
 ```typescript
-interface QuickFixOutput {
-  specPath: string;
-  format: ApiFormat;
-  totalViolations: number;
-  quickFixCount: number;
-  quickFixes: QuickFix[];
+interface RulesetAnalysis {
+  rulesetSource: 'default' | 'custom';
+  rulesetPath?: string;
+  rules: RuleAnalysis[];
 }
 
-interface QuickFix {
+interface RuleAnalysis {
   ruleId: string;
-  message: string;
-  severity: string;
-  path: string[];
-  location: string;              // dot-joined `path`
-  currentValue: string | null;
-  expectedImprovement: string;
+  riskLevel: RiskLevel | null;                 // "low" | "medium" | "high"
+  confidenceLevel: ConfidenceLevel;             // "high" | "medium" | "low"
+  remediationSafetyLevel: RemediationSafetyLevel; // "safe" | "humanreview" | "unsafe"
+  assessedBy: AssessmentOrigin;                 // "human" | "automated"
+  staleFingerprintWarning: StaleFingerprintWarning | null;
+  rationale: string;
+  source: AnalysisSource;                       // "persisted" | "bundled-default" | "heuristic" | "fallback"
 }
 ```
 
-### `formatQuickFixesHuman(result: GradeResult, specContent: string): string`
+### `getRemediationSafety(diagnostic: Diagnostic, rulesetAnalysis: RulesetAnalysis)`
 
-Renders the same filtered `QuickFix[]` list used by `buildQuickFixOutput()` as
-human-readable text. Used by the CLI's `--remediation-safety safe` with `--format human`
-(the default).
+Looks up a single violation's remediation safety against a previously computed
+`RulesetAnalysis`, by `ruleId`. Defaults to `{ riskLevel: "high", confidenceLevel: "low",
+remediationSafetyLevel: "unsafe", staleFingerprintWarning: null }` when the rule isn't
+covered by the analysis.
 
-### `classifyViolation(diagnostic: Diagnostic): ViolationClass`
+### `buildRemediationSafetyOutput(result: GradeResult, specContent: string, rulesetAnalysis: RulesetAnalysis, requestedLevel: RemediationSafetyLevel): RemediationSafetyOutput`
 
-Classifies a single diagnostic as `'nonBreaking' | 'breaking' | 'unknown'`. The
-classification basis for `buildQuickFixOutput()`'s filtering. See the
-[Quick-Fixes Algorithm Specification](../../specs/algorithms/quick_fixes_algorithm_spec.md)
-for the full rationale behind which violations are classified which way.
+Shapes the diagnostics matching one remediation-safety level. Used by MCP's
+`grade-api-remediation-safety` and the CLI's `--remediation-safety <level> --format json`.
+
+```typescript
+interface RemediationSafetyOutput {
+  specPath: string;
+  format: ApiFormat;
+  totalViolations: number;
+  remediationItemCount: number;
+  remediationItems: RemediationItem[];
+  requestedLevel: RemediationSafetyLevel;
+}
+
+interface RemediationItem {
+  ruleId: string;
+  message: string;
+  severity: DiagnosticSeverity;  // "error" | "warn" | "info" | "hint" — the diagnostic's actual severity
+  path: string[];
+  location: string;              // dot-joined `path`
+  range: Diagnostic['range'];    // line/character location, carried over from the source diagnostic
+  currentValue: string | null;
+  expectedImprovement: string;
+  riskLevel: RiskLevel | null;
+  confidenceLevel: ConfidenceLevel;
+  remediationSafetyLevel: RemediationSafetyLevel;
+  staleFingerprintWarning: StaleFingerprintWarning | null;
+}
+```
+
+`severity` and `range` are carried over unchanged from the underlying `Diagnostic` — a
+`RemediationItem` is never missing the line-number/severity context a regular diagnostic has,
+even though it's filtered down to one remediation-safety level and reshaped with
+remediation-specific fields (`location`, `currentValue`, `expectedImprovement`).
+
+The JSON returned by `buildRemediationSafetyOutput()` is pretty-printed by every caller
+(`JSON.stringify(output, null, 2)`), matching `formatJson()`'s output style — it is not
+minified.
+
+### `formatRemediationSafetyHuman(result: GradeResult, specContent: string, rulesetAnalysis: RulesetAnalysis, requestedLevel: RemediationSafetyLevel): string`
+
+Renders the same filtered `RemediationItem[]` list used by `buildRemediationSafetyOutput()`
+as human-readable text, including each item's line number (`Line N`) when `range` is present.
+Used by the CLI's `--remediation-safety <level>` with `--format human` (the default).
+
+### `persistRuleAnalysisCorrection(loadedRuleset, ruleId, remediationSafetyLevel, scope?)`
+
+Persists a human-confirmed remediation-safety correction for one rule, written to the
+colocated shared analysis file (default, for a writable local ruleset) or a personal
+override (workspace/global scope, or as a fallback for a non-writable remote/built-in
+ruleset location). Reloaded automatically by `analyseRuleset()` on future runs against the
+same ruleset.
 
 ---
 
@@ -282,6 +357,11 @@ interface Diagnostic {
 }
 ```
 
+See `DiagnosticWithSafety` (under `buildCommonGradeOutput` above) for the shape a `Diagnostic`
+takes on once decorated with remediation-safety fields, and `RemediationItem` (under
+`buildRemediationSafetyOutput` above) for the shape it takes on once filtered to one
+remediation-safety level — both preserve `severity` and `range` unchanged from this base type.
+
 ---
 
 ### `RuleMetadata`
@@ -305,8 +385,8 @@ interface RuleMetadata {
 
 - [Usage Guide](usage-guide.md) — common patterns and worked examples
 - [Package Overview](README.md) — installation and minimal usage
-- [MCP Server Tool Reference](api-grade-mcp.md) — all six MCP tools including `recoveryOption`
+- [MCP Server Tool Reference](api-grade-mcp.md) — all MCP tools including `recoveryOption`
 - [CLI Commands](../cli/commands.md#json-output-schema) — CLI-specific usage of the JSON Output Schema above
 - [API Diagnostic Algorithm Specification](../../specs/algorithms/api_diagnostic_algorithm_spec.md) — full scoring/grading/recommendation algorithm
-- [Quick-Fixes Algorithm Specification](../../specs/algorithms/quick_fixes_algorithm_spec.md) — full non-breaking-vs-breaking classification algorithm
+- [Automated Remediation Safety Algorithm Specification](../../specs/algorithms/automated_remediation_safety_algorithm_spec.md) — full risk/confidence/remediation-safety classification algorithm
 - [Documentation Index](../index.md) — full navigation across all docs

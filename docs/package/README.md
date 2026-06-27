@@ -79,6 +79,6 @@ After building, the `api-grade-core` package is available under `packages/api-gr
 - [Usage Guide](usage-guide.md) — common integration patterns and worked examples
 - [API Reference](api-reference.md) — all exported functions, classes, and types
 - [API Diagnostic Algorithm Specification](../../specs/algorithms/api_diagnostic_algorithm_spec.md) — how scores, grades, and recommendations are computed
-- [Quick-Fixes Algorithm Specification](../../specs/algorithms/quick_fixes_algorithm_spec.md) — how non-breaking, safely-automatable violations are identified
+- [Automated Remediation Safety Algorithm Specification](../../specs/algorithms/automated_remediation_safety_algorithm_spec.md) — how risk, confidence, and remediation safety are determined per rule
 - [Documentation Index](../index.md) — full navigation across all docs
 - [CLI Tool](../cli/README.md) — use api-grade from the command line

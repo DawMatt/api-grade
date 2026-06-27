@@ -110,16 +110,61 @@ export interface SessionState {
   sessionRulesetOverride: 'builtin' | null;
 }
 
-export type ViolationClass = 'nonBreaking' | 'breaking' | 'unknown';
+export type RemediationSafetyLevel = 'safe' | 'humanreview' | 'unsafe';
 
-export interface QuickFix {
+export type RiskLevel = 'low' | 'medium' | 'high';
+
+export type ConfidenceLevel = 'high' | 'medium' | 'low';
+
+export type AssessmentOrigin = 'human' | 'automated';
+
+export type AnalysisSource = 'persisted' | 'bundled-default' | 'heuristic' | 'fallback';
+
+export interface StaleFingerprintWarning {
+  storedFingerprint: string;
+  currentFingerprint: string;
+  message: string;
+}
+
+export interface RuleAnalysis {
+  ruleId: string;
+  riskLevel: RiskLevel | null;
+  confidenceLevel: ConfidenceLevel;
+  remediationSafetyLevel: RemediationSafetyLevel;
+  assessedBy: AssessmentOrigin;
+  staleFingerprintWarning: StaleFingerprintWarning | null;
+  rationale: string;
+  source: AnalysisSource;
+}
+
+export interface RulesetAnalysis {
+  rulesetSource: 'default' | 'custom';
+  rulesetPath?: string;
+  rules: RuleAnalysis[];
+}
+
+export interface RemediationItem {
   ruleId: string;
   message: string;
-  severity: string;
+  severity: DiagnosticSeverity;
   path: string[];
   location: string;
+  range: Diagnostic['range'];
   currentValue: string | null;
   expectedImprovement: string;
+  riskLevel: RiskLevel | null;
+  confidenceLevel: ConfidenceLevel;
+  remediationSafetyLevel: RemediationSafetyLevel;
+  safetyRationale: string;
+  staleFingerprintWarning: StaleFingerprintWarning | null;
+}
+
+export interface DiagnosticWithSafety extends Diagnostic {
+  riskLevel: RiskLevel | null;
+  confidenceLevel: ConfidenceLevel;
+  remediationSafetyLevel: RemediationSafetyLevel;
+  safetyRationale: string;
+  staleFingerprintWarning: StaleFingerprintWarning | null;
 }
 
 export interface CommonGradeOutput {
@@ -129,7 +174,7 @@ export interface CommonGradeOutput {
   gradeLabel: GradeLabel;
   numericScore: number;
   summary: DiagnosticSummary;
-  diagnostics: Diagnostic[];
+  diagnostics: Diagnostic[] | DiagnosticWithSafety[];
   truncated?: boolean;
   rulesetSource: 'default' | 'custom';
   rulesetPath?: string;
@@ -143,10 +188,29 @@ export interface AssertOutput {
   numericScore: number;
 }
 
-export interface QuickFixOutput {
+export interface PersistedRuleEntry extends RuleAnalysis {
+  fingerprint: string;
+}
+
+export interface SharedRulesetAnalysis {
+  location: string;
+  rules: Record<string, PersistedRuleEntry>;
+}
+
+export interface PersonalRulesetAnalysisOverride {
+  scope: 'workspace' | 'global';
+  rules: Record<string, PersistedRuleEntry>;
+}
+
+export interface BundledRulesetAnalysis {
+  rules: Record<string, PersistedRuleEntry>;
+}
+
+export interface RemediationSafetyOutput {
   specPath: string;
   format: ApiFormat;
   totalViolations: number;
-  quickFixCount: number;
-  quickFixes: QuickFix[];
+  remediationItemCount: number;
+  remediationItems: RemediationItem[];
+  requestedLevel: RemediationSafetyLevel;
 }

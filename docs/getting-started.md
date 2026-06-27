@@ -55,7 +55,7 @@ Two Backstage plugin packages that display API grades directly on your Backstage
 
 ### MCP Server (`@dawmatt/api-grade-mcp`)
 
-An MCP (Model Context Protocol) server that exposes api-grade as six AI tools: `grade-api`, `grade-api-detailed`, `assert-api-grade`, `grade-api-remediation-safety`, `set-ruleset-config`, and `get-ruleset-config`. Register it in Claude Code, GitHub Copilot (VS Code Agent mode), or any MCP-compatible AI host and let the AI grade specs directly.
+An MCP (Model Context Protocol) server that exposes api-grade as seven AI tools: `grade-api`, `grade-api-detailed`, `assert-api-grade`, `grade-api-remediation-safety`, `analyse-ruleset-safety`, `set-ruleset-config`, and `get-ruleset-config`. Register it in Claude Code, GitHub Copilot (VS Code Agent mode), or any MCP-compatible AI host and let the AI grade specs directly.
 
 ```bash
 claude mcp add api-grade -- npx -y @dawmatt/api-grade-mcp

@@ -26,7 +26,7 @@ api-grade <spec-file> [options]
 | `--token <pat>` | GitHub Personal Access Token used to authenticate a remote ruleset fetch (only consulted when `--auth-type github-pat`) |
 | `--format <type>` | Output format: `human` (default) or `json` |
 | `--top <n>` | Show only the top N diagnostics (useful for large specs) |
-| `--remediation-safety <level>` | Filter diagnostics to the given remediation safety level (currently: `safe`) |
+| `--remediation-safety <level>` | Filter diagnostics to the given remediation safety level: `safe`, `humanreview`, or `unsafe` |
 | `--verbose` | Print the full error stack when a runtime error occurs |
 | `-V, --version` | Print the version number |
 | `-h, --help` | Show usage information |
@@ -319,9 +319,10 @@ api-grade openapi.yaml --ruleset my-rules.yaml
 > `diagnosticCounts` wrapper. See [CHANGELOG.md](../../CHANGELOG.md) for the
 > old → new field mapping.
 
-When using `--format json`, the output is a JSON object with the same flat field
-names used by the MCP server's `grade-api` / `grade-api-detailed` tools — one
-parser works for both:
+When using `--format json`, the output is **pretty-printed** (two-space indented, like every
+other end-user-visible JSON document this CLI prints — no compact/minified output) and is a
+JSON object with the same flat field names used by the MCP server's `grade-api` /
+`grade-api-detailed` tools — one parser works for both:
 
 ```json
 {
@@ -351,12 +352,28 @@ parser works for both:
       "message": "\"version\" property must be string.",
       "severity": "error",
       "path": ["info", "version"],
-      "range": { "start": { "line": 3, "character": 0 }, "end": { "line": 3, "character": 5 } }
+      "range": { "start": { "line": 3, "character": 0 }, "end": { "line": 3, "character": 5 } },
+      "source": "openapi.yaml",
+      "riskLevel": "high",
+      "confidenceLevel": "low",
+      "remediationSafetyLevel": "unsafe",
+      "staleFingerprintWarning": null
     }
   ],
   "rulesetSource": "default"
 }
 ```
+
+Every diagnostic always carries `riskLevel`, `confidenceLevel`, `remediationSafetyLevel`, and
+`staleFingerprintWarning` — the same per-violation remediation-safety signals described below
+under [Remediation Safety](#remediation-safety---remediation-safety-level) — computed from the
+ruleset analyser against the spec's effective ruleset. This is **not** gated behind
+`--remediation-safety`; it is present on every `--format json` (and, as a one-line
+`safety=... risk=... confidence=...` annotation under each finding, every `--format human`)
+grading run, so a regular user can see at a glance how risky each fix is without requesting a
+separate filtered view. `--remediation-safety <level>` (below) additionally *filters* the
+diagnostics down to one level and reshapes them into `remediationItems`; absent that flag, the
+full, unfiltered diagnostic list is annotated in place instead.
 
 `truncated: true` is added only when `--top` actually drops entries from `diagnostics`.
 `rulesetPath` is added only when a custom ruleset was used.
@@ -365,37 +382,62 @@ parser works for both:
 
 ## Remediation Safety (`--remediation-safety <level>`)
 
-`--remediation-safety safe` filters diagnostics down to the non-breaking,
-safely-automatable subset — the same classification used by the MCP server's
-`grade-api-remediation-safety` tool. It is a *filter*, independent of `--format`, so it
-works with either output format. Only `safe` is accepted today; any other value is
-rejected with a non-zero exit code.
+`--remediation-safety <level>` filters diagnostics down to one of three remediation-safety
+levels — the same classification used by the MCP server's `grade-api-remediation-safety`
+tool — and is computed by the ruleset analyser (see `ruleset-analysis` below). It is a
+*filter*, independent of `--format`, so it works with either output format.
+
+| Level | Meaning |
+|---|---|
+| `safe` | Non-breaking, safe to auto-apply without per-change human review |
+| `humanreview` | Typically additive/clarifying, but should be confirmed by a human before applying at scale |
+| `unsafe` | Could change request/response validation, required fields, types, or the parameter surface — requires human (or explicitly-confirmed agent) review |
+
+Any other value is rejected with `Error: --remediation-safety must be one of: safe,
+humanreview, unsafe.` and a non-zero exit code.
 
 **Machine-readable:**
 
 ```bash
-api-grade openapi.yaml --remediation-safety safe --format json
+api-grade openapi.yaml --remediation-safety humanreview --format json
 ```
+
+This output is pretty-printed the same as the regular `--format json` output above:
 
 ```json
 {
   "specPath": "openapi.yaml",
   "format": "openapi-3",
   "totalViolations": 22,
-  "quickFixCount": 3,
-  "quickFixes": [
+  "requestedLevel": "humanreview",
+  "remediationItemCount": 3,
+  "remediationItems": [
     {
-      "ruleId": "info-contact",
-      "message": "Info object must have \"contact\" object.",
+      "ruleId": "operation-operationId",
+      "message": "Operation must have \"operationId\".",
       "severity": "warn",
-      "path": ["info"],
-      "location": "info",
+      "path": ["paths", "/pets", "get"],
+      "location": "paths./pets.get",
+      "range": { "start": { "line": 11, "character": 2 }, "end": { "line": 11, "character": 5 } },
       "currentValue": null,
-      "expectedImprovement": "Add a `contact` object to the info block with name, email, or url"
+      "expectedImprovement": "Fix: Operation must have \"operationId\". Add or update `operationId` as required",
+      "riskLevel": "medium",
+      "confidenceLevel": "high",
+      "remediationSafetyLevel": "humanreview",
+      "staleFingerprintWarning": null
     }
   ]
 }
 ```
+
+Each item carries `riskLevel` (`low`/`medium`/`high`) and `confidenceLevel`
+(`high`/`medium`/`low`) alongside `remediationSafetyLevel` — the field
+`--remediation-safety`/`requestedLevel` filters against — and a `staleFingerprintWarning`
+that is non-null only when a human-assessed rule classification's underlying rule
+definition has since changed (see `ruleset-analysis` below). `severity` is the diagnostic's
+actual severity (`error`/`warn`/`info`/`hint`, not a fixed placeholder), and `range` carries
+the same line/character location as the regular diagnostics output — both are required to
+act on a remediation item without losing the line-number context a linter normally provides.
 
 **Human-readable** (default, or with `--format human`):
 
@@ -405,8 +447,39 @@ api-grade openapi.yaml --remediation-safety safe
 
 Prints the same filtered list as readable text instead of JSON.
 
-`--remediation-safety safe` has no effect on `--min-grade` — the gate still evaluates the
+`--remediation-safety <level>` has no effect on `--min-grade` — the gate still evaluates the
 spec's actual letter grade from the full, unfiltered diagnostics.
+
+---
+
+## Ruleset Analysis (`ruleset-analysis`)
+
+Inspects a ruleset's per-rule remediation-safety analysis independent of grading any spec:
+
+```bash
+api-grade ruleset-analysis --format human
+api-grade ruleset-analysis --ruleset-path ./my-ruleset.yaml --format json
+```
+
+`--format human` (default) prints a table with rule id, risk level, confidence level,
+remediation safety level, assessed by (`human`/`automated`), and rationale — plus a
+fingerprint-mismatch warning line for any human-assessed rule whose underlying definition
+has changed since it was last reviewed. `--format json` returns the full `RulesetAnalysis`
+document. Without `--ruleset-path`, analyses the built-in ruleset.
+
+To persist a human-confirmed correction for one rule (reloaded automatically on future runs
+against the same ruleset):
+
+```bash
+api-grade ruleset-analysis correct --rule-id operation-operationId --level safe \
+  --ruleset-path ./my-ruleset.yaml
+```
+
+For a local ruleset, this writes a colocated `<ruleset>.remediation-safety.json` file next
+to the ruleset (commit it so your team shares the same judgements). For a non-writable
+ruleset location (e.g. a GitHub-hosted ruleset, or the built-in ruleset), the correction is
+recorded locally as a personal override instead, and the equivalent shared-file content is
+printed for you to commit yourself.
 
 ---
 

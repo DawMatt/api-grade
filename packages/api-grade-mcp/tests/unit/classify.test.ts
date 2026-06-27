@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyViolation } from '../../src/utils/classify.js';
+import { analyseRuleset, getRemediationSafety } from '../../src/utils/classify.js';
 import type { Diagnostic } from '@dawmatt/api-grade-core';
 
 function makeDiagnostic(overrides: Partial<Diagnostic>): Diagnostic {
@@ -14,44 +14,40 @@ function makeDiagnostic(overrides: Partial<Diagnostic>): Diagnostic {
   };
 }
 
-describe('classifyViolation()', () => {
-  it('classifies operation-description as nonBreaking (rule ID override)', () => {
+describe('classify.ts re-exports', () => {
+  it('analyseRuleset() classifies a safe rule', async () => {
+    const loadedRuleset = {
+      ruleset: {
+        rules: {
+          'operation-description': { given: '$.paths[*][*]', then: { field: 'description', function: 'truthy' } },
+        },
+      },
+      rulesetSource: 'custom' as const,
+    };
+    const analysis = await analyseRuleset(loadedRuleset);
+    expect(analysis.rules[0].remediationSafetyLevel).toBe('safe');
+  });
+
+  it('getRemediationSafety() looks up a violation against a RulesetAnalysis', async () => {
+    const loadedRuleset = {
+      ruleset: {
+        rules: {
+          'operation-description': { given: '$.paths[*][*]', then: { field: 'description', function: 'truthy' } },
+        },
+      },
+      rulesetSource: 'custom' as const,
+    };
+    const analysis = await analyseRuleset(loadedRuleset);
     const d = makeDiagnostic({ ruleId: 'operation-description', path: ['paths', '/pets', 'get'] });
-    expect(classifyViolation(d)).toBe('nonBreaking');
+    const result = getRemediationSafety(d, analysis);
+    expect(result.remediationSafetyLevel).toBe('safe');
   });
 
-  it('classifies violation at required field as breaking', () => {
-    const d = makeDiagnostic({ ruleId: 'some-rule', path: ['paths', '/pets', 'get', 'parameters', '0', 'required'] });
-    expect(classifyViolation(d)).toBe('breaking');
-  });
-
-  it('classifies info-contact as nonBreaking (rule ID override)', () => {
-    const d = makeDiagnostic({ ruleId: 'info-contact', path: ['info'] });
-    expect(classifyViolation(d)).toBe('nonBreaking');
-  });
-
-  it('classifies violation with x- extension path as nonBreaking', () => {
-    const d = makeDiagnostic({ ruleId: 'some-rule', path: ['info', 'x-logo'] });
-    expect(classifyViolation(d)).toBe('nonBreaking');
-  });
-
-  it('classifies unknown path with no recognised segments as unknown', () => {
-    const d = makeDiagnostic({ ruleId: 'obscure-rule', path: ['components', 'securitySchemes', 'oauth2'] });
-    expect(classifyViolation(d)).toBe('unknown');
-  });
-
-  it('classifies oas3-examples-* rules as nonBreaking', () => {
-    const d = makeDiagnostic({ ruleId: 'oas3-examples-value-or-externalValue', path: ['paths', '/pets', 'get'] });
-    expect(classifyViolation(d)).toBe('nonBreaking');
-  });
-
-  it('classifies description path segment as nonBreaking', () => {
-    const d = makeDiagnostic({ ruleId: 'some-rule', path: ['info', 'description'] });
-    expect(classifyViolation(d)).toBe('nonBreaking');
-  });
-
-  it('classifies type path segment as breaking', () => {
-    const d = makeDiagnostic({ ruleId: 'some-rule', path: ['components', 'schemas', 'Pet', 'type'] });
-    expect(classifyViolation(d)).toBe('breaking');
+  it('getRemediationSafety() defaults to unsafe/low on lookup miss (FR-009)', () => {
+    const analysis = { rulesetSource: 'custom' as const, rules: [] };
+    const d = makeDiagnostic({ ruleId: 'never-seen' });
+    const result = getRemediationSafety(d, analysis);
+    expect(result.remediationSafetyLevel).toBe('unsafe');
+    expect(result.confidenceLevel).toBe('low');
   });
 });

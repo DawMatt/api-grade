@@ -1,6 +1,7 @@
 import chalk from 'chalk';
-import type { GradeResult, DiagnosticSeverity } from './types.js';
+import type { GradeResult, DiagnosticSeverity, RulesetAnalysis } from './types.js';
 import { buildCommonGradeOutput } from './json-output.js';
+import { getRemediationSafety } from './remediation-safety.js';
 
 const SEVERITY_COLORS: Record<DiagnosticSeverity, (s: string) => string> = {
   error: chalk.red,
@@ -9,7 +10,7 @@ const SEVERITY_COLORS: Record<DiagnosticSeverity, (s: string) => string> = {
   hint: chalk.gray,
 };
 
-export function formatHuman(result: GradeResult, top?: number): string {
+export function formatHuman(result: GradeResult, top?: number, rulesetAnalysis?: RulesetAnalysis): string {
   const lines: string[] = [];
 
   // Section 1: Grade line
@@ -59,6 +60,12 @@ export function formatHuman(result: GradeResult, top?: number): string {
         `  ${color(d.severity.padEnd(5))}  ${d.ruleId.padEnd(42)}  ${pathStr}${lineNum}`
       );
       lines.push(`             ${d.message}`);
+      if (rulesetAnalysis) {
+        const safety = getRemediationSafety(d, rulesetAnalysis);
+        lines.push(
+          `             safety=${safety.remediationSafetyLevel} risk=${safety.riskLevel ?? 'n/a'} confidence=${safety.confidenceLevel}`
+        );
+      }
     }
 
     if (remaining > 0) {
@@ -73,7 +80,7 @@ export function formatHuman(result: GradeResult, top?: number): string {
   return lines.join('\n');
 }
 
-export function formatJson(result: GradeResult, top?: number): string {
-  const output = buildCommonGradeOutput(result, { top });
+export function formatJson(result: GradeResult, top?: number, rulesetAnalysis?: RulesetAnalysis): string {
+  const output = buildCommonGradeOutput(result, { top, rulesetAnalysis });
   return JSON.stringify(output, null, 2);
 }

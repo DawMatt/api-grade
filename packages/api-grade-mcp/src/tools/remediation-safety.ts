@@ -11,18 +11,21 @@ import {
   RulesetAuthError,
   INITIAL_FETCH_TIMEOUT_MS,
   RETRY_FETCH_TIMEOUT_MS,
-  buildQuickFixOutput,
+  analyseRuleset,
+  buildRemediationSafetyOutput,
+  loadRuleset,
 } from '@dawmatt/api-grade-core';
+import type { RemediationSafetyLevel } from '@dawmatt/api-grade-core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { mcpError, buildRulesetFetchFailureResponse, describeFetchFailureReason, ERROR_CODES } from '../utils/errors.js';
 import type { SessionState } from '@dawmatt/api-grade-core';
 
 const LARGE_SPEC_THRESHOLD_BYTES = 500_000;
 
-export function registerQuickFixesOnlyTool(server: McpServer, sessionState: SessionState): void {
+export function registerRemediationSafetyTool(server: McpServer, sessionState: SessionState): void {
   server.tool(
     'grade-api-remediation-safety',
-    'Return a classified, AI-actionable list of diagnostics filtered by remediation safety level. The `safe` level covers improvements that can be made via non-breaking changes — those that do not alter the API interface contract (paths, methods, required parameters, schema types, or response structures). Use this tool (not grade-api-detailed) when the goal is for the AI to safely resolve violations; the AI generates the corrected specification content and the MCP server does not modify files.',
+    'Return a classified, AI-actionable list of diagnostics filtered by remediation safety level: `safe` (non-breaking, safe to auto-apply), `humanreview` (typically additive/clarifying but should be confirmed by a human before applying at scale), or `unsafe` (could change request/response validation, required fields, types, or the parameter surface — requires human or explicitly-confirmed-agent review). Each returned item also carries a confidence indicator (riskLevel/confidenceLevel) explaining how sure the analyser is in its classification. Use this tool (not grade-api-detailed) when the goal is for the AI to safely resolve violations; the AI generates the corrected specification content and the MCP server does not modify files.',
     {
       specPath: z
         .string()
@@ -30,8 +33,8 @@ export function registerQuickFixesOnlyTool(server: McpServer, sessionState: Sess
           'Absolute or relative path to the OpenAPI or AsyncAPI specification file (YAML or JSON)'
         ),
       level: z
-        .enum(['safe'])
-        .describe('Remediation safety level to filter diagnostics by. Only "safe" is supported today.'),
+        .enum(['safe', 'humanreview', 'unsafe'])
+        .describe('Remediation safety level to filter diagnostics by.'),
       rulesetPath: z
         .string()
         .optional()
@@ -43,7 +46,7 @@ export function registerQuickFixesOnlyTool(server: McpServer, sessionState: Sess
           'Recovery action when the configured default ruleset is inaccessible. Only supply in response to a RULESET_AUTH_FAILED response. On receiving that response, present its recoveryOptions to the user verbatim and wait for their explicit choice before setting this field — do not select use-builtin-once or use-builtin-session on the user’s behalf.'
         ),
     },
-    async ({ specPath, rulesetPath, recoveryOption }) => {
+    async ({ specPath, level, rulesetPath, recoveryOption }) => {
       if (recoveryOption === 'cancel') {
         return mcpError(ERROR_CODES.REQUEST_CANCELLED, 'Grading request cancelled by user.', { specPath });
       }
@@ -118,8 +121,12 @@ export function registerQuickFixesOnlyTool(server: McpServer, sessionState: Sess
       try {
         const engine = new GradeEngine();
         const result = await engine.grade({ specPath, rulesetPath: effectiveRulesetPath });
+        const loadedRuleset = await loadRuleset(result.format, effectiveRulesetPath);
+        const rulesetAnalysis = await analyseRuleset(loadedRuleset);
 
-        const response: Record<string, unknown> = { ...buildQuickFixOutput(result, specContent) };
+        const response: Record<string, unknown> = {
+          ...buildRemediationSafetyOutput(result, specContent, rulesetAnalysis, level as RemediationSafetyLevel),
+        };
 
         if (largeSpecWarning) {
           response.largeSpecWarning = largeSpecWarning;
